@@ -14,6 +14,20 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Map simple Render-friendly env vars to ASP.NET Core config paths
+var envOverrides = new Dictionary<string, string?>
+{
+    ["ConnectionStrings:DefaultConnection"] = Environment.GetEnvironmentVariable("DB_CONNECTION"),
+    ["Jwt:Secret"]                          = Environment.GetEnvironmentVariable("JWT_SECRET"),
+    ["Jwt:Issuer"]                          = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+    ["Jwt:Audience"]                        = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+    ["FrontendBaseUrl"]                     = Environment.GetEnvironmentVariable("FRONTEND_URL"),
+    ["DefaultAdmin:Email"]                  = Environment.GetEnvironmentVariable("ADMIN_EMAIL"),
+    ["DefaultAdmin:Password"]               = Environment.GetEnvironmentVariable("ADMIN_PASSWORD"),
+};
+builder.Configuration.AddInMemoryCollection(
+    envOverrides.Where(kv => kv.Value is not null)!);
+
 builder.Host.UseSerilog((context, services, configuration) =>
 {
     configuration
