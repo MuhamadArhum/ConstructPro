@@ -1,0 +1,131 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+import Loader from '../../components/common/Loader';
+import { useAppDispatch } from '../../app/hooks';
+import { showSnackbar } from '../../app/snackbarSlice';
+import { useCreateLabourMutation, useGetLabourByIdQuery, useUpdateLabourMutation } from './labourApi';
+
+export default function LabourFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const { data: existing, isLoading: isLoadingExisting } = useGetLabourByIdQuery(id ?? '', { skip: !isEdit });
+  const [create, { isLoading: isCreating }] = useCreateLabourMutation();
+  const [update, { isLoading: isUpdating }] = useUpdateLabourMutation();
+
+  const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [cnic, setCnic] = useState('');
+  const [trade, setTrade] = useState('');
+  const [dailyWage, setDailyWage] = useState('');
+  const [overtimeRatePerHour, setOvertimeRatePerHour] = useState('');
+  const [joinDate, setJoinDate] = useState(new Date().toISOString().split('T')[0]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (existing) {
+      setName(existing.name);
+      setPhoneNumber(existing.phoneNumber ?? '');
+      setCnic(existing.cnic ?? '');
+      setTrade(existing.trade ?? '');
+      setDailyWage(String(existing.dailyWage));
+      setOvertimeRatePerHour(String(existing.overtimeRatePerHour));
+      setJoinDate(existing.joinDate.split('T')[0]);
+    }
+  }, [existing]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const payload = {
+      name,
+      phoneNumber: phoneNumber || undefined,
+      cnic: cnic || undefined,
+      trade: trade || undefined,
+      dailyWage: parseFloat(dailyWage),
+      overtimeRatePerHour: parseFloat(overtimeRatePerHour),
+      joinDate,
+    };
+    try {
+      if (isEdit && id) {
+        await update({ id, data: payload }).unwrap();
+        dispatch(showSnackbar({ message: 'Labour updated', severity: 'success' }));
+      } else {
+        await create(payload).unwrap();
+        dispatch(showSnackbar({ message: 'Labour added', severity: 'success' }));
+      }
+      navigate('/labour');
+    } catch {
+      setError('Failed to save labour record.');
+    }
+  };
+
+  if (isEdit && isLoadingExisting) return <Loader />;
+
+  return (
+    <Box sx={{ maxWidth: 560 }}>
+      <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Labour' : 'Add Labour'}</Typography>
+      <Paper variant="outlined" sx={{ p: 3 }}>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <TextField label="Full Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
+            <TextField label="Trade / Skill" value={trade} onChange={(e) => setTrade(e.target.value)} fullWidth />
+            <TextField label="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} fullWidth />
+            <TextField label="CNIC" value={cnic} onChange={(e) => setCnic(e.target.value)} fullWidth placeholder="XXXXX-XXXXXXX-X" />
+
+            <TextField
+              label="Daily Wage"
+              type="number"
+              value={dailyWage}
+              onChange={(e) => setDailyWage(e.target.value)}
+              required
+              fullWidth
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+            />
+
+            <TextField
+              label="Overtime Rate per Hour"
+              type="number"
+              value={overtimeRatePerHour}
+              onChange={(e) => setOvertimeRatePerHour(e.target.value)}
+              required
+              fullWidth
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+            />
+
+            <TextField
+              label="Join Date"
+              type="date"
+              value={joinDate}
+              onChange={(e) => setJoinDate(e.target.value)}
+              required
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+              <Button onClick={() => navigate('/labour')}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>
+                {isEdit ? 'Save Changes' : 'Add Labour'}
+              </Button>
+            </Stack>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
+  );
+}

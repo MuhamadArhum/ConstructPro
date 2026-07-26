@@ -1,0 +1,94 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { Alert, Box, Button, FormControl, FormControlLabel, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+import Loader from '../../components/common/Loader';
+import { useAppDispatch } from '../../app/hooks';
+import { showSnackbar } from '../../app/snackbarSlice';
+import { useCreateTaxRecordMutation, useGetTaxRecordByIdQuery, useUpdateTaxRecordMutation } from './taxApi';
+import type { TaxType } from '../../types/tax.types';
+
+const taxTypes: { value: TaxType; label: string }[] = [
+  { value: 'SalesTax', label: 'Sales Tax' },
+  { value: 'IncomeTax', label: 'Income Tax' },
+  { value: 'PRA', label: 'PRA' },
+  { value: 'WithholdingTax', label: 'Withholding Tax (WHT)' },
+  { value: 'SecurityDeposit', label: 'Security Deposit' },
+];
+
+export default function TaxFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const { data: existing, isLoading } = useGetTaxRecordByIdQuery(id ?? '', { skip: !isEdit });
+  const [create, { isLoading: isCreating }] = useCreateTaxRecordMutation();
+  const [update, { isLoading: isUpdating }] = useUpdateTaxRecordMutation();
+
+  const [taxType, setTaxType] = useState<TaxType>('SalesTax');
+  const [amount, setAmount] = useState('');
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [paidDate, setPaidDate] = useState('');
+  const [isPaid, setIsPaid] = useState(false);
+  const [reference, setReference] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (existing) {
+      setTaxType(existing.taxType); setAmount(existing.amount.toString());
+      setPeriodStart(existing.periodStart.split('T')[0]); setPeriodEnd(existing.periodEnd.split('T')[0]);
+      setDueDate(existing.dueDate?.split('T')[0] ?? ''); setPaidDate(existing.paidDate?.split('T')[0] ?? '');
+      setIsPaid(existing.isPaid); setReference(existing.reference ?? ''); setDescription(existing.description ?? '');
+    }
+  }, [existing]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault(); setError(null);
+    const payload = { taxType, amount: parseFloat(amount), periodStart, periodEnd, dueDate: dueDate || undefined, paidDate: paidDate || undefined, isPaid, reference: reference || undefined, description: description || undefined };
+    try {
+      if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Tax record updated', severity: 'success' })); }
+      else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Tax record created', severity: 'success' })); }
+      navigate('/tax');
+    } catch { setError('Failed to save tax record.'); }
+  };
+
+  if (isEdit && isLoading) return <Loader />;
+
+  return (
+    <Box sx={{ maxWidth: 560 }}>
+      <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Tax Record' : 'Add Tax Record'}</Typography>
+      <Paper variant="outlined" sx={{ p: 3 }}>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            {error && <Alert severity="error">{error}</Alert>}
+            <FormControl fullWidth required>
+              <InputLabel>Tax Type</InputLabel>
+              <Select label="Tax Type" value={taxType} onChange={(e) => setTaxType(e.target.value as TaxType)}>
+                {taxTypes.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField label="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
+            <Stack direction="row" spacing={2}>
+              <TextField label="Period Start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+              <TextField label="Period End" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField label="Due Date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+              <TextField label="Paid Date" type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+            </Stack>
+            <TextField label="Reference" value={reference} onChange={(e) => setReference(e.target.value)} fullWidth />
+            <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth multiline rows={2} />
+            <FormControlLabel control={<Switch checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />} label="Payment Completed" />
+            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+              <Button onClick={() => navigate('/tax')}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>{isEdit ? 'Save Changes' : 'Add Record'}</Button>
+            </Stack>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
+  );
+}
