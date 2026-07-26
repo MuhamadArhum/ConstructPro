@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 namespace BuildERP.Infrastructure;
 
@@ -23,7 +24,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
+                BuildConnectionString(configuration),
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -94,5 +95,24 @@ public static class DependencyInjection
         services.AddScoped<ISettingsService, SettingsService>();
 
         return services;
+    }
+
+    private static string BuildConnectionString(IConfiguration configuration)
+    {
+        var host = Environment.GetEnvironmentVariable("DB_HOST");
+        if (host is not null)
+        {
+            return new NpgsqlConnectionStringBuilder
+            {
+                Host     = host,
+                Port     = int.TryParse(Environment.GetEnvironmentVariable("DB_PORT"), out var p) ? p : 5432,
+                Database = Environment.GetEnvironmentVariable("DB_NAME") ?? "postgres",
+                Username = Environment.GetEnvironmentVariable("DB_USER"),
+                Password = Environment.GetEnvironmentVariable("DB_PASSWORD"),
+                SslMode  = SslMode.Require,
+            }.ConnectionString;
+        }
+
+        return configuration.GetConnectionString("DefaultConnection")!;
     }
 }

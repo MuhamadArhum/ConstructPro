@@ -17,7 +17,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Map simple Render-friendly env vars to ASP.NET Core config paths
 var envOverrides = new Dictionary<string, string?>
 {
-    ["ConnectionStrings:DefaultConnection"] = Environment.GetEnvironmentVariable("DB_CONNECTION"),
     ["Jwt:Secret"]                          = Environment.GetEnvironmentVariable("JWT_SECRET"),
     ["Jwt:Issuer"]                          = Environment.GetEnvironmentVariable("JWT_ISSUER"),
     ["Jwt:Audience"]                        = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
