@@ -189,8 +189,8 @@ public static class DbSeeder
         await context.SaveChangesAsync();
 
         // --- Default Admin User ---
-        var adminEmail = config["DefaultAdmin:Email"] ?? "admin@builderp.local";
-        var adminPassword = config["DefaultAdmin:Password"] ?? "ChangeMe123!";
+        var adminEmail = config["DefaultAdmin:Email"] ?? "admin@constructpro.com";
+        var adminPassword = config["DefaultAdmin:Password"] ?? "12345678";
 
         if (await userManager.FindByEmailAsync(adminEmail) is null)
         {
@@ -230,8 +230,6 @@ public static class DbSeeder
         bool hasSuppliers = await ctx.Suppliers.AnyAsync();
         bool hasEmployees = await ctx.Employees.AnyAsync();
         bool hasLabour    = await ctx.Labours.AnyAsync();
-        bool hasIncome    = await ctx.Incomes.AnyAsync();
-        bool hasExpenses  = await ctx.Expenses.AnyAsync();
         bool hasMachinery = await ctx.Machineries.AnyAsync();
         bool hasVehicles  = await ctx.Vehicles.AnyAsync();
         bool hasPlants    = await ctx.Plants.AnyAsync();
@@ -242,7 +240,7 @@ public static class DbSeeder
         bool hasAuditLogs = await ctx.AuditLogs.AnyAsync();
 
         if (hasSettings && hasCustomers && hasSuppliers && hasEmployees && hasLabour &&
-            hasIncome && hasExpenses && hasMachinery && hasVehicles && hasPlants &&
+            hasMachinery && hasVehicles && hasPlants &&
             hasInventory && hasTax && hasAccounts && hasNotifs && hasAuditLogs)
         {
             logger.LogInformation("Sample data already seeded — skipping");
@@ -355,25 +353,6 @@ public static class DbSeeder
             };
             ctx.Labours.AddRange(labours);
 
-            // ── Labour Attendance — use in-memory list ────────────────────────
-            var attendances = new List<LabourAttendance>();
-            var baseDate = new DateTime(2026, 7, 1);
-            foreach (var l in labours)
-            {
-                for (int d = 0; d < 7; d++)
-                {
-                    attendances.Add(new LabourAttendance
-                    {
-                        LabourId      = l.Id,
-                        Date          = baseDate.AddDays(d),
-                        IsPresent     = d != 4,
-                        OvertimeHours = d % 3 == 0 ? 2 : 0,
-                        Notes         = d == 4 ? "Absent - personal reasons" : null,
-                    });
-                }
-            }
-            ctx.LabourAttendances.AddRange(attendances);
-
             // ── Labour Advances ───────────────────────────────────────────────
             var advances = new List<LabourAdvance>();
             foreach (var l in labours.Take(3))
@@ -387,36 +366,6 @@ public static class DbSeeder
                 });
             }
             ctx.LabourAdvances.AddRange(advances);
-        }
-
-        // ── Income ───────────────────────────────────────────────────────────
-        if (!hasIncome)
-        {
-            ctx.Incomes.AddRange(
-                new Income { Category = IncomeCategory.CustomerPayment, Amount = 1500000, Date = new DateTime(2026, 5, 10), Description = "Advance payment from Mahmood Developers",  CustomerName = "Tariq Mahmood",     ProjectName = "DHA Phase 8 Villas",    IsPaid = true, CreatedAt = DateTime.UtcNow },
-                new Income { Category = IncomeCategory.ProjectIncome,   Amount = 3200000, Date = new DateTime(2026, 5, 25), Description = "Milestone 1 payment – structure complete", CustomerName = "Amjad Ali Khan",    ProjectName = "Raiwind Road Apartments",IsPaid = true, CreatedAt = DateTime.UtcNow },
-                new Income { Category = IncomeCategory.CustomerPayment, Amount = 475000,  Date = new DateTime(2026, 6, 3),  Description = "First installment received",              CustomerName = "Saba Noor",         ProjectName = "Home Extension",         IsPaid = true, CreatedAt = DateTime.UtcNow },
-                new Income { Category = IncomeCategory.ProjectIncome,   Amount = 6000000, Date = new DateTime(2026, 6, 15), Description = "Commercial plaza phase 1 cleared",        CustomerName = "Fahad Enterprises", ProjectName = "Commercial Plaza Block B",IsPaid = true, CreatedAt = DateTime.UtcNow },
-                new Income { Category = IncomeCategory.OtherIncome,     Amount = 125000,  Date = new DateTime(2026, 7, 1),  Description = "Equipment rental income – JCB hired out", CustomerName = null,                ProjectName = null,                     IsPaid = true, CreatedAt = DateTime.UtcNow },
-                new Income { Category = IncomeCategory.CustomerPayment, Amount = 3100000, Date = new DateTime(2026, 7, 10), Description = "Final payment – project handover",         CustomerName = "Hina Malik",        ProjectName = "Bahria Townhouse",       IsPaid = true, CreatedAt = DateTime.UtcNow }
-            );
-        }
-
-        // ── Expenses ─────────────────────────────────────────────────────────
-        if (!hasExpenses)
-        {
-            ctx.Expenses.AddRange(
-                new Expense { Category = ExpenseCategory.LabourExpenses,          Amount = 216000,  Date = new DateTime(2026, 5, 31), Description = "Daily wages – May 2026 (12 workers × 26 days)",   Vendor = null,                    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.Salaries,                Amount = 360000,  Date = new DateTime(2026, 6, 1),  Description = "Staff salaries – May 2026",                       Vendor = null,                    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.SuppliesMaterialPurchase,Amount = 850000,  Date = new DateTime(2026, 5, 15), Description = "Cement purchase – 500 bags (DHA project)",         Vendor = "Usman Cement Store",    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.SuppliesMaterialPurchase,Amount = 1200000, Date = new DateTime(2026, 5, 20), Description = "Steel bars – 10 tonnes (Raiwind Apartments)",      Vendor = "Raza Steel Works",      CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.MachineryMaintenance,    Amount = 45000,   Date = new DateTime(2026, 6, 10), Description = "Concrete mixer service & repair",                  Vendor = "Ashraf Engineering",    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.VehicleExpenses,         Amount = 22000,   Date = new DateTime(2026, 6, 12), Description = "Truck tyre replacement – LHR-1234",                Vendor = "Riaz Tyres",            CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.Fuel,                    Amount = 38500,   Date = new DateTime(2026, 6, 25), Description = "Diesel – generator + vehicles June 2026",          Vendor = "PSO Petrol Station",    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.ElectricalExpenses,      Amount = 95000,   Date = new DateTime(2026, 7, 5),  Description = "Electrical wiring materials – Plaza project",      Vendor = "Pak Electric Supply",   CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.OfficeExpenses,          Amount = 18000,   Date = new DateTime(2026, 7, 10), Description = "Office stationery and utility bills",              Vendor = null,                    CreatedAt = DateTime.UtcNow },
-                new Expense { Category = ExpenseCategory.Miscellaneous,           Amount = 12000,   Date = new DateTime(2026, 7, 15), Description = "Site security charges – July",                     Vendor = "Safe Guard Services",   CreatedAt = DateTime.UtcNow }
-            );
         }
 
         // ── Machinery + Maintenance ───────────────────────────────────────────
@@ -591,13 +540,13 @@ public static class DbSeeder
         if (!hasAuditLogs)
         {
             ctx.AuditLogs.AddRange(
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Create", EntityType = "Customer",  EntityId = "seed", NewValues = "{\"Name\":\"Tariq Mahmood\"}",          IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-10) },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Create", EntityType = "Supplier",  EntityId = "seed", NewValues = "{\"Name\":\"Raza Steel Works\"}",        IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-10) },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Create", EntityType = "Employee",  EntityId = "seed", NewValues = "{\"FullName\":\"Imran Aslam\"}",         IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-9)  },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Create", EntityType = "Income",    EntityId = "seed", NewValues = "{\"Amount\":1500000}",                   IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-8)  },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Create", EntityType = "Expense",   EntityId = "seed", NewValues = "{\"Amount\":850000}",                    IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-7)  },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Update", EntityType = "Vehicle",   EntityId = "seed", OldValues = "{\"Status\":\"Active\"}",   NewValues = "{\"Status\":\"UnderMaintenance\"}", IpAddress = "192.168.1.10", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-3) },
-                new AuditLog { UserEmail = "admin@builderp.local", Action = "Login",  EntityType = "User",      EntityId = "seed", NewValues = "{\"Email\":\"admin@builderp.local\"}",  IpAddress = "192.168.1.5",  Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-1)  }
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Create", EntityType = "Customer",  EntityId = "seed", NewValues = "{\"Name\":\"Tariq Mahmood\"}",          IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-10) },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Create", EntityType = "Supplier",  EntityId = "seed", NewValues = "{\"Name\":\"Raza Steel Works\"}",        IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-10) },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Create", EntityType = "Employee",  EntityId = "seed", NewValues = "{\"FullName\":\"Imran Aslam\"}",         IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-9)  },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Create", EntityType = "Income",    EntityId = "seed", NewValues = "{\"Amount\":1500000}",                   IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-8)  },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Create", EntityType = "Expense",   EntityId = "seed", NewValues = "{\"Amount\":850000}",                    IpAddress = "127.0.0.1", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-7)  },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Update", EntityType = "Vehicle",   EntityId = "seed", OldValues = "{\"Status\":\"Active\"}",   NewValues = "{\"Status\":\"UnderMaintenance\"}", IpAddress = "192.168.1.10", Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-3) },
+                new AuditLog { UserEmail = "admin@constructpro.com", Action = "Login",  EntityType = "User",      EntityId = "seed", NewValues = "{\"Email\":\"admin@constructpro.com\"}",  IpAddress = "192.168.1.5",  Succeeded = true, CreatedAt = DateTime.UtcNow.AddDays(-1)  }
             );
         }
 
@@ -619,9 +568,7 @@ public static class DbSeeder
             return;
         }
 
-        // Clear previous partial data and re-seed cleanly
-        await ctx.Incomes.ExecuteDeleteAsync();
-        await ctx.Expenses.ExecuteDeleteAsync();
+        // Reset attendance so daily re-seed doesn't hit duplicate-key conflicts
         await ctx.LabourAttendances.ExecuteDeleteAsync();
 
         // ── Reference data ────────────────────────────────────────────────────
