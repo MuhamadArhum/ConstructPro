@@ -114,6 +114,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -131,5 +132,6 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();
