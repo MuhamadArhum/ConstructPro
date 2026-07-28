@@ -1,17 +1,27 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Vehicles;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class VehicleService : IVehicleService
 {
     private readonly ApplicationDbContext _db;
-    public VehicleService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public VehicleService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<VehicleDto>> GetAllAsync(VehicleQuery query, CancellationToken ct = default)
     {
@@ -47,19 +57,24 @@ public class VehicleService : IVehicleService
     {
         var entity = new Vehicle
         {
-            RegistrationNumber = request.RegistrationNumber,
-            Make = request.Make,
-            Model = request.Model,
-            Year = request.Year,
-            DriverName = request.DriverName,
-            DriverContact = request.DriverContact,
-            PurchasePrice = request.PurchasePrice,
-            PurchaseDate = request.PurchaseDate,
-            Status = request.Status,
-            Notes = request.Notes
+            RegistrationNumber = request.RegistrationNumber, Make = request.Make, Model = request.Model,
+            Year = request.Year, DriverName = request.DriverName, DriverContact = request.DriverContact,
+            PurchasePrice = request.PurchasePrice, PurchaseDate = request.PurchaseDate,
+            Status = request.Status, Notes = request.Notes
         };
         _db.Vehicles.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Vehicle",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.RegistrationNumber, entity.Make, entity.Model, entity.Status }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -67,19 +82,28 @@ public class VehicleService : IVehicleService
     {
         var entity = await _db.Vehicles.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Vehicle {id} not found.");
-        entity.RegistrationNumber = request.RegistrationNumber;
-        entity.Make = request.Make;
-        entity.Model = request.Model;
-        entity.Year = request.Year;
-        entity.DriverName = request.DriverName;
-        entity.DriverContact = request.DriverContact;
-        entity.PurchasePrice = request.PurchasePrice;
-        entity.PurchaseDate = request.PurchaseDate;
-        entity.Status = request.Status;
-        entity.TotalMileage = request.TotalMileage;
-        entity.NextMaintenanceDate = request.NextMaintenanceDate;
-        entity.Notes = request.Notes;
+
+        var oldValues = JsonSerializer.Serialize(new { entity.RegistrationNumber, entity.Make, entity.Status });
+
+        entity.RegistrationNumber = request.RegistrationNumber; entity.Make = request.Make;
+        entity.Model = request.Model; entity.Year = request.Year;
+        entity.DriverName = request.DriverName; entity.DriverContact = request.DriverContact;
+        entity.PurchasePrice = request.PurchasePrice; entity.PurchaseDate = request.PurchaseDate;
+        entity.Status = request.Status; entity.TotalMileage = request.TotalMileage;
+        entity.NextMaintenanceDate = request.NextMaintenanceDate; entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Vehicle",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.RegistrationNumber, entity.Make, entity.Status }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -87,8 +111,21 @@ public class VehicleService : IVehicleService
     {
         var entity = await _db.Vehicles.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Vehicle {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.RegistrationNumber, entity.Make });
+
         _db.Vehicles.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Vehicle",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     public async Task<List<VehicleMaintenanceDto>> GetMaintenanceAsync(Guid vehicleId, CancellationToken ct = default)
@@ -104,55 +141,48 @@ public class VehicleService : IVehicleService
     {
         var vehicle = await _db.Vehicles.FindAsync(new object[] { vehicleId }, ct)
             ?? throw new KeyNotFoundException($"Vehicle {vehicleId} not found.");
+
         var record = new VehicleMaintenance
         {
-            VehicleId = vehicleId,
-            MaintenanceDate = request.MaintenanceDate,
-            Description = request.Description,
-            Cost = request.Cost,
-            ServiceProvider = request.ServiceProvider,
-            NextDueDate = request.NextDueDate,
-            MileageAtService = request.MileageAtService,
-            Notes = request.Notes
+            VehicleId = vehicleId, MaintenanceDate = request.MaintenanceDate,
+            Description = request.Description, Cost = request.Cost,
+            ServiceProvider = request.ServiceProvider, NextDueDate = request.NextDueDate,
+            MileageAtService = request.MileageAtService, Notes = request.Notes
         };
+
         if (request.NextDueDate.HasValue)
             vehicle.NextMaintenanceDate = request.NextDueDate;
+
         _db.VehicleMaintenances.Add(record);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "AddMaintenance",
+            EntityType = "Vehicle",
+            EntityId = vehicleId.ToString(),
+            NewValues = JsonSerializer.Serialize(new { vehicle.RegistrationNumber, record.Cost, record.MaintenanceDate }),
+        }, ct);
+
         return MapMaintenanceToDto(record);
     }
 
     private static VehicleDto MapToDto(Vehicle v) => new()
     {
-        Id = v.Id,
-        RegistrationNumber = v.RegistrationNumber,
-        Make = v.Make,
-        Model = v.Model,
-        Year = v.Year,
-        DriverName = v.DriverName,
-        DriverContact = v.DriverContact,
-        PurchasePrice = v.PurchasePrice,
-        PurchaseDate = v.PurchaseDate,
-        Status = v.Status,
-        StatusDisplay = v.Status.ToString(),
-        TotalMileage = v.TotalMileage,
-        NextMaintenanceDate = v.NextMaintenanceDate,
-        Notes = v.Notes,
-        CreatedAt = v.CreatedAt,
+        Id = v.Id, RegistrationNumber = v.RegistrationNumber, Make = v.Make, Model = v.Model,
+        Year = v.Year, DriverName = v.DriverName, DriverContact = v.DriverContact,
+        PurchasePrice = v.PurchasePrice, PurchaseDate = v.PurchaseDate,
+        Status = v.Status, StatusDisplay = v.Status.ToString(), TotalMileage = v.TotalMileage,
+        NextMaintenanceDate = v.NextMaintenanceDate, Notes = v.Notes, CreatedAt = v.CreatedAt,
         MaintenanceCount = v.MaintenanceRecords?.Count ?? 0
     };
 
     private static VehicleMaintenanceDto MapMaintenanceToDto(VehicleMaintenance m) => new()
     {
-        Id = m.Id,
-        VehicleId = m.VehicleId,
-        MaintenanceDate = m.MaintenanceDate,
-        Description = m.Description,
-        Cost = m.Cost,
-        ServiceProvider = m.ServiceProvider,
-        NextDueDate = m.NextDueDate,
-        MileageAtService = m.MileageAtService,
-        Notes = m.Notes,
-        CreatedAt = m.CreatedAt
+        Id = m.Id, VehicleId = m.VehicleId, MaintenanceDate = m.MaintenanceDate,
+        Description = m.Description, Cost = m.Cost, ServiceProvider = m.ServiceProvider,
+        NextDueDate = m.NextDueDate, MileageAtService = m.MileageAtService, Notes = m.Notes, CreatedAt = m.CreatedAt
     };
 }

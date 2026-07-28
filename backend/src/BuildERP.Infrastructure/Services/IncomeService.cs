@@ -1,10 +1,12 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Income;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace BuildERP.Infrastructure.Services;
@@ -12,10 +14,14 @@ namespace BuildERP.Infrastructure.Services;
 public class IncomeService : IIncomeService
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
 
-    public IncomeService(ApplicationDbContext db)
+    public IncomeService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
     {
         _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
     }
 
     public async Task<PaginatedList<IncomeDto>> GetAllAsync(IncomeQuery query, CancellationToken ct = default)
@@ -37,22 +43,13 @@ public class IncomeService : IIncomeService
             q = q.Where(i => i.Category == cat);
         }
 
-        if (query.FromDate.HasValue)
-            q = q.Where(i => i.Date >= query.FromDate.Value);
-
-        if (query.ToDate.HasValue)
-            q = q.Where(i => i.Date <= query.ToDate.Value);
+        if (query.FromDate.HasValue) q = q.Where(i => i.Date >= query.FromDate.Value);
+        if (query.ToDate.HasValue) q = q.Where(i => i.Date <= query.ToDate.Value);
 
         q = q.OrderByDescending(i => i.Date);
-
         var totalCount = await q.CountAsync(ct);
-        var items = await q
-            .Skip((query.PageNumber - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToListAsync(ct);
-
-        var dtos = items.Select(MapToDto).ToList();
-        return new PaginatedList<IncomeDto>(dtos, totalCount, query.PageNumber, query.PageSize);
+        var items = await q.Skip((query.PageNumber - 1) * query.PageSize).Take(query.PageSize).ToListAsync(ct);
+        return new PaginatedList<IncomeDto>(items.Select(MapToDto).ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 
     public async Task<IncomeDto> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -78,6 +75,17 @@ public class IncomeService : IIncomeService
 
         _db.Incomes.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Income",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Category, entity.Amount, entity.Description, entity.Date }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -85,6 +93,8 @@ public class IncomeService : IIncomeService
     {
         var entity = await _db.Incomes.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Category, entity.Amount, entity.Description, entity.Date });
 
         entity.Category = request.Category;
         entity.Amount = request.Amount;
@@ -95,6 +105,18 @@ public class IncomeService : IIncomeService
         entity.IsPaid = request.IsPaid;
 
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Income",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Category, entity.Amount, entity.Description, entity.Date }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -102,8 +124,21 @@ public class IncomeService : IIncomeService
     {
         var entity = await _db.Incomes.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Category, entity.Amount, entity.Description, entity.Date });
+
         _db.Incomes.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Income",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     public async Task<IncomeSummaryDto> GetSummaryAsync(CancellationToken ct = default)
@@ -112,15 +147,9 @@ public class IncomeService : IIncomeService
         var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         var totalAllTime = await _db.Incomes.SumAsync(i => i.Amount, ct);
-        var totalThisMonth = await _db.Incomes
-            .Where(i => i.Date >= startOfMonth)
-            .SumAsync(i => i.Amount, ct);
-        var totalPaid = await _db.Incomes
-            .Where(i => i.IsPaid)
-            .SumAsync(i => i.Amount, ct);
-        var totalPending = await _db.Incomes
-            .Where(i => !i.IsPaid)
-            .SumAsync(i => i.Amount, ct);
+        var totalThisMonth = await _db.Incomes.Where(i => i.Date >= startOfMonth).SumAsync(i => i.Amount, ct);
+        var totalPaid = await _db.Incomes.Where(i => i.IsPaid).SumAsync(i => i.Amount, ct);
+        var totalPending = await _db.Incomes.Where(i => !i.IsPaid).SumAsync(i => i.Amount, ct);
 
         return new IncomeSummaryDto
         {

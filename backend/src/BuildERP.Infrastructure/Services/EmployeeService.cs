@@ -1,19 +1,25 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Employees;
 using BuildERP.Domain.Entities;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class EmployeeService : IEmployeeService
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
 
-    public EmployeeService(ApplicationDbContext db)
+    public EmployeeService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
     {
         _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
     }
 
     public async Task<PaginatedList<EmployeeDto>> GetAllAsync(int page, int pageSize, string? search, string? department, bool? isActive, CancellationToken ct = default)
@@ -33,19 +39,12 @@ public class EmployeeService : IEmployeeService
         if (!string.IsNullOrWhiteSpace(department))
             q = q.Where(e => e.Department != null && e.Department.ToLower().Contains(department.ToLower()));
 
-        if (isActive.HasValue)
-            q = q.Where(e => e.IsActive == isActive.Value);
+        if (isActive.HasValue) q = q.Where(e => e.IsActive == isActive.Value);
 
         q = q.OrderBy(e => e.FullName);
-
         var totalCount = await q.CountAsync(ct);
-        var items = await q
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        var dtos = items.Select(MapToDto).ToList();
-        return new PaginatedList<EmployeeDto>(dtos, totalCount, page, pageSize);
+        var items = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return new PaginatedList<EmployeeDto>(items.Select(MapToDto).ToList(), totalCount, page, pageSize);
     }
 
     public async Task<EmployeeDto> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -72,6 +71,17 @@ public class EmployeeService : IEmployeeService
 
         _db.Employees.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Employee",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.FullName, entity.Department, entity.Designation, entity.BasicSalary }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -79,6 +89,8 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _db.Employees.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Employee {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.FullName, entity.Department, entity.Designation, entity.BasicSalary });
 
         entity.FullName = request.FullName;
         entity.Designation = request.Designation;
@@ -90,6 +102,18 @@ public class EmployeeService : IEmployeeService
         entity.JoinDate = request.JoinDate;
 
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Employee",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.FullName, entity.Department, entity.Designation, entity.BasicSalary }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -97,8 +121,19 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _db.Employees.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Employee {id} not found.");
+
         entity.IsActive = false;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Deactivate",
+            EntityType = "Employee",
+            EntityId = id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.FullName, IsActive = false }),
+        }, ct);
     }
 
     public async Task<SalaryPaymentDto> ProcessSalaryAsync(Guid employeeId, ProcessSalaryRequest request, CancellationToken ct = default)
@@ -131,6 +166,16 @@ public class EmployeeService : IEmployeeService
         _db.SalaryPayments.Add(payment);
         await _db.SaveChangesAsync(ct);
 
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "ProcessSalary",
+            EntityType = "Employee",
+            EntityId = employeeId.ToString(),
+            NewValues = JsonSerializer.Serialize(new { employee.FullName, request.Month, request.Year, NetSalary = netSalary }),
+        }, ct);
+
         return MapSalaryDto(payment, employee.FullName);
     }
 
@@ -141,8 +186,7 @@ public class EmployeeService : IEmployeeService
 
         var payments = await _db.SalaryPayments
             .Where(p => p.EmployeeId == employeeId)
-            .OrderByDescending(p => p.Year)
-            .ThenByDescending(p => p.Month)
+            .OrderByDescending(p => p.Year).ThenByDescending(p => p.Month)
             .ToListAsync(ct);
 
         return payments.Select(p => MapSalaryDto(p, employee.FullName)).ToList();
@@ -161,31 +205,15 @@ public class EmployeeService : IEmployeeService
 
     private static EmployeeDto MapToDto(Employee e) => new()
     {
-        Id = e.Id,
-        FullName = e.FullName,
-        Designation = e.Designation,
-        Department = e.Department,
-        PhoneNumber = e.PhoneNumber,
-        CNIC = e.CNIC,
-        BasicSalary = e.BasicSalary,
-        JoinDate = e.JoinDate,
-        IsActive = e.IsActive
+        Id = e.Id, FullName = e.FullName, Designation = e.Designation, Department = e.Department,
+        PhoneNumber = e.PhoneNumber, CNIC = e.CNIC, BasicSalary = e.BasicSalary, JoinDate = e.JoinDate, IsActive = e.IsActive
     };
 
     private static SalaryPaymentDto MapSalaryDto(SalaryPayment p, string employeeName) => new()
     {
-        Id = p.Id,
-        EmployeeId = p.EmployeeId,
-        EmployeeName = employeeName,
-        Month = p.Month,
-        Year = p.Year,
-        BasicSalary = p.BasicSalary,
-        Bonus = p.Bonus,
-        Deductions = p.Deductions,
-        NetSalary = p.NetSalary,
-        DaysPresent = p.DaysPresent,
-        TotalDays = p.TotalDays,
-        PaidAt = p.PaidAt,
-        Remarks = p.Remarks
+        Id = p.Id, EmployeeId = p.EmployeeId, EmployeeName = employeeName,
+        Month = p.Month, Year = p.Year, BasicSalary = p.BasicSalary,
+        Bonus = p.Bonus, Deductions = p.Deductions, NetSalary = p.NetSalary,
+        DaysPresent = p.DaysPresent, TotalDays = p.TotalDays, PaidAt = p.PaidAt, Remarks = p.Remarks
     };
 }

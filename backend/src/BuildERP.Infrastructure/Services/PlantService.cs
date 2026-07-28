@@ -1,17 +1,27 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Plants;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class PlantService : IPlantService
 {
     private readonly ApplicationDbContext _db;
-    public PlantService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public PlantService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<PlantDto>> GetAllAsync(PlantQuery query, CancellationToken ct = default)
     {
@@ -52,6 +62,17 @@ public class PlantService : IPlantService
         };
         _db.Plants.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Plant",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Type, entity.Status }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -59,6 +80,9 @@ public class PlantService : IPlantService
     {
         var entity = await _db.Plants.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Plant {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.Type, entity.Status });
+
         entity.Name = request.Name; entity.Type = request.Type; entity.Manufacturer = request.Manufacturer;
         entity.SerialNumber = request.SerialNumber; entity.PurchaseDate = request.PurchaseDate;
         entity.PurchasePrice = request.PurchasePrice; entity.CurrentValue = request.CurrentValue;
@@ -66,6 +90,18 @@ public class PlantService : IPlantService
         entity.LastMaintenanceDate = request.LastMaintenanceDate; entity.NextMaintenanceDate = request.NextMaintenanceDate;
         entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Plant",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Type, entity.Status }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -73,8 +109,21 @@ public class PlantService : IPlantService
     {
         var entity = await _db.Plants.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Plant {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.Type });
+
         _db.Plants.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Plant",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     private static PlantDto MapToDto(Plant p) => new()

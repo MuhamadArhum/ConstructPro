@@ -1,15 +1,25 @@
 using BuildERP.Application.Common.Interfaces;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Settings;
 using BuildERP.Domain.Entities;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class SettingsService : ISettingsService
 {
     private readonly ApplicationDbContext _db;
-    public SettingsService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public SettingsService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<CompanySettingsDto> GetAsync(CancellationToken ct = default)
     {
@@ -31,17 +41,25 @@ public class SettingsService : ISettingsService
             settings = new CompanySettings();
             _db.CompanySettings.Add(settings);
         }
-        settings.CompanyName = request.CompanyName;
-        settings.Address = request.Address;
-        settings.Phone = request.Phone;
-        settings.Email = request.Email;
-        settings.Website = request.Website;
-        settings.NTN = request.NTN;
-        settings.STRN = request.STRN;
-        settings.Currency = request.Currency;
-        settings.FinancialYearStart = request.FinancialYearStart;
-        settings.UpdatedAt = DateTime.UtcNow;
+
+        var oldValues = JsonSerializer.Serialize(new { settings.CompanyName, settings.Currency, settings.NTN });
+
+        settings.CompanyName = request.CompanyName; settings.Address = request.Address;
+        settings.Phone = request.Phone; settings.Email = request.Email; settings.Website = request.Website;
+        settings.NTN = request.NTN; settings.STRN = request.STRN; settings.Currency = request.Currency;
+        settings.FinancialYearStart = request.FinancialYearStart; settings.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "CompanySettings",
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { settings.CompanyName, settings.Currency, settings.NTN }),
+        }, ct);
+
         return MapToDto(settings);
     }
 

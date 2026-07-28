@@ -1,17 +1,27 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Inventory;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class InventoryService : IInventoryService
 {
     private readonly ApplicationDbContext _db;
-    public InventoryService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public InventoryService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<InventoryItemDto>> GetAllAsync(InventoryQuery query, CancellationToken ct = default)
     {
@@ -22,10 +32,8 @@ public class InventoryService : IInventoryService
             q = q.Where(i => i.Name.ToLower().Contains(s) ||
                              (i.Category != null && i.Category.ToLower().Contains(s)));
         }
-        if (!string.IsNullOrWhiteSpace(query.Category))
-            q = q.Where(i => i.Category == query.Category);
-        if (query.LowStock == true)
-            q = q.Where(i => i.CurrentStock <= i.LowStockThreshold);
+        if (!string.IsNullOrWhiteSpace(query.Category)) q = q.Where(i => i.Category == query.Category);
+        if (query.LowStock == true) q = q.Where(i => i.CurrentStock <= i.LowStockThreshold);
 
         q = q.OrderBy(i => i.Name);
         var totalCount = await q.CountAsync(ct);
@@ -51,6 +59,17 @@ public class InventoryService : IInventoryService
         };
         _db.InventoryItems.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Inventory",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Category, entity.CurrentStock, entity.UnitPrice }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -58,10 +77,25 @@ public class InventoryService : IInventoryService
     {
         var entity = await _db.InventoryItems.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Item {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.Category, entity.CurrentStock, entity.UnitPrice });
+
         entity.Name = request.Name; entity.Category = request.Category; entity.Unit = request.Unit;
         entity.LowStockThreshold = request.LowStockThreshold; entity.UnitPrice = request.UnitPrice;
         entity.SupplierName = request.SupplierName; entity.Location = request.Location; entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Inventory",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Category, entity.CurrentStock, entity.UnitPrice }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -69,14 +103,26 @@ public class InventoryService : IInventoryService
     {
         var entity = await _db.InventoryItems.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Item {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.Category, entity.CurrentStock });
+
         _db.InventoryItems.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Inventory",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     public async Task<List<StockTransactionDto>> GetTransactionsAsync(Guid itemId, CancellationToken ct = default)
     {
-        var txns = await _db.StockTransactions
-            .Include(t => t.InventoryItem)
+        var txns = await _db.StockTransactions.Include(t => t.InventoryItem)
             .Where(t => t.InventoryItemId == itemId)
             .OrderByDescending(t => t.Date)
             .ToListAsync(ct);
@@ -88,16 +134,13 @@ public class InventoryService : IInventoryService
         var item = await _db.InventoryItems.FindAsync(new object[] { itemId }, ct)
             ?? throw new KeyNotFoundException($"Item {itemId} not found.");
 
+        var stockBefore = item.CurrentStock;
+
         var txn = new StockTransaction
         {
-            InventoryItemId = itemId,
-            Type = request.Type,
-            Quantity = request.Quantity,
-            UnitPrice = request.UnitPrice,
-            Date = request.Date,
-            Reference = request.Reference,
-            ProjectName = request.ProjectName,
-            Notes = request.Notes
+            InventoryItemId = itemId, Type = request.Type, Quantity = request.Quantity,
+            UnitPrice = request.UnitPrice, Date = request.Date, Reference = request.Reference,
+            ProjectName = request.ProjectName, Notes = request.Notes
         };
 
         if (request.Type == StockTransactionType.StockIn)
@@ -107,6 +150,17 @@ public class InventoryService : IInventoryService
 
         _db.StockTransactions.Add(txn);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = request.Type == StockTransactionType.StockIn ? "StockIn" : "StockOut",
+            EntityType = "Inventory",
+            EntityId = itemId.ToString(),
+            NewValues = JsonSerializer.Serialize(new { item.Name, request.Quantity, StockBefore = stockBefore, StockAfter = item.CurrentStock }),
+        }, ct);
+
         txn.InventoryItem = item;
         return MapTxnToDto(txn);
     }
@@ -116,16 +170,13 @@ public class InventoryService : IInventoryService
         Id = i.Id, Name = i.Name, Category = i.Category, Unit = i.Unit,
         CurrentStock = i.CurrentStock, LowStockThreshold = i.LowStockThreshold,
         UnitPrice = i.UnitPrice, SupplierName = i.SupplierName, Location = i.Location,
-        IsLowStock = i.CurrentStock <= i.LowStockThreshold,
-        Notes = i.Notes, CreatedAt = i.CreatedAt
+        IsLowStock = i.CurrentStock <= i.LowStockThreshold, Notes = i.Notes, CreatedAt = i.CreatedAt
     };
 
     private static StockTransactionDto MapTxnToDto(StockTransaction t) => new()
     {
-        Id = t.Id, InventoryItemId = t.InventoryItemId,
-        ItemName = t.InventoryItem?.Name ?? string.Empty,
-        Type = t.Type, TypeDisplay = t.Type.ToString(),
-        Quantity = t.Quantity, UnitPrice = t.UnitPrice, Date = t.Date,
-        Reference = t.Reference, ProjectName = t.ProjectName, Notes = t.Notes, CreatedAt = t.CreatedAt
+        Id = t.Id, InventoryItemId = t.InventoryItemId, ItemName = t.InventoryItem?.Name ?? string.Empty,
+        Type = t.Type, TypeDisplay = t.Type.ToString(), Quantity = t.Quantity, UnitPrice = t.UnitPrice,
+        Date = t.Date, Reference = t.Reference, ProjectName = t.ProjectName, Notes = t.Notes, CreatedAt = t.CreatedAt
     };
 }

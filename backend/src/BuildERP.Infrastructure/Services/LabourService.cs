@@ -1,19 +1,25 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Labour;
 using BuildERP.Domain.Entities;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class LabourService : ILabourService
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
 
-    public LabourService(ApplicationDbContext db)
+    public LabourService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
     {
         _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
     }
 
     public async Task<PaginatedList<LabourDto>> GetAllAsync(int page, int pageSize, string? search, string? trade, bool? isActive, CancellationToken ct = default)
@@ -32,16 +38,11 @@ public class LabourService : ILabourService
         if (!string.IsNullOrWhiteSpace(trade))
             q = q.Where(l => l.Trade != null && l.Trade.ToLower().Contains(trade.ToLower()));
 
-        if (isActive.HasValue)
-            q = q.Where(l => l.IsActive == isActive.Value);
+        if (isActive.HasValue) q = q.Where(l => l.IsActive == isActive.Value);
 
         q = q.OrderBy(l => l.Name);
-
         var totalCount = await q.CountAsync(ct);
-        var items = await q
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        var items = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
 
         var ids = items.Select(l => l.Id).ToList();
         var advanceSums = await _db.LabourAdvances
@@ -83,6 +84,17 @@ public class LabourService : ILabourService
 
         _db.Labours.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Labour",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Trade, entity.DailyWage }),
+        }, ct);
+
         return MapToDto(entity, 0);
     }
 
@@ -90,6 +102,8 @@ public class LabourService : ILabourService
     {
         var entity = await _db.Labours.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Labour {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.Trade, entity.DailyWage });
 
         entity.Name = request.Name;
         entity.PhoneNumber = request.PhoneNumber;
@@ -102,6 +116,17 @@ public class LabourService : ILabourService
 
         await _db.SaveChangesAsync(ct);
 
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Labour",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.Trade, entity.DailyWage }),
+        }, ct);
+
         var totalAdvances = await _db.LabourAdvances.Where(a => a.LabourId == id).SumAsync(a => a.Amount, ct);
         return MapToDto(entity, totalAdvances);
     }
@@ -110,8 +135,19 @@ public class LabourService : ILabourService
     {
         var entity = await _db.Labours.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Labour {id} not found.");
+
         entity.IsActive = false;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Deactivate",
+            EntityType = "Labour",
+            EntityId = id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, IsActive = false }),
+        }, ct);
     }
 
     public async Task<LabourAttendanceDto> UpsertAttendanceAsync(UpsertAttendanceRequest request, CancellationToken ct = default)
@@ -123,21 +159,28 @@ public class LabourService : ILabourService
         var existing = await _db.LabourAttendances
             .FirstOrDefaultAsync(a => a.LabourId == request.LabourId && a.Date == dateOnly, ct);
 
-        if (existing == null)
+        var isNew = existing == null;
+        if (isNew)
         {
-            existing = new LabourAttendance
-            {
-                LabourId = request.LabourId,
-                Date = dateOnly
-            };
+            existing = new LabourAttendance { LabourId = request.LabourId, Date = dateOnly };
             _db.LabourAttendances.Add(existing);
         }
 
-        existing.IsPresent = request.IsPresent;
+        existing!.IsPresent = request.IsPresent;
         existing.OvertimeHours = request.OvertimeHours;
         existing.Notes = request.Notes;
 
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = isNew ? "Create" : "Update",
+            EntityType = "LabourAttendance",
+            EntityId = existing.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { labour.Name, Date = dateOnly, request.IsPresent, request.OvertimeHours }),
+        }, ct);
 
         return MapAttendanceDto(existing, labour);
     }
@@ -174,14 +217,20 @@ public class LabourService : ILabourService
         _db.LabourAdvances.Add(advance);
         await _db.SaveChangesAsync(ct);
 
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "AddAdvance",
+            EntityType = "Labour",
+            EntityId = labourId.ToString(),
+            NewValues = JsonSerializer.Serialize(new { labour.Name, advance.Amount, advance.Date, advance.Reason }),
+        }, ct);
+
         return new LabourAdvanceDto
         {
-            Id = advance.Id,
-            LabourId = advance.LabourId,
-            LabourName = labour.Name,
-            Amount = advance.Amount,
-            Date = advance.Date,
-            Reason = advance.Reason
+            Id = advance.Id, LabourId = advance.LabourId, LabourName = labour.Name,
+            Amount = advance.Amount, Date = advance.Date, Reason = advance.Reason
         };
     }
 
@@ -197,12 +246,8 @@ public class LabourService : ILabourService
 
         return advances.Select(a => new LabourAdvanceDto
         {
-            Id = a.Id,
-            LabourId = a.LabourId,
-            LabourName = labour.Name,
-            Amount = a.Amount,
-            Date = a.Date,
-            Reason = a.Reason
+            Id = a.Id, LabourId = a.LabourId, LabourName = labour.Name,
+            Amount = a.Amount, Date = a.Date, Reason = a.Reason
         }).ToList();
     }
 
@@ -216,16 +261,13 @@ public class LabourService : ILabourService
 
         var attendances = await _db.LabourAttendances
             .Where(a => a.LabourId == labourId && a.Date >= startDate && a.Date < endDate)
-            .OrderBy(a => a.Date)
-            .ToListAsync(ct);
+            .OrderBy(a => a.Date).ToListAsync(ct);
 
         var advances = await _db.LabourAdvances
             .Where(a => a.LabourId == labourId && a.Date >= startDate && a.Date < endDate)
-            .OrderBy(a => a.Date)
-            .ToListAsync(ct);
+            .OrderBy(a => a.Date).ToListAsync(ct);
 
         var totalAdvancesAllTime = await _db.LabourAdvances.Where(a => a.LabourId == labourId).SumAsync(a => a.Amount, ct);
-
         var attendanceDtos = attendances.Select(a => MapAttendanceDto(a, labour)).ToList();
         var totalEarnings = attendanceDtos.Sum(a => a.TotalPay);
         var totalAdvancesThisMonth = advances.Sum(a => a.Amount);
@@ -239,28 +281,17 @@ public class LabourService : ILabourService
             Attendances = attendanceDtos,
             Advances = advances.Select(a => new LabourAdvanceDto
             {
-                Id = a.Id,
-                LabourId = a.LabourId,
-                LabourName = labour.Name,
-                Amount = a.Amount,
-                Date = a.Date,
-                Reason = a.Reason
+                Id = a.Id, LabourId = a.LabourId, LabourName = labour.Name,
+                Amount = a.Amount, Date = a.Date, Reason = a.Reason
             }).ToList()
         };
     }
 
     private static LabourDto MapToDto(Labour l, decimal totalAdvances) => new()
     {
-        Id = l.Id,
-        Name = l.Name,
-        PhoneNumber = l.PhoneNumber,
-        CNIC = l.CNIC,
-        Trade = l.Trade,
-        DailyWage = l.DailyWage,
-        OvertimeRatePerHour = l.OvertimeRatePerHour,
-        JoinDate = l.JoinDate,
-        IsActive = l.IsActive,
-        TotalAdvances = totalAdvances
+        Id = l.Id, Name = l.Name, PhoneNumber = l.PhoneNumber, CNIC = l.CNIC,
+        Trade = l.Trade, DailyWage = l.DailyWage, OvertimeRatePerHour = l.OvertimeRatePerHour,
+        JoinDate = l.JoinDate, IsActive = l.IsActive, TotalAdvances = totalAdvances
     };
 
     private static LabourAttendanceDto MapAttendanceDto(LabourAttendance a, Labour labour)
@@ -269,16 +300,9 @@ public class LabourService : ILabourService
         var totalPay = (a.IsPresent ? labour.DailyWage : 0) + overtimePay;
         return new LabourAttendanceDto
         {
-            Id = a.Id,
-            LabourId = a.LabourId,
-            LabourName = labour.Name,
-            Date = a.Date,
-            IsPresent = a.IsPresent,
-            OvertimeHours = a.OvertimeHours,
-            Notes = a.Notes,
-            DailyWage = labour.DailyWage,
-            OvertimePay = overtimePay,
-            TotalPay = totalPay
+            Id = a.Id, LabourId = a.LabourId, LabourName = labour.Name, Date = a.Date,
+            IsPresent = a.IsPresent, OvertimeHours = a.OvertimeHours, Notes = a.Notes,
+            DailyWage = labour.DailyWage, OvertimePay = overtimePay, TotalPay = totalPay
         };
     }
 }

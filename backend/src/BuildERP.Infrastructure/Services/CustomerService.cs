@@ -1,16 +1,26 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Customers;
 using BuildERP.Domain.Entities;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class CustomerService : ICustomerService
 {
     private readonly ApplicationDbContext _db;
-    public CustomerService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public CustomerService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<CustomerDto>> GetAllAsync(CustomerQuery query, CancellationToken ct = default)
     {
@@ -48,6 +58,17 @@ public class CustomerService : ICustomerService
         };
         _db.Customers.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Customer",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Phone }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -55,12 +76,27 @@ public class CustomerService : ICustomerService
     {
         var entity = await _db.Customers.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Customer {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Phone, entity.IsActive });
+
         entity.Name = request.Name; entity.CompanyName = request.CompanyName; entity.Phone = request.Phone;
         entity.Email = request.Email; entity.Address = request.Address; entity.NTN = request.NTN;
         entity.CNIC = request.CNIC; entity.ProjectName = request.ProjectName;
         entity.TotalBilled = request.TotalBilled; entity.TotalPaid = request.TotalPaid;
         entity.IsActive = request.IsActive; entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Customer",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Phone, entity.IsActive }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -68,8 +104,21 @@ public class CustomerService : ICustomerService
     {
         var entity = await _db.Customers.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Customer {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName });
+
         _db.Customers.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Customer",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     private static CustomerDto MapToDto(Customer c) => new()

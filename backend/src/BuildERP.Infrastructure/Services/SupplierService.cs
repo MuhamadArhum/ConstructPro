@@ -1,16 +1,26 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Suppliers;
 using BuildERP.Domain.Entities;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class SupplierService : ISupplierService
 {
     private readonly ApplicationDbContext _db;
-    public SupplierService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public SupplierService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<SupplierDto>> GetAllAsync(SupplierQuery query, CancellationToken ct = default)
     {
@@ -47,6 +57,17 @@ public class SupplierService : ISupplierService
         };
         _db.Suppliers.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "Supplier",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Category }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -54,11 +75,26 @@ public class SupplierService : ISupplierService
     {
         var entity = await _db.Suppliers.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Supplier {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Category, entity.IsActive });
+
         entity.Name = request.Name; entity.CompanyName = request.CompanyName; entity.Phone = request.Phone;
         entity.Email = request.Email; entity.Address = request.Address; entity.NTN = request.NTN;
         entity.Category = request.Category; entity.TotalPurchased = request.TotalPurchased;
         entity.TotalPaid = request.TotalPaid; entity.IsActive = request.IsActive; entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "Supplier",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName, entity.Category, entity.IsActive }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -66,8 +102,21 @@ public class SupplierService : ISupplierService
     {
         var entity = await _db.Suppliers.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Supplier {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Name, entity.CompanyName });
+
         _db.Suppliers.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "Supplier",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     private static SupplierDto MapToDto(Supplier s) => new()

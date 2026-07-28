@@ -1,17 +1,27 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Application.Features.Taxes;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class TaxService : ITaxService
 {
     private readonly ApplicationDbContext _db;
-    public TaxService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public TaxService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<TaxRecordDto>> GetAllAsync(TaxQuery query, CancellationToken ct = default)
     {
@@ -53,6 +63,17 @@ public class TaxService : ITaxService
         };
         _db.TaxRecords.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "TaxRecord",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.TaxType, entity.Amount, entity.IsPaid }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -60,12 +81,27 @@ public class TaxService : ITaxService
     {
         var entity = await _db.TaxRecords.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"TaxRecord {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.TaxType, entity.Amount, entity.IsPaid });
+
         entity.TaxType = request.TaxType; entity.Amount = request.Amount;
         entity.PeriodStart = request.PeriodStart; entity.PeriodEnd = request.PeriodEnd;
         entity.DueDate = request.DueDate; entity.PaidDate = request.PaidDate;
         entity.IsPaid = request.IsPaid; entity.Reference = request.Reference;
         entity.Description = request.Description; entity.Notes = request.Notes;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "TaxRecord",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.TaxType, entity.Amount, entity.IsPaid }),
+        }, ct);
+
         return MapToDto(entity);
     }
 
@@ -73,8 +109,21 @@ public class TaxService : ITaxService
     {
         var entity = await _db.TaxRecords.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"TaxRecord {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.TaxType, entity.Amount });
+
         _db.TaxRecords.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "TaxRecord",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     public async Task<TaxSummaryDto> GetSummaryAsync(CancellationToken ct = default)

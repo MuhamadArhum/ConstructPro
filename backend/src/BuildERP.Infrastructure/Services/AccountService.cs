@@ -1,17 +1,27 @@
 using BuildERP.Application.Common.Interfaces;
 using BuildERP.Application.Common.Models;
 using BuildERP.Application.Features.Accounts;
+using BuildERP.Application.Features.AuditLogs;
 using BuildERP.Domain.Entities;
 using BuildERP.Domain.Enums;
 using BuildERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BuildERP.Infrastructure.Services;
 
 public class AccountService : IAccountService
 {
     private readonly ApplicationDbContext _db;
-    public AccountService(ApplicationDbContext db) => _db = db;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICurrentUserService _currentUser;
+
+    public AccountService(ApplicationDbContext db, IAuditLogService auditLog, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _auditLog = auditLog;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedList<ChartOfAccountDto>> GetAccountsAsync(AccountQuery query, CancellationToken ct = default)
     {
@@ -56,6 +66,17 @@ public class AccountService : IAccountService
         };
         _db.ChartOfAccounts.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "ChartOfAccount",
+            EntityId = entity.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entity.Code, entity.Name, entity.AccountType }),
+        }, ct);
+
         return MapAccountToDto(entity, 0);
     }
 
@@ -63,9 +84,24 @@ public class AccountService : IAccountService
     {
         var entity = await _db.ChartOfAccounts.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Account {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Code, entity.Name, entity.AccountType });
+
         entity.Code = request.Code; entity.Name = request.Name; entity.AccountType = request.AccountType;
         entity.ParentId = request.ParentId; entity.IsActive = request.IsActive; entity.Description = request.Description;
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Update",
+            EntityType = "ChartOfAccount",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(new { entity.Code, entity.Name, entity.AccountType }),
+        }, ct);
+
         return MapAccountToDto(entity, await GetAccountBalance(id, ct));
     }
 
@@ -73,8 +109,21 @@ public class AccountService : IAccountService
     {
         var entity = await _db.ChartOfAccounts.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"Account {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.Code, entity.Name });
+
         _db.ChartOfAccounts.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "ChartOfAccount",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     public async Task<PaginatedList<JournalEntryDto>> GetJournalEntriesAsync(JournalEntryQuery query, CancellationToken ct = default)
@@ -111,13 +160,9 @@ public class AccountService : IAccountService
         var entry = new JournalEntry
         {
             EntryNumber = $"JV-{(count + 1):D5}",
-            Date = request.Date,
-            Description = request.Description,
-            Reference = request.Reference,
-            Notes = request.Notes,
-            TotalDebit = request.Lines.Sum(l => l.Debit),
-            TotalCredit = request.Lines.Sum(l => l.Credit),
-            IsPosted = true,
+            Date = request.Date, Description = request.Description, Reference = request.Reference,
+            Notes = request.Notes, TotalDebit = request.Lines.Sum(l => l.Debit),
+            TotalCredit = request.Lines.Sum(l => l.Credit), IsPosted = true,
             Lines = request.Lines.Select(l => new JournalEntryLine
             {
                 AccountId = l.AccountId, Debit = l.Debit, Credit = l.Credit, Description = l.Description
@@ -126,6 +171,17 @@ public class AccountService : IAccountService
         _db.JournalEntries.Add(entry);
         await _db.SaveChangesAsync(ct);
         await _db.Entry(entry).Collection(e => e.Lines).Query().Include(l => l.Account).LoadAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Create",
+            EntityType = "JournalEntry",
+            EntityId = entry.Id.ToString(),
+            NewValues = JsonSerializer.Serialize(new { entry.EntryNumber, entry.Description, entry.TotalDebit, entry.TotalCredit }),
+        }, ct);
+
         return MapJournalToDto(entry);
     }
 
@@ -133,8 +189,21 @@ public class AccountService : IAccountService
     {
         var entity = await _db.JournalEntries.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException($"JournalEntry {id} not found.");
+
+        var oldValues = JsonSerializer.Serialize(new { entity.EntryNumber, entity.Description, entity.TotalDebit });
+
         _db.JournalEntries.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        await _auditLog.LogAsync(new AuditLogEntry
+        {
+            UserId = _currentUser.UserId,
+            UserEmail = _currentUser.Email ?? "",
+            Action = "Delete",
+            EntityType = "JournalEntry",
+            EntityId = id.ToString(),
+            OldValues = oldValues,
+        }, ct);
     }
 
     private async Task<decimal> GetAccountBalance(Guid accountId, CancellationToken ct)
