@@ -77,10 +77,8 @@ export default function Sidebar() {
       }}
     >
       <Toolbar sx={{ px: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="h6" color="primary" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-            ConstructPro
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/logo.png" alt="ConstructPro" style={{ height: 36, width: 'auto' }} />
         </Box>
       </Toolbar>
       <Divider />

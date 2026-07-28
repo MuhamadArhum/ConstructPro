@@ -56,13 +56,14 @@ export default function AuthLayout() {
         <Box sx={{ position: 'relative', zIndex: 1 }}>
           {/* Brand */}
           <Box sx={{ mb: 5 }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="ConstructPro"
+              sx={{ height: 52, width: 'auto', filter: 'brightness(0) invert(1)' }}
+            />
             <Typography
-              sx={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.1 }}
-            >
-              ConstructPro
-            </Typography>
-            <Typography
-              sx={{ fontSize: '1rem', fontWeight: 400, opacity: 0.75, letterSpacing: 4, textTransform: 'uppercase', mt: 0.5 }}
+              sx={{ fontSize: '1rem', fontWeight: 400, opacity: 0.75, letterSpacing: 4, textTransform: 'uppercase', mt: 1.5 }}
             >
               ERP Platform
             </Typography>

@@ -10,7 +10,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useNavigate } from 'react-router-dom';
@@ -45,17 +44,7 @@ export default function LoginPage() {
     <>
       {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Box
-          sx={{
-            width: 52, height: 52, borderRadius: '50%',
-            bgcolor: 'primary.main',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            mx: 'auto', mb: 2,
-            boxShadow: '0 4px 14px rgba(21,101,192,0.35)',
-          }}
-        >
-          <LockOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
-        </Box>
+        <Box component="img" src="/logo.png" alt="ConstructPro" sx={{ height: 48, width: 'auto', mb: 2 }} />
         <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
           Welcome back
         </Typography>
