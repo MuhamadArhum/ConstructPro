@@ -18,7 +18,7 @@ import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import {
-  Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider,
+  Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box, Divider,
 } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 import { useAppSelector } from '../../app/hooks';
