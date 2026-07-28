@@ -17,48 +17,44 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalanceOutlined';
 import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
-import {
-  Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box, Divider,
-} from '@mui/material';
+import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 import { useAppSelector } from '../../app/hooks';
 import { Perms } from '../../utils/permissions';
 
-export const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_WIDTH = 260;
 
 interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
   permission?: string;
-  dividerBefore?: boolean;
+  section?: string;
 }
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/', icon: <DashboardIcon />, permission: Perms.Dashboard.View },
 
-  { label: 'Income', path: '/income', icon: <AttachMoneyIcon />, permission: Perms.Income.View, dividerBefore: true },
+  { label: 'Income', path: '/income', icon: <AttachMoneyIcon />, permission: Perms.Income.View, section: 'Finance' },
   { label: 'Expense', path: '/expense', icon: <MoneyOffIcon />, permission: Perms.Expense.View },
+  { label: 'Tax Management', path: '/tax', icon: <ReceiptIcon />, permission: Perms.Tax.View },
+  { label: 'Accounts', path: '/accounts', icon: <AccountBalanceIcon />, permission: Perms.Accounts.View },
 
-  { label: 'Labour', path: '/labour', icon: <GroupIcon />, permission: Perms.Labour.View, dividerBefore: true },
+  { label: 'Labour', path: '/labour', icon: <GroupIcon />, permission: Perms.Labour.View, section: 'Workforce' },
   { label: 'Employees', path: '/employees', icon: <BadgeIcon />, permission: Perms.Employees.View },
 
-  { label: 'Machinery', path: '/machinery', icon: <PrecisionManufacturingIcon />, permission: Perms.Machinery.View, dividerBefore: true },
+  { label: 'Machinery', path: '/machinery', icon: <PrecisionManufacturingIcon />, permission: Perms.Machinery.View, section: 'Assets' },
   { label: 'Vehicles', path: '/vehicles', icon: <DirectionsCarIcon />, permission: Perms.Vehicles.View },
   { label: 'Plant & Equipment', path: '/plants', icon: <FactoryIcon />, permission: Perms.Plants.View },
 
-  { label: 'Customers', path: '/customers', icon: <PersonIcon />, permission: Perms.Customers.View, dividerBefore: true },
+  { label: 'Customers', path: '/customers', icon: <PersonIcon />, permission: Perms.Customers.View, section: 'Procurement' },
   { label: 'Suppliers', path: '/suppliers', icon: <LocalShippingIcon />, permission: Perms.Suppliers.View },
   { label: 'Inventory', path: '/inventory', icon: <InventoryIcon />, permission: Perms.Inventory.View },
 
-  { label: 'Tax Management', path: '/tax', icon: <ReceiptIcon />, permission: Perms.Tax.View, dividerBefore: true },
-  { label: 'Accounts', path: '/accounts', icon: <AccountBalanceIcon />, permission: Perms.Accounts.View },
-
-  { label: 'Reports', path: '/reports', icon: <BarChartIcon />, permission: Perms.Reports.View, dividerBefore: true },
+  { label: 'Reports', path: '/reports', icon: <BarChartIcon />, permission: Perms.Reports.View, section: 'System' },
   { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon />, permission: Perms.Notifications.View },
   { label: 'Settings', path: '/settings', icon: <SettingsIcon />, permission: Perms.Settings.View },
-
-  { label: 'User Management', path: '/users', icon: <PeopleIcon />, permission: Perms.Users.View, dividerBefore: true },
+  { label: 'User Management', path: '/users', icon: <PeopleIcon />, permission: Perms.Users.View },
   { label: 'Role Management', path: '/roles', icon: <ShieldIcon />, permission: Perms.Roles.View },
   { label: 'Audit Logs', path: '/audit-logs', icon: <HistoryIcon />, permission: Perms.AuditLogs.View },
 ];
@@ -73,37 +69,105 @@ export default function Sidebar() {
       sx={{
         width: SIDEBAR_WIDTH,
         flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: SIDEBAR_WIDTH, boxSizing: 'border-box', borderRight: '1px solid', borderColor: 'divider', overflowX: 'hidden' },
+        [`& .MuiDrawer-paper`]: {
+          width: SIDEBAR_WIDTH,
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+          border: 'none',
+          background: 'linear-gradient(180deg, #0a2540 0%, #0d2d4a 100%)',
+          color: 'white',
+        },
       }}
     >
-      <Toolbar sx={{ px: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/logo.png" alt="ConstructPro" style={{ height: 36, width: 'auto' }} />
-        </Box>
-      </Toolbar>
-      <Divider />
-      <List sx={{ pt: 1, overflowY: 'auto', flex: 1 }}>
+      {/* Logo Area */}
+      <Box
+        sx={{
+          px: 2.5,
+          py: 2.5,
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="ConstructPro"
+          sx={{ height: 44, width: 'auto', filter: 'brightness(0) invert(1)' }}
+        />
+      </Box>
+
+      {/* Nav Items */}
+      <List sx={{ pt: 1.5, pb: 2, overflowY: 'auto', flex: 1, px: 1.5 }}>
         {visibleItems.map((item) => (
           <Box key={item.path}>
-            {item.dividerBefore && <Divider sx={{ my: 0.5, mx: 1 }} />}
+            {item.section && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  px: 1.5,
+                  pt: 2,
+                  pb: 0.5,
+                  color: 'rgba(255,255,255,0.35)',
+                  fontWeight: 700,
+                  fontSize: '0.68rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {item.section}
+              </Typography>
+            )}
             <ListItemButton
               component={NavLink}
               to={item.path}
               end={item.path === '/'}
               sx={{
-                mx: 1, borderRadius: 1.5, mb: 0.5,
+                borderRadius: 2,
+                mb: 0.25,
+                px: 1.5,
+                py: 0.85,
+                color: 'rgba(255,255,255,0.65)',
+                '& .MuiListItemIcon-root': {
+                  color: 'rgba(255,255,255,0.5)',
+                  minWidth: 36,
+                },
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.07)',
+                  color: 'white',
+                  '& .MuiListItemIcon-root': { color: 'white' },
+                },
                 '&.active': {
-                  backgroundColor: 'primary.main', color: 'primary.contrastText',
-                  '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                  color: 'white',
+                  '& .MuiListItemIcon-root': { color: '#64b5f6' },
+                  '& .MuiListItemText-primary': { fontWeight: 700 },
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} slotProps={{ primary: { variant: 'body2', sx: { fontWeight: 500 } } }} />
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                slotProps={{
+                  primary: {
+                    variant: 'body2',
+                    sx: { fontWeight: 500, fontSize: '0.875rem' },
+                  },
+                }}
+              />
             </ListItemButton>
           </Box>
         ))}
       </List>
+
+      {/* Bottom branding */}
+      <Box sx={{ px: 2.5, py: 2, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>
+          Powered by AbyteSol
+        </Typography>
+      </Box>
     </Drawer>
   );
 }
