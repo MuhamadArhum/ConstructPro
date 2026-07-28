@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using BuildERP.API.Authorization;
 using BuildERP.API.Middleware;
 using BuildERP.Application;
@@ -63,7 +64,11 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHealthChecks();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -91,6 +96,12 @@ builder.Services.AddSwaggerGen(options =>
         { securityScheme, Array.Empty<string>() }
     });
 });
+
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:Secret must be set to a secure value of at least 32 characters. " +
+        "Set the JWT_SECRET or Jwt__Secret environment variable.");
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
