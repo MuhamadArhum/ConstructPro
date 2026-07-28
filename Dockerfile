@@ -4,10 +4,10 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Build frontend
-FROM node:20-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /src
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
