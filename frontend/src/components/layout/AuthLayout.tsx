@@ -1,6 +1,6 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import { Outlet } from 'react-router-dom';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 
 const FEATURES = [
   'Finance & Expense Tracking',
@@ -56,8 +56,8 @@ export default function AuthLayout() {
           {/* Feature list */}
           <Stack spacing={1.8}>
             {FEATURES.map((f) => (
-              <Stack key={f} direction="row" spacing={1.5} alignItems="center">
-                <CheckCircleOutlineIcon sx={{ fontSize: 18, opacity: 0.85, color: '#64b5f6' }} />
+              <Stack key={f} direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                <CheckCircleOutlinedIcon sx={{ fontSize: 18, opacity: 0.85, color: '#64b5f6' }} />
                 <Typography sx={{ fontSize: '0.88rem', opacity: 0.9, fontWeight: 500 }}>{f}</Typography>
               </Stack>
             ))}
