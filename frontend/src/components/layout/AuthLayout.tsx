@@ -1,103 +1,70 @@
-import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 import { Outlet } from 'react-router-dom';
-import ConstructionIcon from '@mui/icons-material/Construction';
-import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
-import EngineeringOutlinedIcon from '@mui/icons-material/EngineeringOutlined';
-import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 const FEATURES = [
-  { icon: <ConstructionIcon fontSize="small" />, text: 'Project & Site Management' },
-  { icon: <AccountTreeOutlinedIcon fontSize="small" />, text: 'Financial Tracking & Invoicing' },
-  { icon: <EngineeringOutlinedIcon fontSize="small" />, text: 'Workforce & Resource Planning' },
-  { icon: <BarChartOutlinedIcon fontSize="small" />, text: 'Real-time Analytics & Reports' },
+  'Finance & Expense Tracking',
+  'Labour & Employee Management',
+  'Machinery & Asset Control',
+  'Inventory & Stock Alerts',
+  'Real-time Reports & Dashboard',
+  'Role-based Access & Audit Logs',
 ];
 
 export default function AuthLayout() {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Left branding panel — hidden on mobile */}
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f0f4ff' }}>
+
+      {/* Left branding panel */}
       <Box
         sx={{
           display: { xs: 'none', md: 'flex' },
           flexDirection: 'column',
           justifyContent: 'center',
-          width: '44%',
-          minWidth: 380,
-          background: 'linear-gradient(150deg, #0d47a1 0%, #1565c0 55%, #1976d2 100%)',
-          p: 7,
+          width: '46%',
+          minWidth: 400,
+          background: 'linear-gradient(160deg, #0a2540 0%, #1565c0 60%, #1976d2 100%)',
+          p: 8,
           color: 'white',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Decorative circles */}
-        <Box
-          sx={{
-            position: 'absolute', top: -100, right: -100,
-            width: 380, height: 380, borderRadius: '50%',
-            bgcolor: 'rgba(255,255,255,0.06)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute', bottom: -60, left: -60,
-            width: 260, height: 260, borderRadius: '50%',
-            bgcolor: 'rgba(255,255,255,0.06)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute', top: '40%', right: -30,
-            width: 140, height: 140, borderRadius: '50%',
-            bgcolor: 'rgba(255,255,255,0.04)',
-          }}
-        />
+        {/* Background decoration */}
+        <Box sx={{ position: 'absolute', top: -120, right: -120, width: 420, height: 420, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)' }} />
+        <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 300, height: 300, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+        <Box sx={{ position: 'absolute', top: '35%', right: -40, width: 160, height: 160, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
 
         <Box sx={{ position: 'relative', zIndex: 1 }}>
-          {/* Brand */}
-          <Box sx={{ mb: 5 }}>
-            <Box
-              component="img"
-              src="/logo.png"
-              alt="ConstructPro"
-              sx={{ height: 52, width: 'auto', filter: 'brightness(0) invert(1)' }}
-            />
-            <Typography
-              sx={{ fontSize: '1rem', fontWeight: 400, opacity: 0.75, letterSpacing: 4, textTransform: 'uppercase', mt: 1.5 }}
-            >
-              ERP Platform
-            </Typography>
-          </Box>
 
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.18)', mb: 4 }} />
+          {/* Logo */}
+          <Box
+            component="img"
+            src="/logo.png"
+            alt="ConstructPro"
+            sx={{ height: 48, width: 'auto', mb: 5, filter: 'brightness(0) invert(1)' }}
+          />
 
-          <Typography variant="body1" sx={{ opacity: 0.88, mb: 5, lineHeight: 1.8, maxWidth: 320 }}>
-            The all-in-one enterprise platform built for modern construction companies.
-            Manage every aspect of your business from a single workspace.
+          {/* Headline */}
+          <Typography sx={{ fontSize: '1.9rem', fontWeight: 800, lineHeight: 1.25, mb: 1.5, letterSpacing: '-0.5px' }}>
+            Run your construction business smarter.
+          </Typography>
+          <Typography sx={{ fontSize: '0.97rem', opacity: 0.72, mb: 5, lineHeight: 1.75, maxWidth: 340 }}>
+            ConstructPro brings finance, workforce, assets, and inventory into one powerful platform — built for builders.
           </Typography>
 
-          <Stack spacing={2.5}>
-            {FEATURES.map(({ icon, text }) => (
-              <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 38, height: 38, borderRadius: 1.5,
-                    bgcolor: 'rgba(255,255,255,0.14)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  {icon}
-                </Box>
-                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                  {text}
-                </Typography>
-              </Box>
+          {/* Feature list */}
+          <Stack spacing={1.8}>
+            {FEATURES.map((f) => (
+              <Stack key={f} direction="row" spacing={1.5} alignItems="center">
+                <CheckCircleOutlineIcon sx={{ fontSize: 18, opacity: 0.85, color: '#64b5f6' }} />
+                <Typography sx={{ fontSize: '0.88rem', opacity: 0.9, fontWeight: 500 }}>{f}</Typography>
+              </Stack>
             ))}
           </Stack>
 
-          <Typography variant="caption" sx={{ opacity: 0.45, display: 'block', mt: 8 }}>
-            © {new Date().getFullYear()} ConstructPro ERP. All rights reserved.
+          <Typography variant="caption" sx={{ opacity: 0.35, display: 'block', mt: 7 }}>
+            © {new Date().getFullYear()} ConstructPro · Powered by AbyteSol
           </Typography>
         </Box>
       </Box>
@@ -109,14 +76,20 @@ export default function AuthLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'background.default',
           p: { xs: 2, sm: 4 },
         }}
       >
         <Paper
-          variant="outlined"
           elevation={0}
-          sx={{ p: { xs: 3, sm: 4 }, width: '100%', maxWidth: 420, borderRadius: 3 }}
+          sx={{
+            p: { xs: 3, sm: 4.5 },
+            width: '100%',
+            maxWidth: 420,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'rgba(0,0,0,0.09)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+          }}
         >
           <Outlet />
         </Paper>

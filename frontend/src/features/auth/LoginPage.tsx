@@ -9,10 +9,11 @@ import {
   Stack,
   TextField,
   Typography,
+  Link,
 } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { useLoginMutation } from './authApi';
 import { setCredentials } from './authSlice';
@@ -42,67 +43,89 @@ export default function LoginPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Box component="img" src="/logo.png" alt="ConstructPro" sx={{ height: 48, width: 'auto', mb: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
-          Welcome back
+      <Box sx={{ textAlign: 'center', mb: 3 }}>
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="ConstructPro"
+          sx={{ height: 44, width: 'auto', mb: 3 }}
+        />
+        <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+          Sign in to your account
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Sign in to continue to ConstructPro ERP
+        <Typography variant="body2" color="text.secondary">
+          Welcome back! Enter your credentials to continue.
         </Typography>
       </Box>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} noValidate>
         <Stack spacing={2.5}>
           {error && (
-            <Alert severity="error" sx={{ borderRadius: 2 }}>
+            <Alert severity="error" sx={{ borderRadius: 2, fontSize: '0.85rem' }}>
               {error}
             </Alert>
           )}
 
-          <TextField
-            label="Email Address"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            fullWidth
-            autoFocus
-            autoComplete="email"
-            disabled={isLoading}
-          />
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+              Email Address
+            </Typography>
+            <TextField
+              placeholder="you@company.com"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              autoFocus
+              autoComplete="email"
+              disabled={isLoading}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+          </Box>
 
-          <TextField
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            autoComplete="current-password"
-            disabled={isLoading}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword((v) => !v)}
-                      edge="end"
-                      size="small"
-                      tabIndex={-1}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword
-                        ? <VisibilityOffOutlinedIcon fontSize="small" />
-                        : <VisibilityOutlinedIcon fontSize="small" />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
+          <Box>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                Password
+              </Typography>
+              <Link component={RouterLink} to="/forgot-password" variant="caption" underline="hover" sx={{ color: 'primary.main', fontWeight: 500 }}>
+                Forgot password?
+              </Link>
+            </Stack>
+            <TextField
+              placeholder="••••••••"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              autoComplete="current-password"
+              disabled={isLoading}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword((v) => !v)}
+                        edge="end"
+                        size="small"
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword
+                          ? <VisibilityOffOutlinedIcon sx={{ fontSize: 18 }} />
+                          : <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Box>
 
           <Button
             type="submit"
@@ -111,10 +134,11 @@ export default function LoginPage() {
             disabled={isLoading}
             fullWidth
             sx={{
-              py: 1.4,
-              mt: 0.5,
+              py: 1.3,
+              borderRadius: 2,
               fontWeight: 600,
               fontSize: '0.95rem',
+              textTransform: 'none',
               boxShadow: '0 4px 12px rgba(21,101,192,0.3)',
               '&:hover': { boxShadow: '0 6px 16px rgba(21,101,192,0.4)' },
             }}
@@ -127,7 +151,8 @@ export default function LoginPage() {
       <Divider sx={{ my: 3 }} />
 
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
-        © {new Date().getFullYear()} ConstructPro ERP · All rights reserved
+        © {new Date().getFullYear()} ConstructPro · Powered by{' '}
+        <Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>AbyteSol</Box>
       </Typography>
     </>
   );
