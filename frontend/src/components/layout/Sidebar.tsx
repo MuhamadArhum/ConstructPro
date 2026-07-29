@@ -22,7 +22,7 @@ import { NavLink } from 'react-router-dom';
 import { useAppSelector } from '../../app/hooks';
 import { Perms } from '../../utils/permissions';
 
-export const SIDEBAR_WIDTH = 260;
+export const SIDEBAR_WIDTH = 230;
 
 interface NavItem {
   label: string;
@@ -30,33 +30,34 @@ interface NavItem {
   icon: React.ReactNode;
   permission?: string;
   section?: string;
+  badge?: number;
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: <DashboardIcon />, permission: Perms.Dashboard.View },
+  { label: 'Dashboard', path: '/', icon: <DashboardIcon fontSize="small" />, permission: Perms.Dashboard.View },
 
-  { label: 'Income', path: '/income', icon: <AttachMoneyIcon />, permission: Perms.Income.View, section: 'Finance' },
-  { label: 'Expense', path: '/expense', icon: <MoneyOffIcon />, permission: Perms.Expense.View },
-  { label: 'Tax Management', path: '/tax', icon: <ReceiptIcon />, permission: Perms.Tax.View },
-  { label: 'Accounts', path: '/accounts', icon: <AccountBalanceIcon />, permission: Perms.Accounts.View },
+  { label: 'Income',        path: '/income',   icon: <AttachMoneyIcon fontSize="small" />, permission: Perms.Income.View,   section: 'Finance' },
+  { label: 'Expense',       path: '/expense',  icon: <MoneyOffIcon fontSize="small" />,    permission: Perms.Expense.View   },
+  { label: 'Tax',           path: '/tax',      icon: <ReceiptIcon fontSize="small" />,     permission: Perms.Tax.View       },
+  { label: 'Accounts',      path: '/accounts', icon: <AccountBalanceIcon fontSize="small" />, permission: Perms.Accounts.View },
 
-  { label: 'Labour', path: '/labour', icon: <GroupIcon />, permission: Perms.Labour.View, section: 'Workforce' },
-  { label: 'Employees', path: '/employees', icon: <BadgeIcon />, permission: Perms.Employees.View },
+  { label: 'Labour',        path: '/labour',    icon: <GroupIcon fontSize="small" />,    permission: Perms.Labour.View,    section: 'Workforce' },
+  { label: 'Employees',     path: '/employees', icon: <BadgeIcon fontSize="small" />,    permission: Perms.Employees.View  },
 
-  { label: 'Machinery', path: '/machinery', icon: <PrecisionManufacturingIcon />, permission: Perms.Machinery.View, section: 'Assets' },
-  { label: 'Vehicles', path: '/vehicles', icon: <DirectionsCarIcon />, permission: Perms.Vehicles.View },
-  { label: 'Plant & Equipment', path: '/plants', icon: <FactoryIcon />, permission: Perms.Plants.View },
+  { label: 'Machinery',        path: '/machinery', icon: <PrecisionManufacturingIcon fontSize="small" />, permission: Perms.Machinery.View, section: 'Assets' },
+  { label: 'Vehicles',         path: '/vehicles',  icon: <DirectionsCarIcon fontSize="small" />,          permission: Perms.Vehicles.View  },
+  { label: 'Plant & Equipment', path: '/plants',   icon: <FactoryIcon fontSize="small" />,                permission: Perms.Plants.View    },
 
-  { label: 'Customers', path: '/customers', icon: <PersonIcon />, permission: Perms.Customers.View, section: 'Procurement' },
-  { label: 'Suppliers', path: '/suppliers', icon: <LocalShippingIcon />, permission: Perms.Suppliers.View },
-  { label: 'Inventory', path: '/inventory', icon: <InventoryIcon />, permission: Perms.Inventory.View },
+  { label: 'Customers',  path: '/customers',  icon: <PersonIcon fontSize="small" />,        permission: Perms.Customers.View,  section: 'Procurement' },
+  { label: 'Suppliers',  path: '/suppliers',  icon: <LocalShippingIcon fontSize="small" />, permission: Perms.Suppliers.View   },
+  { label: 'Inventory',  path: '/inventory',  icon: <InventoryIcon fontSize="small" />,     permission: Perms.Inventory.View   },
 
-  { label: 'Reports', path: '/reports', icon: <BarChartIcon />, permission: Perms.Reports.View, section: 'System' },
-  { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon />, permission: Perms.Notifications.View },
-  { label: 'Settings', path: '/settings', icon: <SettingsIcon />, permission: Perms.Settings.View },
-  { label: 'User Management', path: '/users', icon: <PeopleIcon />, permission: Perms.Users.View },
-  { label: 'Role Management', path: '/roles', icon: <ShieldIcon />, permission: Perms.Roles.View },
-  { label: 'Audit Logs', path: '/audit-logs', icon: <HistoryIcon />, permission: Perms.AuditLogs.View },
+  { label: 'Reports',          path: '/reports',       icon: <BarChartIcon fontSize="small" />,      permission: Perms.Reports.View,       section: 'System' },
+  { label: 'Notifications',    path: '/notifications', icon: <NotificationsIcon fontSize="small" />, permission: Perms.Notifications.View  },
+  { label: 'Settings',         path: '/settings',      icon: <SettingsIcon fontSize="small" />,      permission: Perms.Settings.View       },
+  { label: 'User Management',  path: '/users',         icon: <PeopleIcon fontSize="small" />,        permission: Perms.Users.View          },
+  { label: 'Role Management',  path: '/roles',         icon: <ShieldIcon fontSize="small" />,        permission: Perms.Roles.View          },
+  { label: 'Audit Logs',       path: '/audit-logs',    icon: <HistoryIcon fontSize="small" />,       permission: Perms.AuditLogs.View      },
 ];
 
 export default function Sidebar() {
@@ -74,47 +75,60 @@ export default function Sidebar() {
           boxSizing: 'border-box',
           overflowX: 'hidden',
           border: 'none',
-          background: 'linear-gradient(180deg, #0a2540 0%, #0d2d4a 100%)',
-          color: 'white',
+          borderRight: '1px solid rgba(154,198,232,0.18)',
+          background: '#081B30',
+          color: '#9AC6E8',
         },
       }}
     >
-      {/* Logo Area */}
+      {/* Brand */}
       <Box
         sx={{
           px: 2.5,
-          py: 2.5,
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          py: '22px',
+          borderBottom: '1px solid rgba(154,198,232,0.18)',
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
+          gap: 1.25,
         }}
       >
         <Box
-          component="img"
-          src="/logo.png"
-          alt="ConstructPro"
-          sx={{ height: 44, width: 'auto', filter: 'brightness(0) invert(1)' }}
+          sx={{
+            width: 9, height: 9,
+            backgroundColor: '#E85D1F',
+            flexShrink: 0,
+          }}
         />
+        <Typography
+          sx={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '17px',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            color: '#F5F2E8',
+          }}
+        >
+          CONSTRUCTPRO
+        </Typography>
       </Box>
 
       {/* Nav Items */}
-      <List sx={{ pt: 1.5, pb: 2, overflowY: 'auto', flex: 1, px: 1.5 }}>
+      <List sx={{ pt: '18px', pb: 2, overflowY: 'auto', flex: 1, px: '12px' }}>
         {visibleItems.map((item) => (
           <Box key={item.path}>
             {item.section && (
               <Typography
-                variant="caption"
                 sx={{
                   display: 'block',
-                  px: 1.5,
-                  pt: 2,
-                  pb: 0.5,
-                  color: 'rgba(255,255,255,0.35)',
-                  fontWeight: 700,
-                  fontSize: '0.68rem',
-                  letterSpacing: '0.08em',
+                  px: '12px',
+                  pt: '14px',
+                  pb: '8px',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '10.5px',
+                  letterSpacing: '0.10em',
+                  opacity: 0.45,
                   textTransform: 'uppercase',
+                  color: '#9AC6E8',
                 }}
               >
                 {item.section}
@@ -125,25 +139,33 @@ export default function Sidebar() {
               to={item.path}
               end={item.path === '/'}
               sx={{
-                borderRadius: 2,
-                mb: 0.25,
-                px: 1.5,
-                py: 0.85,
-                color: 'rgba(255,255,255,0.65)',
+                borderRadius: '4px',
+                mb: '2px',
+                px: '12px',
+                py: '10px',
+                opacity: 0.82,
+                color: '#9AC6E8',
+                borderLeft: '2px solid transparent',
+                transition: 'background .15s, opacity .15s',
                 '& .MuiListItemIcon-root': {
-                  color: 'rgba(255,255,255,0.5)',
-                  minWidth: 36,
+                  color: '#9AC6E8',
+                  minWidth: 32,
+                  opacity: 0.75,
                 },
                 '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.07)',
-                  color: 'white',
-                  '& .MuiListItemIcon-root': { color: 'white' },
+                  bgcolor: 'rgba(154,198,232,0.08)',
+                  opacity: 1,
                 },
                 '&.active': {
-                  bgcolor: 'rgba(255,255,255,0.12)',
-                  color: 'white',
-                  '& .MuiListItemIcon-root': { color: '#64b5f6' },
-                  '& .MuiListItemText-primary': { fontWeight: 700 },
+                  bgcolor: 'rgba(232,93,31,0.12)',
+                  opacity: 1,
+                  color: '#F5F2E8',
+                  borderLeft: '2px solid #E85D1F',
+                  '& .MuiListItemIcon-root': {
+                    color: '#E85D1F',
+                    opacity: 1,
+                  },
+                  '& .MuiListItemText-primary': { fontWeight: 600 },
                 },
               }}
             >
@@ -152,21 +174,50 @@ export default function Sidebar() {
                 primary={item.label}
                 slotProps={{
                   primary: {
-                    variant: 'body2',
-                    sx: { fontWeight: 500, fontSize: '0.875rem' },
+                    sx: {
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      fontFamily: "'IBM Plex Sans', sans-serif",
+                      lineHeight: 1,
+                    },
                   },
                 }}
               />
+              {item.badge != null && (
+                <Box
+                  sx={{
+                    background: '#E85D1F',
+                    color: '#081B30',
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    px: '6px',
+                    py: '1px',
+                    borderRadius: '10px',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {item.badge}
+                </Box>
+              )}
             </ListItemButton>
           </Box>
         ))}
       </List>
 
-      {/* Bottom branding */}
-      <Box sx={{ px: 2.5, py: 2, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-        <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>
-          Powered by AbyteSol
-        </Typography>
+      {/* Footer */}
+      <Box
+        sx={{
+          px: '20px',
+          py: '16px',
+          borderTop: '1px solid rgba(154,198,232,0.18)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '11px',
+          opacity: 0.5,
+          color: '#9AC6E8',
+        }}
+      >
+        v4.2.0 — REV. 4
       </Box>
     </Drawer>
   );

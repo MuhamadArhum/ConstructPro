@@ -1,3 +1,23 @@
+:root {
+  --blueprint: #0E2A47;
+  --blueprint-deep: #081B30;
+  --blueprint-light: #1F4A73;
+  --line-cyan: #9AC6E8;
+  --line-cyan-dim: rgba(154, 198, 232, 0.25);
+  --paper: #ECE8DB;
+  --paper-light: #F5F2E8;
+  --ink: #14181B;
+  --ink-soft: #3B4147;
+  --steel: #6B7178;
+  --safety-orange: #E85D1F;
+  --safety-orange-deep: #C24A16;
+  --green-ok: #3E8E5A;
+  --amber-warn: #C98A1E;
+  --red-risk: #C23B2E;
+  --rule: #D3CDBA;
+  --radius: 4px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -10,22 +30,23 @@ body,
 }
 
 body {
-  font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+  background: var(--paper);
+  font-family: 'IBM Plex Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 10px;
+  background: var(--rule);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.28);
+  background: #b8b0a0;
 }

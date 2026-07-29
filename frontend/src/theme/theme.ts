@@ -1,55 +1,97 @@
-import { createTheme, alpha } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 
-const PRIMARY = '#1a73e8';
-const PRIMARY_DARK = '#1557b0';
+// Blueprint design tokens
+const BLUEPRINT       = '#0E2A47';
+const BLUEPRINT_DEEP  = '#081B30';
+const BLUEPRINT_LIGHT = '#1F4A73';
+const LINE_CYAN       = '#9AC6E8';
+const PAPER           = '#ECE8DB';
+const PAPER_LIGHT     = '#F5F2E8';
+const INK             = '#14181B';
+const INK_SOFT        = '#3B4147';
+const STEEL           = '#6B7178';
+const SAFETY_ORANGE   = '#E85D1F';
+const SAFETY_DEEP     = '#C24A16';
+const GREEN_OK        = '#3E8E5A';
+const AMBER_WARN      = '#C98A1E';
+const RED_RISK        = '#C23B2E';
+const RULE            = '#D3CDBA';
 
 export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: PRIMARY,
-      dark: PRIMARY_DARK,
-      light: '#4d90ef',
+      main: SAFETY_ORANGE,
+      dark: SAFETY_DEEP,
+      light: '#EE7B45',
       contrastText: '#fff',
     },
     secondary: {
-      main: '#00897b',
+      main: BLUEPRINT,
+      dark: BLUEPRINT_DEEP,
+      light: BLUEPRINT_LIGHT,
+      contrastText: '#fff',
     },
-    success: { main: '#2e7d32', light: '#e8f5e9' },
-    error:   { main: '#c62828', light: '#ffebee' },
-    warning: { main: '#e65100', light: '#fff3e0' },
+    success:    { main: GREEN_OK,   light: 'rgba(62,142,90,0.12)'  },
+    error:      { main: RED_RISK,   light: 'rgba(194,59,46,0.12)'  },
+    warning:    { main: AMBER_WARN, light: 'rgba(201,138,30,0.14)' },
+    info:       { main: LINE_CYAN },
     background: {
-      default: '#f0f4f8',
-      paper: '#ffffff',
+      default: PAPER,
+      paper:   PAPER_LIGHT,
     },
     text: {
-      primary: '#0f1923',
-      secondary: '#64748b',
+      primary:   INK,
+      secondary: STEEL,
     },
-    divider: 'rgba(0,0,0,0.08)',
+    divider: RULE,
   },
 
   typography: {
-    fontFamily: ['Inter', 'Helvetica', 'Arial', 'sans-serif'].join(','),
-    h1: { fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.4px' },
-    h2: { fontSize: '1.4rem',  fontWeight: 700, letterSpacing: '-0.3px' },
-    h3: { fontSize: '1.2rem',  fontWeight: 600 },
-    h4: { fontSize: '1.1rem',  fontWeight: 600 },
-    h5: { fontSize: '1rem',    fontWeight: 600 },
-    h6: { fontSize: '0.9rem',  fontWeight: 600 },
+    fontFamily: ["'IBM Plex Sans'", 'Helvetica', 'Arial', 'sans-serif'].join(','),
+    h1: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '1.75rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
+    },
+    h2: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '1.4rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
+    },
+    h3: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '1.15rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
+    },
+    h4: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '1rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
+    },
+    h5: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '0.9rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.03em', color: BLUEPRINT,
+    },
+    h6: {
+      fontFamily: "'Oswald', sans-serif",
+      fontSize: '0.8rem', fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.03em', color: BLUEPRINT,
+    },
     subtitle1: { fontWeight: 600, fontSize: '0.95rem' },
-    subtitle2: { fontWeight: 600, fontSize: '0.82rem', color: '#64748b' },
-    body1: { fontSize: '0.9rem' },
-    body2: { fontSize: '0.82rem' },
-    caption: { fontSize: '0.75rem', color: '#64748b' },
-    button: { fontWeight: 600, textTransform: 'none', fontSize: '0.875rem' },
+    subtitle2: { fontWeight: 600, fontSize: '0.82rem', color: STEEL },
+    body1:     { fontSize: '0.9rem', color: INK },
+    body2:     { fontSize: '0.82rem', color: INK_SOFT },
+    caption:   { fontSize: '0.72rem', color: STEEL, fontFamily: "'IBM Plex Mono', monospace" },
+    button:    { fontWeight: 600, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.04em', fontFamily: "'IBM Plex Sans', sans-serif" },
   },
 
-  shape: { borderRadius: 10 },
+  shape: { borderRadius: 4 },
 
   shadows: [
     'none',
-    '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+    '0 1px 3px rgba(0,0,0,0.06)',
     '0 2px 8px rgba(0,0,0,0.07)',
     '0 4px 16px rgba(0,0,0,0.08)',
     '0 6px 24px rgba(0,0,0,0.09)',
@@ -60,7 +102,7 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: { backgroundColor: '#f0f4f8' },
+        body: { backgroundColor: PAPER },
       },
     },
 
@@ -68,9 +110,9 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: 'none',
-          borderBottom: '1px solid rgba(0,0,0,0.07)',
-          backgroundColor: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(12px)',
+          borderBottom: `1px solid ${RULE}`,
+          backgroundColor: PAPER_LIGHT,
+          color: INK,
         },
       },
     },
@@ -80,10 +122,11 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          borderRadius: 12,
+          borderRadius: 4,
+          backgroundColor: PAPER_LIGHT,
         },
         outlined: {
-          border: '1px solid rgba(0,0,0,0.08)',
+          border: `1px solid ${RULE}`,
         },
       },
     },
@@ -92,13 +135,10 @@ export const theme = createTheme({
       defaultProps: { elevation: 0 },
       styleOverrides: {
         root: {
-          borderRadius: 14,
-          border: '1px solid rgba(0,0,0,0.07)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-          transition: 'box-shadow 0.2s ease',
-          '&:hover': {
-            boxShadow: '0 4px 16px rgba(0,0,0,0.09)',
-          },
+          borderRadius: 4,
+          border: `1px solid ${RULE}`,
+          backgroundColor: PAPER_LIGHT,
+          backgroundImage: 'none',
         },
       },
     },
@@ -116,20 +156,25 @@ export const theme = createTheme({
       defaultProps: { disableElevation: true },
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 4,
           fontWeight: 600,
-          fontSize: '0.875rem',
           padding: '7px 18px',
         },
         contained: {
-          boxShadow: '0 2px 8px rgba(26,115,232,0.25)',
-          '&:hover': {
-            boxShadow: '0 4px 14px rgba(26,115,232,0.35)',
-          },
+          backgroundColor: SAFETY_ORANGE,
+          '&:hover': { backgroundColor: SAFETY_DEEP },
         },
         outlined: {
-          borderColor: 'rgba(0,0,0,0.15)',
-          '&:hover': { borderColor: PRIMARY, backgroundColor: alpha(PRIMARY, 0.04) },
+          borderColor: RULE,
+          color: BLUEPRINT,
+          '&:hover': {
+            borderColor: SAFETY_ORANGE,
+            backgroundColor: 'rgba(232,93,31,0.04)',
+          },
+        },
+        text: {
+          color: BLUEPRINT,
+          '&:hover': { backgroundColor: 'rgba(14,42,71,0.05)' },
         },
       },
     },
@@ -139,34 +184,64 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
-            '&:hover fieldset': { borderColor: PRIMARY },
+            borderRadius: 4,
+            backgroundColor: '#fff',
+            '& fieldset': { borderColor: RULE },
+            '&:hover fieldset': { borderColor: BLUEPRINT },
+            '&.Mui-focused fieldset': { borderColor: SAFETY_ORANGE },
           },
+          '& .MuiInputLabel-root.Mui-focused': { color: SAFETY_ORANGE },
         },
       },
     },
 
     MuiSelect: {
       styleOverrides: {
-        outlined: { borderRadius: 8 },
+        outlined: { borderRadius: 4 },
       },
     },
 
     MuiOutlinedInput: {
       styleOverrides: {
-        root: { borderRadius: 8 },
-        notchedOutline: { borderColor: 'rgba(0,0,0,0.15)' },
+        root: {
+          borderRadius: 4,
+          backgroundColor: '#fff',
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: SAFETY_ORANGE },
+        },
+        notchedOutline: { borderColor: RULE },
       },
     },
 
     MuiChip: {
       styleOverrides: {
         root: {
+          fontFamily: "'IBM Plex Mono', monospace",
           fontWeight: 600,
-          fontSize: '0.72rem',
-          height: 24,
-          borderRadius: 6,
+          fontSize: '0.68rem',
+          height: 22,
+          borderRadius: 10,
+          letterSpacing: '0.03em',
+          textTransform: 'uppercase',
+        },
+        colorSuccess: {
+          backgroundColor: 'rgba(62,142,90,0.12)',
+          color: GREEN_OK,
+        },
+        colorWarning: {
+          backgroundColor: 'rgba(201,138,30,0.14)',
+          color: AMBER_WARN,
+        },
+        colorError: {
+          backgroundColor: 'rgba(194,59,46,0.12)',
+          color: RED_RISK,
+        },
+        colorPrimary: {
+          backgroundColor: 'rgba(232,93,31,0.12)',
+          color: SAFETY_ORANGE,
+        },
+        colorSecondary: {
+          backgroundColor: 'rgba(14,42,71,0.1)',
+          color: BLUEPRINT,
         },
       },
     },
@@ -175,14 +250,15 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiTableCell-head': {
-            backgroundColor: '#f8fafc',
-            color: '#64748b',
-            fontWeight: 700,
-            fontSize: '0.72rem',
+            backgroundColor: PAPER,
+            color: STEEL,
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontWeight: 500,
+            fontSize: '0.68rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
-            padding: '10px 14px',
+            letterSpacing: '0.06em',
+            borderBottom: `1px solid ${RULE}`,
+            padding: '10px 20px',
           },
         },
       },
@@ -192,13 +268,16 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiTableRow-root:hover': {
-            backgroundColor: '#f8fafc',
+            backgroundColor: 'rgba(154,198,232,0.06)',
+          },
+          '& .MuiTableRow-root:last-child .MuiTableCell-body': {
+            borderBottom: 'none',
           },
           '& .MuiTableCell-body': {
             fontSize: '0.85rem',
-            borderBottom: '1px solid rgba(0,0,0,0.05)',
-            padding: '10px 14px',
-            color: '#0f1923',
+            borderBottom: `1px solid ${RULE}`,
+            padding: '13px 20px',
+            color: INK,
           },
         },
       },
@@ -206,68 +285,209 @@ export const theme = createTheme({
 
     MuiTableContainer: {
       styleOverrides: {
-        root: { borderRadius: 12 },
+        root: { borderRadius: 4 },
       },
     },
 
     MuiTablePagination: {
       styleOverrides: {
-        root: { borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.82rem' },
-        selectLabel: { fontSize: '0.82rem' },
-        displayedRows: { fontSize: '0.82rem' },
+        root: {
+          borderTop: `1px solid ${RULE}`,
+          fontSize: '0.8rem',
+          fontFamily: "'IBM Plex Mono', monospace",
+          color: STEEL,
+        },
+        selectLabel: { fontSize: '0.8rem' },
+        displayedRows: { fontSize: '0.8rem' },
       },
     },
 
     MuiDialog: {
       styleOverrides: {
-        paper: { borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' },
+        paper: {
+          borderRadius: 4,
+          border: `1px solid ${RULE}`,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          backgroundColor: PAPER_LIGHT,
+        },
       },
     },
 
     MuiDialogTitle: {
       styleOverrides: {
-        root: { fontSize: '1.05rem', fontWeight: 700, paddingBottom: 8 },
+        root: {
+          fontFamily: "'Oswald', sans-serif",
+          fontSize: '1rem',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.03em',
+          color: BLUEPRINT,
+          paddingBottom: 8,
+          borderBottom: `1px solid ${RULE}`,
+        },
       },
     },
 
     MuiListItemButton: {
       styleOverrides: {
-        root: { borderRadius: 8 },
+        root: { borderRadius: 4 },
       },
     },
 
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          borderRadius: 6,
-          fontSize: '0.75rem',
-          backgroundColor: '#0f1923',
+          borderRadius: 4,
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '0.72rem',
+          backgroundColor: BLUEPRINT_DEEP,
           padding: '5px 10px',
+          letterSpacing: '0.02em',
         },
       },
     },
 
     MuiDivider: {
       styleOverrides: {
-        root: { borderColor: 'rgba(0,0,0,0.07)' },
+        root: { borderColor: RULE },
       },
     },
 
     MuiAlert: {
       styleOverrides: {
-        root: { borderRadius: 10 },
+        root: { borderRadius: 4 },
       },
     },
 
     MuiIconButton: {
       styleOverrides: {
-        root: { borderRadius: 8 },
+        root: { borderRadius: 4 },
       },
     },
 
     MuiSnackbar: {
       defaultProps: {
         anchorOrigin: { vertical: 'bottom', horizontal: 'center' },
+      },
+    },
+
+    MuiBadge: {
+      styleOverrides: {
+        badge: {
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '10px',
+          fontWeight: 600,
+          minWidth: 16,
+          height: 16,
+          borderRadius: 8,
+        },
+        colorError: {
+          backgroundColor: SAFETY_ORANGE,
+          color: '#fff',
+        },
+      },
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontWeight: 600,
+          fontSize: '0.72rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: STEEL,
+          '&.Mui-selected': { color: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiTabs: {
+      styleOverrides: {
+        indicator: { backgroundColor: SAFETY_ORANGE, height: 2 },
+      },
+    },
+
+    MuiFormLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          color: INK_SOFT,
+          '&.Mui-focused': { color: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.85rem',
+          color: STEEL,
+          '&.Mui-focused': { color: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiSwitch: {
+      styleOverrides: {
+        switchBase: {
+          '&.Mui-checked': { color: SAFETY_ORANGE },
+          '&.Mui-checked + .MuiSwitch-track': { backgroundColor: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          color: RULE,
+          '&.Mui-checked': { color: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiRadio: {
+      styleOverrides: {
+        root: {
+          color: RULE,
+          '&.Mui-checked': { color: SAFETY_ORANGE },
+        },
+      },
+    },
+
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          height: 6,
+          borderRadius: 4,
+          backgroundColor: RULE,
+        },
+        bar: { backgroundColor: SAFETY_ORANGE, borderRadius: 4 },
+      },
+    },
+
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 4,
+          border: `1px solid ${RULE}`,
+          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          backgroundColor: PAPER_LIGHT,
+        },
+      },
+    },
+
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.875rem',
+          '&:hover': { backgroundColor: 'rgba(232,93,31,0.06)' },
+          '&.Mui-selected': {
+            backgroundColor: 'rgba(232,93,31,0.1)',
+            '&:hover': { backgroundColor: 'rgba(232,93,31,0.14)' },
+          },
+        },
       },
     },
   },

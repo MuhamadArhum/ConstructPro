@@ -2,20 +2,21 @@ import { useState, type MouseEvent } from 'react';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/PersonOutlined';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Divider,
   IconButton,
+  InputBase,
   ListItemIcon,
   Menu,
   MenuItem,
   Toolbar,
   Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { clearCredentials } from '../../features/auth/authSlice';
 import { useLogoutMutation } from '../../features/auth/authApi';
@@ -24,15 +25,45 @@ import { tokenStorage } from '../../utils/tokenStorage';
 import { SIDEBAR_WIDTH } from './Sidebar';
 import { API_BASE_URL } from '../../utils/constants';
 
+const ROUTE_LABELS: Record<string, string> = {
+  '/':             'Dashboard',
+  '/income':       'Income',
+  '/expense':      'Expense',
+  '/tax':          'Tax Management',
+  '/accounts':     'Accounts',
+  '/labour':       'Labour',
+  '/employees':    'Employees',
+  '/machinery':    'Machinery',
+  '/vehicles':     'Vehicles',
+  '/plants':       'Plant & Equipment',
+  '/customers':    'Customers',
+  '/suppliers':    'Suppliers',
+  '/inventory':    'Inventory',
+  '/reports':      'Reports',
+  '/notifications':'Notifications',
+  '/settings':     'Settings',
+  '/users':        'User Management',
+  '/roles':        'Role Management',
+  '/audit-logs':   'Audit Logs',
+  '/profile':      'My Profile',
+};
+
 export default function Header() {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [logout] = useLogoutMutation();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const { data: unreadData } = useGetUnreadCountQuery();
   const unreadCount = unreadData?.count ?? 0;
+
+  const pageTitle = ROUTE_LABELS[location.pathname] ?? 'ConstructPro';
+
+  const now = new Date();
+  const week = Math.ceil(((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
+  const subLine = `ALL PROJECTS · WEEK ${week}, ${now.getFullYear()}`;
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -62,45 +93,104 @@ export default function Header() {
   return (
     <AppBar
       position="fixed"
-      color="inherit"
       elevation={0}
       sx={{
         width: `calc(100% - ${SIDEBAR_WIDTH}px)`,
         ml: `${SIDEBAR_WIDTH}px`,
+        backgroundColor: '#F5F2E8',
+        borderBottom: '1px solid #D3CDBA',
+        color: '#14181B',
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '60px !important', px: 3 }}>
+      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '64px !important', px: '32px' }}>
 
-        {/* Left: greeting */}
+        {/* Left: page title */}
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
-            {user?.fullName ?? 'Welcome'}
+          <Typography
+            sx={{
+              fontFamily: "'Oswald', sans-serif",
+              fontSize: '20px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              color: '#0E2A47',
+              lineHeight: 1.1,
+            }}
+          >
+            {pageTitle}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {user?.roles.join(', ')}
+          <Typography
+            sx={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11.5px',
+              color: '#6B7178',
+              mt: '2px',
+              lineHeight: 1,
+            }}
+          >
+            {subLine}
           </Typography>
         </Box>
 
-        {/* Right: actions */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {/* Right: search + notification + avatar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
 
-          {/* Notification Bell */}
-          <IconButton
-            size="small"
-            onClick={() => navigate('/notifications')}
+          {/* Search box */}
+          <Box
             sx={{
-              width: 36, height: 36,
-              bgcolor: 'rgba(0,0,0,0.04)',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#fff',
+              border: '1px solid #D3CDBA',
+              borderRadius: '4px',
+              px: '12px',
+              py: '7px',
+              width: 260,
+              '&:focus-within': { borderColor: '#E85D1F' },
             }}
           >
-            <Badge badgeContent={unreadCount > 0 ? unreadCount : undefined} color="error" max={99}>
-              <NotificationsOutlinedIcon sx={{ fontSize: 20 }} />
-            </Badge>
-          </IconButton>
+            <SearchIcon sx={{ fontSize: 16, color: '#6B7178', flexShrink: 0 }} />
+            <InputBase
+              placeholder="Search projects, tasks..."
+              sx={{
+                fontSize: '13px',
+                fontFamily: "'IBM Plex Sans', sans-serif",
+                color: '#14181B',
+                flex: 1,
+                '& input::placeholder': { color: '#6B7178', opacity: 1 },
+              }}
+            />
+          </Box>
 
-          {/* Divider */}
-          <Box sx={{ width: 1, height: 28, bgcolor: 'divider', mx: 1 }} />
+          {/* Notification bell */}
+          <Box sx={{ position: 'relative' }}>
+            <IconButton
+              size="small"
+              onClick={() => navigate('/notifications')}
+              sx={{
+                width: 34, height: 34,
+                border: '1px solid #D3CDBA',
+                borderRadius: '4px',
+                bgcolor: '#fff',
+                '&:hover': { bgcolor: 'rgba(14,42,71,0.05)', borderColor: '#0E2A47' },
+              }}
+            >
+              <NotificationsOutlinedIcon sx={{ fontSize: 18, color: '#3B4147' }} />
+            </IconButton>
+            {unreadCount > 0 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -3, right: -3,
+                  width: 8, height: 8,
+                  borderRadius: '50%',
+                  background: '#E85D1F',
+                  border: '1.5px solid #F5F2E8',
+                }}
+              />
+            )}
+          </Box>
 
           {/* Avatar */}
           <IconButton onClick={handleMenuOpen} size="small" sx={{ p: 0 }}>
@@ -108,10 +198,12 @@ export default function Header() {
               src={avatarSrc}
               sx={{
                 width: 34, height: 34,
-                bgcolor: 'primary.main',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                border: '2px solid rgba(26,115,232,0.2)',
+                bgcolor: '#0E2A47',
+                color: '#F5F2E8',
+                fontSize: '12px',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontWeight: 600,
+                borderRadius: '50%',
               }}
             >
               {initials}
@@ -130,32 +222,37 @@ export default function Header() {
             paper: {
               sx: {
                 mt: 1,
-                minWidth: 200,
-                borderRadius: 2,
-                border: '1px solid rgba(0,0,0,0.08)',
+                minWidth: 210,
+                borderRadius: '4px',
+                border: '1px solid #D3CDBA',
                 boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                backgroundColor: '#F5F2E8',
               },
             },
           }}
         >
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.fullName}</Typography>
-            <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+            <Typography sx={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 700, fontSize: '0.875rem', color: '#0E2A47' }}>
+              {user?.fullName}
+            </Typography>
+            <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#6B7178', mt: '2px' }}>
+              {user?.email}
+            </Typography>
           </Box>
-          <Divider />
+          <Divider sx={{ borderColor: '#D3CDBA' }} />
           <MenuItem
             onClick={() => { handleMenuClose(); navigate('/profile'); }}
-            sx={{ py: 1.2, fontSize: '0.875rem' }}
+            sx={{ py: 1.2, fontSize: '0.875rem', color: '#14181B' }}
           >
-            <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+            <ListItemIcon><PersonIcon fontSize="small" sx={{ color: '#3B4147' }} /></ListItemIcon>
             My Profile
           </MenuItem>
-          <Divider />
+          <Divider sx={{ borderColor: '#D3CDBA' }} />
           <MenuItem
             onClick={handleLogout}
-            sx={{ py: 1.2, fontSize: '0.875rem', color: 'error.main' }}
+            sx={{ py: 1.2, fontSize: '0.875rem', color: '#C23B2E' }}
           >
-            <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
+            <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: '#C23B2E' }} /></ListItemIcon>
             Sign Out
           </MenuItem>
         </Menu>

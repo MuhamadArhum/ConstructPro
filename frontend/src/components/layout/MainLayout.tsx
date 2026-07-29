@@ -9,12 +9,12 @@ export default function MainLayout() {
   useKeepAlive();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#ECE8DB' }}>
       <Sidebar />
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Header />
-        <Toolbar sx={{ minHeight: '60px !important' }} />
-        <Box sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, maxWidth: 1400 }}>
+        <Toolbar sx={{ minHeight: '64px !important' }} />
+        <Box sx={{ flexGrow: 1, p: { xs: 2.5, sm: '28px 32px 60px' } }}>
           <Outlet />
         </Box>
         <Footer />

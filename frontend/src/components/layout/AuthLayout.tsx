@@ -1,6 +1,5 @@
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { Outlet } from 'react-router-dom';
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 
 const FEATURES = [
   'Finance & Expense Tracking',
@@ -13,7 +12,7 @@ const FEATURES = [
 
 export default function AuthLayout() {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f0f4ff' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#ECE8DB' }}>
 
       {/* Left branding panel */}
       <Box
@@ -23,48 +22,98 @@ export default function AuthLayout() {
           justifyContent: 'center',
           width: '46%',
           minWidth: 400,
-          background: 'linear-gradient(160deg, #0a2540 0%, #1565c0 60%, #1976d2 100%)',
+          background: '#081B30',
+          borderRight: '1px solid rgba(154,198,232,0.18)',
           p: 8,
-          color: 'white',
+          color: '#9AC6E8',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background decoration */}
-        <Box sx={{ position: 'absolute', top: -120, right: -120, width: 420, height: 420, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)' }} />
-        <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 300, height: 300, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
-        <Box sx={{ position: 'absolute', top: '35%', right: -40, width: 160, height: 160, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+        {/* Blueprint grid decoration */}
+        <Box sx={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(154,198,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(154,198,232,0.04) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
 
         <Box sx={{ position: 'relative', zIndex: 1 }}>
-
-          {/* Logo */}
-          <Box
-            component="img"
-            src="/logo.png"
-            alt="ConstructPro"
-            sx={{ height: 48, width: 'auto', mb: 5, filter: 'brightness(0) invert(1)' }}
-          />
+          {/* Brand mark */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', mb: 6 }}>
+            <Box sx={{ width: 9, height: 9, background: '#E85D1F', flexShrink: 0 }} />
+            <Typography
+              sx={{
+                fontFamily: "'IBM Plex Sans', sans-serif",
+                fontSize: '18px',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                color: '#F5F2E8',
+              }}
+            >
+              CONSTRUCTPRO
+            </Typography>
+          </Box>
 
           {/* Headline */}
-          <Typography sx={{ fontSize: '1.9rem', fontWeight: 800, lineHeight: 1.25, mb: 1.5, letterSpacing: '-0.5px' }}>
+          <Typography
+            sx={{
+              fontFamily: "'Oswald', sans-serif",
+              fontSize: '2rem',
+              fontWeight: 600,
+              lineHeight: 1.2,
+              mb: 2,
+              letterSpacing: '0.02em',
+              color: '#F5F2E8',
+              textTransform: 'uppercase',
+            }}
+          >
             Run your construction business smarter.
           </Typography>
-          <Typography sx={{ fontSize: '0.97rem', opacity: 0.72, mb: 5, lineHeight: 1.75, maxWidth: 340 }}>
+          <Typography
+            sx={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: '0.95rem',
+              color: 'rgba(154,198,232,0.75)',
+              mb: 5,
+              lineHeight: 1.75,
+              maxWidth: 340,
+            }}
+          >
             ConstructPro brings finance, workforce, assets, and inventory into one powerful platform — built for builders.
           </Typography>
 
           {/* Feature list */}
-          <Stack spacing={1.8}>
+          <Stack spacing={1.75}>
             {FEATURES.map((f) => (
               <Stack key={f} direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                <CheckCircleOutlinedIcon sx={{ fontSize: 18, opacity: 0.85, color: '#64b5f6' }} />
-                <Typography sx={{ fontSize: '0.88rem', opacity: 0.9, fontWeight: 500 }}>{f}</Typography>
+                <Box
+                  sx={{
+                    width: 6, height: 6,
+                    background: '#E85D1F',
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: '0.875rem',
+                    color: 'rgba(154,198,232,0.85)',
+                    fontWeight: 500,
+                  }}
+                >
+                  {f}
+                </Typography>
               </Stack>
             ))}
           </Stack>
 
-          <Typography variant="caption" sx={{ opacity: 0.35, display: 'block', mt: 7 }}>
-            © {new Date().getFullYear()} ConstructPro · Powered by AbyteSol
+          <Typography
+            sx={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11px',
+              opacity: 0.3,
+              display: 'block',
+              mt: 7,
+              color: '#9AC6E8',
+            }}
+          >
+            © {new Date().getFullYear()} CONSTRUCTPRO · POWERED BY ABYTESOL
           </Typography>
         </Box>
       </Box>
@@ -79,20 +128,19 @@ export default function AuthLayout() {
           p: { xs: 2, sm: 4 },
         }}
       >
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            p: { xs: 3, sm: 4.5 },
+            p: { xs: 3, sm: '36px 40px' },
             width: '100%',
             maxWidth: 420,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'rgba(0,0,0,0.09)',
+            borderRadius: '4px',
+            border: '1px solid #D3CDBA',
+            backgroundColor: '#F5F2E8',
             boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
           }}
         >
           <Outlet />
-        </Paper>
+        </Box>
       </Box>
     </Box>
   );
