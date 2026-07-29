@@ -5,6 +5,7 @@ import {
   Chip,
   Divider,
   Grid,
+  LinearProgress,
   List,
   ListItem,
   Paper,
@@ -13,106 +14,86 @@ import {
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import PeopleIcon from '@mui/icons-material/PeopleOutlined';
-import EngineeringIcon from '@mui/icons-material/EngineeringOutlined';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturingOutlined';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import MoneyOffOutlinedIcon from '@mui/icons-material/MoneyOffOutlined';
+import HourglassTopOutlinedIcon from '@mui/icons-material/HourglassTopOutlined';
 import Loader from '../../components/common/Loader';
 import { useGetDashboardStatsQuery } from './dashboardApi';
 
-const fmt = (n: number) =>
+const pkr = (n: number) =>
   new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(n);
 
-const STAT_CARDS = (stats: {
-  totalIncomeThisMonth: number;
-  totalIncomeAllTime: number;
-  totalExpenseThisMonth: number;
-  totalExpenseAllTime: number;
-  profitLossThisMonth: number;
-  profitLossAllTime: number;
-  pendingPayments: number;
-}) => [
-  {
-    label: 'Income This Month',
-    value: fmt(stats.totalIncomeThisMonth),
-    sub: `All time: ${fmt(stats.totalIncomeAllTime)}`,
-    icon: <AttachMoneyIcon sx={{ fontSize: 22 }} />,
-    bg: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
-    chip: 'Income',
-    chipColor: '#a5d6a7',
-  },
-  {
-    label: 'Expense This Month',
-    value: fmt(stats.totalExpenseThisMonth),
-    sub: `All time: ${fmt(stats.totalExpenseAllTime)}`,
-    icon: <MoneyOffIcon sx={{ fontSize: 22 }} />,
-    bg: 'linear-gradient(135deg, #b71c1c 0%, #c62828 100%)',
-    chip: 'Expense',
-    chipColor: '#ef9a9a',
-  },
-  {
-    label: 'Profit / Loss',
-    value: fmt(stats.profitLossThisMonth),
-    sub: `All time: ${fmt(stats.profitLossAllTime)}`,
-    icon: <AccountBalanceWalletIcon sx={{ fontSize: 22 }} />,
-    bg: stats.profitLossThisMonth >= 0
-      ? 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)'
-      : 'linear-gradient(135deg, #e65100 0%, #f57c00 100%)',
-    chip: stats.profitLossThisMonth >= 0 ? 'Profit' : 'Loss',
-    chipColor: stats.profitLossThisMonth >= 0 ? '#90caf9' : '#ffcc80',
-  },
-  {
-    label: 'Pending Payments',
-    value: fmt(stats.pendingPayments),
-    sub: 'Awaiting collection',
-    icon: <HourglassEmptyIcon sx={{ fontSize: 22 }} />,
-    bg: 'linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%)',
-    chip: 'Pending',
-    chipColor: '#ce93d8',
-  },
-];
+const shortPkr = (n: number) => {
+  if (n >= 1_000_000) return `PKR ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `PKR ${(n / 1_000).toFixed(0)}K`;
+  return pkr(n);
+};
 
 function BarChart({ data }: { data: { month: string; income: number; expense: number; profit: number }[] }) {
   const max = Math.max(...data.flatMap((d) => [d.income, d.expense]), 1);
   return (
-    <Box sx={{ overflowX: 'auto' }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-end', minWidth: 360, height: 180, px: 1 }}>
+    <Box>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-end', height: 160, px: 0.5 }}>
         {data.map((d) => (
           <Box key={d.month} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: 'flex-end', height: 150, width: '100%', justifyContent: 'center' }}>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-end', height: 140, width: '100%', justifyContent: 'center' }}>
               <Box
-                title={`Income: ${fmt(d.income)}`}
-                sx={{ width: 12, height: `${(d.income / max) * 100}%`, minHeight: 3, bgcolor: '#4caf50', borderRadius: '4px 4px 0 0', transition: 'height 0.3s' }}
+                title={`Income: ${pkr(d.income)}`}
+                sx={{
+                  width: 10,
+                  height: `${(d.income / max) * 100}%`,
+                  minHeight: 4,
+                  background: 'linear-gradient(180deg, #4ade80 0%, #22c55e 100%)',
+                  borderRadius: '4px 4px 0 0',
+                }}
               />
               <Box
-                title={`Expense: ${fmt(d.expense)}`}
-                sx={{ width: 12, height: `${(d.expense / max) * 100}%`, minHeight: 3, bgcolor: '#f44336', borderRadius: '4px 4px 0 0', transition: 'height 0.3s' }}
+                title={`Expense: ${pkr(d.expense)}`}
+                sx={{
+                  width: 10,
+                  height: `${(d.expense / max) * 100}%`,
+                  minHeight: 4,
+                  background: 'linear-gradient(180deg, #f87171 0%, #ef4444 100%)',
+                  borderRadius: '4px 4px 0 0',
+                }}
               />
               <Box
-                title={`Profit: ${fmt(d.profit)}`}
-                sx={{ width: 12, height: `${Math.max(d.profit, 0) / max * 100}%`, minHeight: 3, bgcolor: d.profit >= 0 ? '#1976d2' : '#ff9800', borderRadius: '4px 4px 0 0', transition: 'height 0.3s' }}
+                title={`Profit: ${pkr(d.profit)}`}
+                sx={{
+                  width: 10,
+                  height: `${(Math.max(d.profit, 0) / max) * 100}%`,
+                  minHeight: 4,
+                  background: d.profit >= 0
+                    ? 'linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)'
+                    : 'linear-gradient(180deg, #fb923c 0%, #f97316 100%)',
+                  borderRadius: '4px 4px 0 0',
+                }}
               />
             </Stack>
-            <Typography variant="caption" noWrap sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 500 }}>
+            <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', fontWeight: 600 }}>
               {d.month.slice(0, 3)}
             </Typography>
           </Box>
         ))}
       </Stack>
 
-      <Stack direction="row" spacing={2.5} sx={{ mt: 2, px: 1 }}>
+      <Stack direction="row" spacing={2.5} sx={{ mt: 2 }}>
         {[
-          { color: '#4caf50', label: 'Income' },
-          { color: '#f44336', label: 'Expense' },
-          { color: '#1976d2', label: 'Profit' },
+          { color: '#22c55e', label: 'Income' },
+          { color: '#ef4444', label: 'Expense' },
+          { color: '#3b82f6', label: 'Profit' },
         ].map((item) => (
           <Stack key={item.label} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-            <Box sx={{ width: 10, height: 10, bgcolor: item.color, borderRadius: 0.5 }} />
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>{item.label}</Typography>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color }} />
+            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>
+              {item.label}
+            </Typography>
           </Stack>
         ))}
       </Stack>
@@ -121,170 +102,300 @@ function BarChart({ data }: { data: { month: string; income: number; expense: nu
 }
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useGetDashboardStatsQuery();
+  const { data: s, isLoading } = useGetDashboardStatsQuery();
 
-  if (isLoading || !stats) return <Loader />;
+  if (isLoading || !s) return <Loader />;
 
   const now = new Date();
-  const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const dateStr = now.toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const profitRatio = s.totalIncomeThisMonth > 0
+    ? Math.round((s.profitLossThisMonth / s.totalIncomeThisMonth) * 100)
+    : 0;
+
+  const expenseRatio = s.totalIncomeThisMonth > 0
+    ? Math.min(Math.round((s.totalExpenseThisMonth / s.totalIncomeThisMonth) * 100), 100)
+    : 0;
 
   return (
-    <Box>
+    <Box sx={{ pb: 3 }}>
 
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.5px' }}>
-          {greeting} 👋
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {now.toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </Typography>
+      {/* ── Page Header ─────────────────────────────── */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #0a2540 0%, #1565c0 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)' }} />
+        <Box sx={{ position: 'absolute', bottom: -30, right: 80, width: 120, height: 120, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, mb: 0.25 }}>
+            {greeting} 👋
+          </Typography>
+          <Typography sx={{ fontSize: '0.85rem', opacity: 0.65 }}>{dateStr}</Typography>
+        </Box>
       </Box>
 
-      {/* Stat Cards */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {STAT_CARDS(stats).map((card) => (
-          <Grid key={card.label} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                background: card.bg,
-                color: 'white',
-                borderRadius: 3,
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.08)' }} />
-              <Box sx={{ position: 'absolute', bottom: -30, right: 20, width: 70, height: 70, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
-              <CardContent sx={{ p: 2.5, position: 'relative', zIndex: 1 }}>
-                <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Box sx={{ bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 1.5, p: 0.8, display: 'flex' }}>
-                    {card.icon}
-                  </Box>
-                  <Chip label={card.chip} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: card.chipColor, fontWeight: 600, fontSize: '0.7rem', height: 22 }} />
+      {/* ── KPI Cards ───────────────────────────────── */}
+      <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+
+        {/* Income */}
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+          <Card sx={{ borderRadius: 3, border: '1px solid rgba(34,197,94,0.2)', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
+            <CardContent>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ bgcolor: '#22c55e', borderRadius: 2, p: 0.9, display: 'flex' }}>
+                  <AttachMoneyIcon sx={{ color: 'white', fontSize: 22 }} />
+                </Box>
+                <Chip label="Income" size="small" sx={{ bgcolor: 'rgba(34,197,94,0.15)', color: '#15803d', fontWeight: 700, fontSize: '0.68rem' }} />
+              </Stack>
+              <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803d', lineHeight: 1, mb: 0.5 }}>
+                {shortPkr(s.totalIncomeThisMonth)}
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#166534', opacity: 0.7 }}>This month</Typography>
+              <Divider sx={{ my: 1.5, borderColor: 'rgba(34,197,94,0.2)' }} />
+              <Typography sx={{ fontSize: '0.72rem', color: '#166534', opacity: 0.6 }}>
+                All time: <strong>{shortPkr(s.totalIncomeAllTime)}</strong>
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Expense */}
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+          <Card sx={{ borderRadius: 3, border: '1px solid rgba(239,68,68,0.2)', background: 'linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%)' }}>
+            <CardContent>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ bgcolor: '#ef4444', borderRadius: 2, p: 0.9, display: 'flex' }}>
+                  <MoneyOffOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                </Box>
+                <Chip label="Expense" size="small" sx={{ bgcolor: 'rgba(239,68,68,0.12)', color: '#b91c1c', fontWeight: 700, fontSize: '0.68rem' }} />
+              </Stack>
+              <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#b91c1c', lineHeight: 1, mb: 0.5 }}>
+                {shortPkr(s.totalExpenseThisMonth)}
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#991b1b', opacity: 0.7 }}>This month</Typography>
+              <Divider sx={{ my: 1.5, borderColor: 'rgba(239,68,68,0.2)' }} />
+              <Typography sx={{ fontSize: '0.72rem', color: '#991b1b', opacity: 0.6 }}>
+                All time: <strong>{shortPkr(s.totalExpenseAllTime)}</strong>
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Profit / Loss */}
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+          {(() => {
+            const isProfit = s.profitLossThisMonth >= 0;
+            return (
+              <Card sx={{ borderRadius: 3, border: `1px solid ${isProfit ? 'rgba(59,130,246,0.2)' : 'rgba(249,115,22,0.2)'}`, background: isProfit ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)' }}>
+                <CardContent>
+                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ bgcolor: isProfit ? '#3b82f6' : '#f97316', borderRadius: 2, p: 0.9, display: 'flex' }}>
+                      <AccountBalanceWalletOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Chip
+                      icon={isProfit ? <TrendingUpIcon sx={{ fontSize: '14px !important' }} /> : <TrendingDownIcon sx={{ fontSize: '14px !important' }} />}
+                      label={isProfit ? 'Profit' : 'Loss'}
+                      size="small"
+                      sx={{ bgcolor: isProfit ? 'rgba(59,130,246,0.12)' : 'rgba(249,115,22,0.12)', color: isProfit ? '#1d4ed8' : '#c2410c', fontWeight: 700, fontSize: '0.68rem' }}
+                    />
+                  </Stack>
+                  <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: isProfit ? '#1d4ed8' : '#c2410c', lineHeight: 1, mb: 0.5 }}>
+                    {shortPkr(Math.abs(s.profitLossThisMonth))}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.75rem', opacity: 0.7, color: isProfit ? '#1e3a8a' : '#7c2d12' }}>This month</Typography>
+                  <Divider sx={{ my: 1.5, borderColor: isProfit ? 'rgba(59,130,246,0.2)' : 'rgba(249,115,22,0.2)' }} />
+                  <Typography sx={{ fontSize: '0.72rem', opacity: 0.6, color: isProfit ? '#1e3a8a' : '#7c2d12' }}>
+                    All time: <strong>{shortPkr(Math.abs(s.profitLossAllTime))}</strong>
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })()}
+        </Grid>
+
+        {/* Pending */}
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+          <Card sx={{ borderRadius: 3, border: '1px solid rgba(168,85,247,0.2)', background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)' }}>
+            <CardContent>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ bgcolor: '#a855f7', borderRadius: 2, p: 0.9, display: 'flex' }}>
+                  <HourglassTopOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                </Box>
+                <Chip label="Pending" size="small" sx={{ bgcolor: 'rgba(168,85,247,0.12)', color: '#7e22ce', fontWeight: 700, fontSize: '0.68rem' }} />
+              </Stack>
+              <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#7e22ce', lineHeight: 1, mb: 0.5 }}>
+                {shortPkr(s.pendingPayments)}
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#6b21a8', opacity: 0.7 }}>Awaiting collection</Typography>
+              <Divider sx={{ my: 1.5, borderColor: 'rgba(168,85,247,0.2)' }} />
+              <Typography sx={{ fontSize: '0.72rem', color: '#6b21a8', opacity: 0.6 }}>
+                Unpaid invoices & dues
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ── Row 2: Progress + Resource Cards ───────── */}
+      <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+
+        {/* Monthly performance progress */}
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.07)', height: '100%' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Monthly Performance</Typography>
+            <Typography variant="caption" color="text.secondary">Income vs Expense ratio this month</Typography>
+
+            <Stack spacing={2.5} sx={{ mt: 3 }}>
+              <Box>
+                <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#15803d' }}>Income</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#15803d' }}>{shortPkr(s.totalIncomeThisMonth)}</Typography>
                 </Stack>
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '-0.5px' }}>
-                  {card.value}
-                </Typography>
-                <Typography sx={{ fontSize: '0.78rem', opacity: 0.65 }}>
-                  {card.label}
-                </Typography>
-                <Typography sx={{ fontSize: '0.72rem', opacity: 0.55, mt: 0.5 }}>
-                  {card.sub}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Count Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[
-          { label: 'Active Labour', value: stats.activeLabourCount, icon: <EngineeringIcon sx={{ fontSize: 28 }} />, color: '#1976d2', bg: '#e3f2fd' },
-          { label: 'Employees', value: stats.activeEmployeeCount, icon: <PeopleIcon sx={{ fontSize: 28 }} />, color: '#388e3c', bg: '#e8f5e9' },
-          { label: 'Machinery', value: stats.activeMachineryCount, icon: <PrecisionManufacturingIcon sx={{ fontSize: 28 }} />, color: '#7b1fa2', bg: '#f3e5f5' },
-          { label: 'Maintenance Due', value: stats.maintenanceDueCount, icon: <WarningAmberIcon sx={{ fontSize: 28 }} />, color: stats.maintenanceDueCount > 0 ? '#d32f2f' : '#616161', bg: stats.maintenanceDueCount > 0 ? '#ffebee' : '#f5f5f5' },
-        ].map((c) => (
-          <Grid key={c.label} size={{ xs: 6, md: 3 }}>
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{ bgcolor: c.bg, color: c.color, borderRadius: 2, p: 1.2, display: 'flex', flexShrink: 0 }}>
-                {c.icon}
+                <LinearProgress variant="determinate" value={100} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(34,197,94,0.15)', '& .MuiLinearProgress-bar': { bgcolor: '#22c55e', borderRadius: 4 } }} />
               </Box>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.value}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>{c.label}</Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
 
-      {/* Chart + Transactions */}
-      <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                  Monthly Overview
-                </Typography>
-                <Typography variant="caption" color="text.secondary">Last 6 months performance</Typography>
+                <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#b91c1c' }}>Expense</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#b91c1c' }}>{shortPkr(s.totalExpenseThisMonth)}</Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={expenseRatio} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(239,68,68,0.12)', '& .MuiLinearProgress-bar': { bgcolor: '#ef4444', borderRadius: 4 } }} />
+              </Box>
+
+              <Box>
+                <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: s.profitLossThisMonth >= 0 ? '#1d4ed8' : '#c2410c' }}>
+                    {s.profitLossThisMonth >= 0 ? 'Profit Margin' : 'Loss'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: s.profitLossThisMonth >= 0 ? '#1d4ed8' : '#c2410c' }}>
+                    {profitRatio}%
+                  </Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={Math.max(profitRatio, 0)} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(59,130,246,0.12)', '& .MuiLinearProgress-bar': { bgcolor: s.profitLossThisMonth >= 0 ? '#3b82f6' : '#f97316', borderRadius: 4 } }} />
               </Box>
             </Stack>
-            {stats.monthlyChart.length > 0 ? (
-              <BarChart data={stats.monthlyChart} />
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, color: 'text.secondary' }}>
-                <Typography variant="body2">No data yet</Typography>
-              </Box>
-            )}
+
+            <Divider sx={{ my: 2.5 }} />
+
+            <Grid container spacing={1.5}>
+              {[
+                { label: 'Labour', value: s.activeLabourCount, icon: <GroupsOutlinedIcon sx={{ fontSize: 18 }} />, color: '#2563eb', bg: '#eff6ff' },
+                { label: 'Employees', value: s.activeEmployeeCount, icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />, color: '#059669', bg: '#ecfdf5' },
+                { label: 'Machinery', value: s.activeMachineryCount, icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />, color: '#7c3aed', bg: '#f5f3ff' },
+                { label: 'Maintenance', value: s.maintenanceDueCount, icon: <WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />, color: s.maintenanceDueCount > 0 ? '#dc2626' : '#6b7280', bg: s.maintenanceDueCount > 0 ? '#fef2f2' : '#f9fafb' },
+              ].map((c) => (
+                <Grid key={c.label} size={{ xs: 6 }}>
+                  <Box sx={{ bgcolor: c.bg, borderRadius: 2, p: 1.25, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ color: c.color }}>{c.icon}</Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.value}</Typography>
+                      <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', fontWeight: 500 }}>{c.label}</Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Recent Transactions
-            </Typography>
-            <Typography variant="caption" color="text.secondary">Latest financial activity</Typography>
-
-            <List dense disablePadding sx={{ mt: 2 }}>
-              {stats.recentTransactions.length === 0 && (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-                  No transactions yet
-                </Typography>
-              )}
-              {stats.recentTransactions.map((tx, i) => (
-                <Box key={tx.id}>
-                  {i > 0 && <Divider sx={{ my: 0.5 }} />}
-                  <ListItem disablePadding sx={{ py: 1 }}>
-                    <Box
-                      sx={{
-                        mr: 1.5,
-                        width: 34,
-                        height: 34,
-                        borderRadius: 1.5,
-                        bgcolor: tx.type === 'Income' ? '#e8f5e9' : '#ffebee',
-                        color: tx.type === 'Income' ? '#2e7d32' : '#c62828',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {tx.type === 'Income'
-                        ? <TrendingUpIcon sx={{ fontSize: 18 }} />
-                        : <TrendingDownIcon sx={{ fontSize: 18 }} />}
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" noWrap sx={{ fontWeight: 600, maxWidth: 110, color: 'text.primary' }}>
-                          {tx.description || tx.category}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, color: tx.type === 'Income' ? '#2e7d32' : '#c62828', ml: 1, flexShrink: 0 }}
-                        >
-                          {tx.type === 'Income' ? '+' : '-'}{fmt(tx.amount)}
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-                        <Typography variant="caption" color="text.secondary">{tx.category}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  </ListItem>
-                </Box>
-              ))}
-            </List>
+        {/* Bar Chart */}
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.07)', height: '100%' }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>6-Month Overview</Typography>
+                <Typography variant="caption" color="text.secondary">Income, expense & profit trend</Typography>
+              </Box>
+              <Chip
+                icon={<TrendingFlatIcon sx={{ fontSize: '14px !important' }} />}
+                label="Last 6 months"
+                size="small"
+                variant="outlined"
+                sx={{ fontSize: '0.7rem', height: 24 }}
+              />
+            </Stack>
+            {s.monthlyChart.length > 0
+              ? <BarChart data={s.monthlyChart} />
+              : <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160 }}><Typography color="text.secondary" variant="body2">No data yet</Typography></Box>
+            }
           </Paper>
         </Grid>
       </Grid>
+
+      {/* ── Recent Transactions ─────────────────────── */}
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.07)' }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Recent Transactions</Typography>
+            <Typography variant="caption" color="text.secondary">Latest financial activity</Typography>
+          </Box>
+        </Stack>
+
+        {s.recentTransactions.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+            No transactions yet
+          </Typography>
+        ) : (
+          <Grid container spacing={1}>
+            {s.recentTransactions.slice(0, 10).map((tx, i) => (
+              <Grid key={tx.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    bgcolor: i % 2 === 0 ? 'rgba(0,0,0,0.01)' : 'transparent',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 36, height: 36, borderRadius: 1.5, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      bgcolor: tx.type === 'Income' ? '#dcfce7' : '#fee2e2',
+                      color: tx.type === 'Income' ? '#15803d' : '#b91c1c',
+                    }}
+                  >
+                    {tx.type === 'Income'
+                      ? <TrendingUpIcon sx={{ fontSize: 18 }} />
+                      : <TrendingDownIcon sx={{ fontSize: 18 }} />}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography noWrap sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary' }}>
+                      {tx.description || tx.category}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                      {tx.category} · {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
+                    </Typography>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: '0.85rem', fontWeight: 700, flexShrink: 0,
+                      color: tx.type === 'Income' ? '#15803d' : '#b91c1c',
+                    }}
+                  >
+                    {tx.type === 'Income' ? '+' : '-'}{shortPkr(tx.amount)}
+                  </Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Paper>
+
     </Box>
   );
 }
