@@ -126,9 +126,9 @@ export default function Sidebar() {
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: '10.5px',
                   letterSpacing: '0.10em',
-                  opacity: 0.45,
+                  opacity: 0.5,
                   textTransform: 'uppercase',
-                  color: '#9AC6E8',
+                  color: '#C9D4DE',
                 }}
               >
                 {item.section}
@@ -147,23 +147,23 @@ export default function Sidebar() {
                 borderLeft: '2px solid transparent',
                 transition: 'background .15s, opacity .15s',
                 '& .MuiListItemIcon-root': {
-                  color: '#9AC6E8',
+                  color: '#C9D4DE',
                   minWidth: 32,
                 },
                 '& .MuiListItemText-primary': {
-                  color: '#9AC6E8',
+                  color: '#C9D4DE',
                 },
                 '&:hover': {
-                  bgcolor: 'rgba(154,198,232,0.10)',
-                  '& .MuiListItemIcon-root': { color: '#C8DFF0' },
-                  '& .MuiListItemText-primary': { color: '#C8DFF0' },
+                  bgcolor: 'rgba(255,255,255,0.07)',
+                  '& .MuiListItemIcon-root': { color: '#E8EDF2' },
+                  '& .MuiListItemText-primary': { color: '#E8EDF2' },
                 },
                 '&.active': {
                   bgcolor: 'rgba(232,93,31,0.14)',
-                  color: '#F5F2E8',
+                  color: '#ffffff',
                   borderLeft: '2px solid #E85D1F',
                   '& .MuiListItemIcon-root': { color: '#E85D1F' },
-                  '& .MuiListItemText-primary': { color: '#F5F2E8', fontWeight: 600 },
+                  '& .MuiListItemText-primary': { color: '#ffffff', fontWeight: 600 },
                 },
               }}
             >
