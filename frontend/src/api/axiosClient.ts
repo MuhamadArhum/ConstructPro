@@ -4,6 +4,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 
 export const axiosClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

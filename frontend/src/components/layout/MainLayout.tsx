@@ -3,8 +3,11 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
+import { useKeepAlive } from '../../hooks/useKeepAlive';
 
 export default function MainLayout() {
+  useKeepAlive();
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Sidebar />
