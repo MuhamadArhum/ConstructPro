@@ -143,29 +143,27 @@ export default function Sidebar() {
                 mb: '2px',
                 px: '12px',
                 py: '10px',
-                opacity: 0.82,
                 color: '#9AC6E8',
                 borderLeft: '2px solid transparent',
                 transition: 'background .15s, opacity .15s',
                 '& .MuiListItemIcon-root': {
                   color: '#9AC6E8',
                   minWidth: 32,
-                  opacity: 0.75,
+                },
+                '& .MuiListItemText-primary': {
+                  color: '#9AC6E8',
                 },
                 '&:hover': {
-                  bgcolor: 'rgba(154,198,232,0.08)',
-                  opacity: 1,
+                  bgcolor: 'rgba(154,198,232,0.10)',
+                  '& .MuiListItemIcon-root': { color: '#C8DFF0' },
+                  '& .MuiListItemText-primary': { color: '#C8DFF0' },
                 },
                 '&.active': {
-                  bgcolor: 'rgba(232,93,31,0.12)',
-                  opacity: 1,
+                  bgcolor: 'rgba(232,93,31,0.14)',
                   color: '#F5F2E8',
                   borderLeft: '2px solid #E85D1F',
-                  '& .MuiListItemIcon-root': {
-                    color: '#E85D1F',
-                    opacity: 1,
-                  },
-                  '& .MuiListItemText-primary': { fontWeight: 600 },
+                  '& .MuiListItemIcon-root': { color: '#E85D1F' },
+                  '& .MuiListItemText-primary': { color: '#F5F2E8', fontWeight: 600 },
                 },
               }}
             >
