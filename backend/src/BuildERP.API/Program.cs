@@ -135,7 +135,23 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-// Serve static files (frontend build from wwwroot)
+// SPA rewrite: any non-API, non-file-extension request → /index.html
+// This must come BEFORE UseStaticFiles so React Router handles all frontend routes
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "/";
+    var isApiRoute      = path.StartsWith("/api/",     StringComparison.OrdinalIgnoreCase);
+    var isHealthRoute   = path.StartsWith("/health",   StringComparison.OrdinalIgnoreCase);
+    var isSwaggerRoute  = path.StartsWith("/swagger",  StringComparison.OrdinalIgnoreCase);
+    var hasFileExtension = Path.HasExtension(path);
+
+    if (!isApiRoute && !isHealthRoute && !isSwaggerRoute && !hasFileExtension)
+    {
+        context.Request.Path = "/index.html";
+    }
+    await next();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -144,8 +160,6 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
-
-// SPA fallback — all unmatched routes return index.html so React Router handles them
 app.MapFallbackToFile("index.html");
 
 app.Run();
