@@ -1,5 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { Outlet } from 'react-router-dom';
+import AppLogo from '../common/AppLogo';
 
 const FEATURES = [
   'Finance & Expense Tracking',
@@ -35,19 +36,8 @@ export default function AuthLayout() {
 
         <Box sx={{ position: 'relative', zIndex: 1 }}>
           {/* Brand mark */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', mb: 6 }}>
-            <Box sx={{ width: 9, height: 9, background: '#E85D1F', flexShrink: 0 }} />
-            <Typography
-              sx={{
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: '18px',
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                color: '#F5F2E8',
-              }}
-            >
-              CONSTRUCTPRO
-            </Typography>
+          <Box sx={{ mb: 6 }}>
+            <AppLogo size="md" variant="dark" />
           </Box>
 
           {/* Headline */}

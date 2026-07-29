@@ -21,6 +21,7 @@ import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Typograp
 import { NavLink } from 'react-router-dom';
 import { useAppSelector } from '../../app/hooks';
 import { Perms } from '../../utils/permissions';
+import AppLogo from '../common/AppLogo';
 
 export const SIDEBAR_WIDTH = 230;
 
@@ -87,29 +88,9 @@ export default function Sidebar() {
           px: 2.5,
           py: '22px',
           borderBottom: '1px solid rgba(154,198,232,0.18)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.25,
         }}
       >
-        <Box
-          sx={{
-            width: 9, height: 9,
-            backgroundColor: '#E85D1F',
-            flexShrink: 0,
-          }}
-        />
-        <Typography
-          sx={{
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            fontSize: '17px',
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            color: '#F5F2E8',
-          }}
-        >
-          CONSTRUCTPRO
-        </Typography>
+        <AppLogo size="sm" variant="dark" />
       </Box>
 
       {/* Nav Items */}

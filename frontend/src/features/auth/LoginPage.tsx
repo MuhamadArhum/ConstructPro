@@ -18,6 +18,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { useLoginMutation } from './authApi';
 import { setCredentials } from './authSlice';
 import type { ApiError } from '../../types/common.types';
+import AppLogo from '../../components/common/AppLogo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -44,12 +45,9 @@ export default function LoginPage() {
   return (
     <>
       <Box sx={{ textAlign: 'center', mb: 3 }}>
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="ConstructPro"
-          sx={{ height: 44, width: 'auto', mb: 3 }}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <AppLogo size="lg" variant="light" />
+        </Box>
         <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
           Sign in to your account
         </Typography>
