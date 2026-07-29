@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -35,6 +34,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetIncomesQuery, useGetIncomeSummaryQuery, useDeleteIncomeMutation } from './incomeApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 import type { IncomeCategory } from '../../types/income.types';
 
 const categoryLabels: Record<IncomeCategory, string> = {
@@ -156,70 +156,68 @@ export default function IncomeListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Project</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell>Paid</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Chip label={categoryLabels[row.category]} size="small" />
-                  </TableCell>
-                  <TableCell>{row.description}</TableCell>
-                  <TableCell>{row.customerName ?? '-'}</TableCell>
-                  <TableCell>{row.projectName ?? '-'}</TableCell>
-                  <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>
-                    {fmt(row.amount)}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={row.isPaid ? 'Paid' : 'Pending'}
-                      color={row.isPaid ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <PermissionGate permission={Perms.Income.Edit}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => navigate(`/income/${row.id}/edit`)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                    <PermissionGate permission={Perms.Income.Delete}>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">No records found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Customer</TableCell>
+              <TableCell>Project</TableCell>
+              <TableCell align="right">Amount</TableCell>
+              <TableCell>Paid</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={8} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Chip label={categoryLabels[row.category]} size="small" />
+                    </TableCell>
+                    <TableCell>{row.description}</TableCell>
+                    <TableCell>{row.customerName ?? '-'}</TableCell>
+                    <TableCell>{row.projectName ?? '-'}</TableCell>
+                    <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>
+                      {fmt(row.amount)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={row.isPaid ? 'Paid' : 'Pending'}
+                        color={row.isPaid ? 'success' : 'warning'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <PermissionGate permission={Perms.Income.Edit}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => navigate(`/income/${row.id}/edit`)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                      <PermissionGate permission={Perms.Income.Delete}>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">No records found</TableCell>
+                  </TableRow>
+                )}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}

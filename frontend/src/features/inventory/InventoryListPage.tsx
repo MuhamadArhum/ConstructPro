@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Chip, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,6 +11,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetInventoryItemsQuery, useDeleteInventoryItemMutation } from './inventoryApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n?: number) => n != null ? `PKR ${n.toLocaleString()}` : '-';
 
@@ -56,30 +57,43 @@ export default function InventoryListPage() {
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Category</TableCell><TableCell>Unit</TableCell><TableCell align="right">Stock</TableCell><TableCell align="right">Unit Price</TableCell><TableCell>Supplier</TableCell><TableCell>Stock Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
-                  <TableCell>{row.category ?? '-'}</TableCell>
-                  <TableCell>{row.unit ?? '-'}</TableCell>
-                  <TableCell align="right">{row.currentStock}</TableCell>
-                  <TableCell align="right">{fmt(row.unitPrice)}</TableCell>
-                  <TableCell>{row.supplierName ?? '-'}</TableCell>
-                  <TableCell><Chip label={row.isLowStock ? 'Low Stock' : 'OK'} color={row.isLowStock ? 'error' : 'success'} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Stock Transactions"><IconButton size="small" onClick={() => navigate(`/inventory/${row.id}/transactions`)}><SwapVertIcon fontSize="small" /></IconButton></Tooltip>
-                    <PermissionGate permission={Perms.Inventory.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/inventory/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                    <PermissionGate permission={Perms.Inventory.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No items found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Unit</TableCell>
+              <TableCell align="right">Stock</TableCell>
+              <TableCell align="right">Unit Price</TableCell>
+              <TableCell>Supplier</TableCell>
+              <TableCell>Stock Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={8} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
+                    <TableCell>{row.category ?? '-'}</TableCell>
+                    <TableCell>{row.unit ?? '-'}</TableCell>
+                    <TableCell align="right">{row.currentStock}</TableCell>
+                    <TableCell align="right">{fmt(row.unitPrice)}</TableCell>
+                    <TableCell>{row.supplierName ?? '-'}</TableCell>
+                    <TableCell><Chip label={row.isLowStock ? 'Low Stock' : 'OK'} color={row.isLowStock ? 'error' : 'success'} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Stock Transactions"><IconButton size="small" onClick={() => navigate(`/inventory/${row.id}/transactions`)}><SwapVertIcon fontSize="small" /></IconButton></Tooltip>
+                      <PermissionGate permission={Perms.Inventory.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/inventory/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                      <PermissionGate permission={Perms.Inventory.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No items found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 20, 50]} />
       </TableContainer>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete Item" message="Are you sure?" confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />

@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -35,6 +34,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetExpensesQuery, useGetExpenseSummaryQuery, useDeleteExpenseMutation } from './expenseApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 import type { ExpenseCategory } from '../../types/expense.types';
 
 const categoryLabels: Record<ExpenseCategory, string> = {
@@ -160,60 +160,58 @@ export default function ExpenseListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Vendor</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Chip label={categoryLabels[row.category]} size="small" />
-                  </TableCell>
-                  <TableCell>{row.description}</TableCell>
-                  <TableCell>{row.vendor ?? '-'}</TableCell>
-                  <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>
-                    {fmt(row.amount)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <PermissionGate permission={Perms.Expense.Edit}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => navigate(`/expense/${row.id}/edit`)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                    <PermissionGate permission={Perms.Expense.Delete}>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">No records found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Vendor</TableCell>
+              <TableCell align="right">Amount</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={6} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Chip label={categoryLabels[row.category]} size="small" />
+                    </TableCell>
+                    <TableCell>{row.description}</TableCell>
+                    <TableCell>{row.vendor ?? '-'}</TableCell>
+                    <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>
+                      {fmt(row.amount)}
+                    </TableCell>
+                    <TableCell align="right">
+                      <PermissionGate permission={Perms.Expense.Edit}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => navigate(`/expense/${row.id}/edit`)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                      <PermissionGate permission={Perms.Expense.Delete}>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">No records found</TableCell>
+                  </TableRow>
+                )}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}

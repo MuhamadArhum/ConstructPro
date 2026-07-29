@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -36,6 +35,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetMachineriesQuery, useDeleteMachineryMutation, useGetMaintenanceDueQuery } from './machineryApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 import type { MachineryStatus } from '../../types/machinery.types';
 
 const statusColor: Record<MachineryStatus, 'success' | 'warning' | 'default'> = {
@@ -136,74 +136,72 @@ export default function MachineryListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Model</TableCell>
-                <TableCell>Serial No.</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Running Hours</TableCell>
-                <TableCell>Next Maintenance</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
-                  <TableCell>{row.model ?? '-'}</TableCell>
-                  <TableCell>{row.serialNumber ?? '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={statusLabel[row.status]}
-                      color={statusColor[row.status]}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">{row.totalRunningHours.toLocaleString()} hrs</TableCell>
-                  <TableCell
-                    sx={{ color: row.isMaintenanceDue ? 'error.main' : 'text.primary', fontWeight: row.isMaintenanceDue ? 600 : 400 }}
-                  >
-                    {row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}
-                    {row.isMaintenanceDue && ' ⚠'}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Maintenance History">
-                      <IconButton size="small" color="primary" onClick={() => navigate(`/machinery/${row.id}/maintenance`)}>
-                        <BuildIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <PermissionGate permission={Perms.Machinery.Edit}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => navigate(`/machinery/${row.id}/edit`)}>
-                          <EditIcon fontSize="small" />
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Model</TableCell>
+              <TableCell>Serial No.</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Running Hours</TableCell>
+              <TableCell>Next Maintenance</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={7} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
+                    <TableCell>{row.model ?? '-'}</TableCell>
+                    <TableCell>{row.serialNumber ?? '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={statusLabel[row.status]}
+                        color={statusColor[row.status]}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">{row.totalRunningHours.toLocaleString()} hrs</TableCell>
+                    <TableCell
+                      sx={{ color: row.isMaintenanceDue ? 'error.main' : 'text.primary', fontWeight: row.isMaintenanceDue ? 600 : 400 }}
+                    >
+                      {row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}
+                      {row.isMaintenanceDue && ' ⚠'}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Maintenance History">
+                        <IconButton size="small" color="primary" onClick={() => navigate(`/machinery/${row.id}/maintenance`)}>
+                          <BuildIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </PermissionGate>
-                    <PermissionGate permission={Perms.Machinery.Delete}>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">No machinery found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
+                      <PermissionGate permission={Perms.Machinery.Edit}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => navigate(`/machinery/${row.id}/edit`)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                      <PermissionGate permission={Perms.Machinery.Delete}>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">No machinery found</TableCell>
+                  </TableRow>
+                )}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}

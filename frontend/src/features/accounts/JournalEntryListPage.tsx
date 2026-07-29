@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Chip, CircularProgress, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -8,6 +8,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useGetJournalEntriesQuery, useDeleteJournalEntryMutation } from './accountsApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -48,28 +49,40 @@ export default function JournalEntryListPage() {
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead><TableRow><TableCell>Entry No.</TableCell><TableCell>Date</TableCell><TableCell>Description</TableCell><TableCell>Reference</TableCell><TableCell align="right">Total Debit</TableCell><TableCell>Posted</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.entryNumber}</TableCell>
-                  <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{row.description}</TableCell>
-                  <TableCell>{row.reference ?? '-'}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.totalDebit)}</TableCell>
-                  <TableCell><Chip label={row.isPosted ? 'Posted' : 'Draft'} color={row.isPosted ? 'success' : 'warning'} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/accounts/journal/${row.id}`)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip>
-                    <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No journal entries found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Entry No.</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Reference</TableCell>
+              <TableCell align="right">Total Debit</TableCell>
+              <TableCell>Posted</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={7} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.entryNumber}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{row.description}</TableCell>
+                    <TableCell>{row.reference ?? '-'}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.totalDebit)}</TableCell>
+                    <TableCell><Chip label={row.isPosted ? 'Posted' : 'Draft'} color={row.isPosted ? 'success' : 'warning'} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/accounts/journal/${row.id}`)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip>
+                      <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No journal entries found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 20, 50]} />
       </TableContainer>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete Entry" message="Are you sure?" confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Chip, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,6 +12,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetVehiclesQuery, useDeleteVehicleMutation } from './vehicleApi';
 import type { VehicleStatus } from '../../types/vehicle.types';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const statusColors: Record<VehicleStatus, 'success' | 'warning' | 'error'> = {
   Active: 'success', UnderMaintenance: 'warning', Retired: 'error',
@@ -61,39 +62,41 @@ export default function VehicleListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Reg. No.</TableCell>
-                <TableCell>Make / Model</TableCell>
-                <TableCell>Driver</TableCell>
-                <TableCell>Mileage (km)</TableCell>
-                <TableCell>Next Maintenance</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.registrationNumber}</TableCell>
-                  <TableCell>{row.make} {row.model ?? ''} {row.year ? `(${row.year})` : ''}</TableCell>
-                  <TableCell>{row.driverName ?? '-'}</TableCell>
-                  <TableCell>{row.totalMileage.toLocaleString()}</TableCell>
-                  <TableCell>{row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell><Chip label={row.statusDisplay} color={statusColors[row.status]} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Maintenance"><IconButton size="small" onClick={() => navigate(`/vehicles/${row.id}/maintenance`)}><BuildIcon fontSize="small" /></IconButton></Tooltip>
-                    <PermissionGate permission={Perms.Vehicles.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/vehicles/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                    <PermissionGate permission={Perms.Vehicles.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No vehicles found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Reg. No.</TableCell>
+              <TableCell>Make / Model</TableCell>
+              <TableCell>Driver</TableCell>
+              <TableCell>Mileage (km)</TableCell>
+              <TableCell>Next Maintenance</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={7} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.registrationNumber}</TableCell>
+                    <TableCell>{row.make} {row.model ?? ''} {row.year ? `(${row.year})` : ''}</TableCell>
+                    <TableCell>{row.driverName ?? '-'}</TableCell>
+                    <TableCell>{row.totalMileage.toLocaleString()}</TableCell>
+                    <TableCell>{row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}</TableCell>
+                    <TableCell><Chip label={row.statusDisplay} color={statusColors[row.status]} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Maintenance"><IconButton size="small" onClick={() => navigate(`/vehicles/${row.id}/maintenance`)}><BuildIcon fontSize="small" /></IconButton></Tooltip>
+                      <PermissionGate permission={Perms.Vehicles.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/vehicles/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                      <PermissionGate permission={Perms.Vehicles.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No vehicles found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 20, 50]} />
       </TableContainer>
 

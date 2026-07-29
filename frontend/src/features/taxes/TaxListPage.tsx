@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Chip, CircularProgress, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,6 +11,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetTaxRecordsQuery, useGetTaxSummaryQuery, useDeleteTaxRecordMutation } from './taxApi';
 import type { TaxType } from '../../types/tax.types';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const taxTypeLabels: Record<TaxType, string> = { SalesTax: 'Sales Tax', IncomeTax: 'Income Tax', PRA: 'PRA', WithholdingTax: 'Withholding Tax (WHT)', SecurityDeposit: 'Security Deposit' };
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -83,28 +84,40 @@ export default function TaxListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead><TableRow><TableCell>Tax Type</TableCell><TableCell>Period</TableCell><TableCell>Due Date</TableCell><TableCell>Reference</TableCell><TableCell align="right">Amount</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell><Chip label={taxTypeLabels[row.taxType]} size="small" variant="outlined" /></TableCell>
-                  <TableCell>{new Date(row.periodStart).toLocaleDateString()} – {new Date(row.periodEnd).toLocaleDateString()}</TableCell>
-                  <TableCell>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell>{row.reference ?? '-'}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.amount)}</TableCell>
-                  <TableCell><Chip label={row.isPaid ? 'Paid' : 'Pending'} color={row.isPaid ? 'success' : 'warning'} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <PermissionGate permission={Perms.Tax.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/tax/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                    <PermissionGate permission={Perms.Tax.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No tax records found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Tax Type</TableCell>
+              <TableCell>Period</TableCell>
+              <TableCell>Due Date</TableCell>
+              <TableCell>Reference</TableCell>
+              <TableCell align="right">Amount</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={7} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell><Chip label={taxTypeLabels[row.taxType]} size="small" variant="outlined" /></TableCell>
+                    <TableCell>{new Date(row.periodStart).toLocaleDateString()} – {new Date(row.periodEnd).toLocaleDateString()}</TableCell>
+                    <TableCell>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '-'}</TableCell>
+                    <TableCell>{row.reference ?? '-'}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.amount)}</TableCell>
+                    <TableCell><Chip label={row.isPaid ? 'Paid' : 'Pending'} color={row.isPaid ? 'success' : 'warning'} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <PermissionGate permission={Perms.Tax.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/tax/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                      <PermissionGate permission={Perms.Tax.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No tax records found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 20, 50]} />
       </TableContainer>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete Tax Record" message="Are you sure?" confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />

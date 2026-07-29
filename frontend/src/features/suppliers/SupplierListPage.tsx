@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Chip, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -10,6 +10,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetSuppliersQuery, useDeleteSupplierMutation } from './supplierApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -54,29 +55,42 @@ export default function SupplierListPage() {
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Company</TableCell><TableCell>Category</TableCell><TableCell>Phone</TableCell><TableCell align="right">Total Purchased</TableCell><TableCell align="right">Outstanding</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
-                  <TableCell>{row.companyName ?? '-'}</TableCell>
-                  <TableCell>{row.category ?? '-'}</TableCell>
-                  <TableCell>{row.phone ?? '-'}</TableCell>
-                  <TableCell align="right">{fmt(row.totalPurchased)}</TableCell>
-                  <TableCell align="right" sx={{ color: row.outstandingBalance > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>{fmt(row.outstandingBalance)}</TableCell>
-                  <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <PermissionGate permission={Perms.Suppliers.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/suppliers/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                    <PermissionGate permission={Perms.Suppliers.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No suppliers found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Company</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell align="right">Total Purchased</TableCell>
+              <TableCell align="right">Outstanding</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={8} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
+                    <TableCell>{row.companyName ?? '-'}</TableCell>
+                    <TableCell>{row.category ?? '-'}</TableCell>
+                    <TableCell>{row.phone ?? '-'}</TableCell>
+                    <TableCell align="right">{fmt(row.totalPurchased)}</TableCell>
+                    <TableCell align="right" sx={{ color: row.outstandingBalance > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>{fmt(row.outstandingBalance)}</TableCell>
+                    <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <PermissionGate permission={Perms.Suppliers.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/suppliers/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                      <PermissionGate permission={Perms.Suppliers.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No suppliers found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 20, 50]} />
       </TableContainer>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete Supplier" message="Are you sure?" confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />

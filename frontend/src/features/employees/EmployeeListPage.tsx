@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   FormControl,
   IconButton,
   InputLabel,
@@ -33,6 +32,7 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetEmployeesQuery, useDeactivateEmployeeMutation } from './employeesApi';
+import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -108,78 +108,76 @@ export default function EmployeeListPage() {
       </Paper>
 
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Full Name</TableCell>
-                <TableCell>Designation</TableCell>
-                <TableCell>Department</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>CNIC</TableCell>
-                <TableCell align="right">Basic Salary</TableCell>
-                <TableCell>Join Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontWeight: 500 }}>{row.fullName}</TableCell>
-                  <TableCell>{row.designation ?? '-'}</TableCell>
-                  <TableCell>{row.department ?? '-'}</TableCell>
-                  <TableCell>{row.phoneNumber ?? '-'}</TableCell>
-                  <TableCell>{row.cnic ?? '-'}</TableCell>
-                  <TableCell align="right">{fmt(row.basicSalary)}</TableCell>
-                  <TableCell>{new Date(row.joinDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={row.isActive ? 'Active' : 'Inactive'}
-                      color={row.isActive ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Salary">
-                      <IconButton size="small" color="primary" onClick={() => navigate(`/employees/${row.id}/salary`)}>
-                        <PaymentsIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <PermissionGate permission={Perms.Employees.Edit}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => navigate(`/employees/${row.id}/edit`)}>
-                          <EditIcon fontSize="small" />
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Full Name</TableCell>
+              <TableCell>Designation</TableCell>
+              <TableCell>Department</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>CNIC</TableCell>
+              <TableCell align="right">Basic Salary</TableCell>
+              <TableCell>Join Date</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={9} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontWeight: 500 }}>{row.fullName}</TableCell>
+                    <TableCell>{row.designation ?? '-'}</TableCell>
+                    <TableCell>{row.department ?? '-'}</TableCell>
+                    <TableCell>{row.phoneNumber ?? '-'}</TableCell>
+                    <TableCell>{row.cnic ?? '-'}</TableCell>
+                    <TableCell align="right">{fmt(row.basicSalary)}</TableCell>
+                    <TableCell>{new Date(row.joinDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={row.isActive ? 'Active' : 'Inactive'}
+                        color={row.isActive ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Salary">
+                        <IconButton size="small" color="primary" onClick={() => navigate(`/employees/${row.id}/salary`)}>
+                          <PaymentsIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </PermissionGate>
-                    <PermissionGate permission={Perms.Employees.Delete}>
-                      <Tooltip title="Deactivate">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          disabled={!row.isActive}
-                          onClick={() => setDeactivateId(row.id)}
-                        >
-                          <BlockIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && (
-                <TableRow>
-                  <TableCell colSpan={9} align="center">No records found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
+                      <PermissionGate permission={Perms.Employees.Edit}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => navigate(`/employees/${row.id}/edit`)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                      <PermissionGate permission={Perms.Employees.Delete}>
+                        <Tooltip title="Deactivate">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={!row.isActive}
+                            onClick={() => setDeactivateId(row.id)}
+                          >
+                            <BlockIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">No records found</TableCell>
+                  </TableRow>
+                )}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}
