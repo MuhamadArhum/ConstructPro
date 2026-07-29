@@ -125,9 +125,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
@@ -138,11 +135,17 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+// Serve static files (frontend build from wwwroot)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
+
+// SPA fallback — all unmatched routes return index.html so React Router handles them
 app.MapFallbackToFile("index.html");
 
 app.Run();
