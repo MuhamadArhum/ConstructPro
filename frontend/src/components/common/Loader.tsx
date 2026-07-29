@@ -1,17 +1,17 @@
+import { Box, LinearProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Box, CircularProgress, Fade, Typography } from '@mui/material';
-import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 
 interface LoaderProps {
   minHeight?: string | number;
+  label?: string;
 }
 
-export default function Loader({ minHeight = '220px' }: LoaderProps) {
+export default function Loader({ minHeight = '300px', label }: LoaderProps) {
   const [showSlow, setShowSlow] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSlow(true), 4000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setShowSlow(true), 4000);
+    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -19,27 +19,61 @@ export default function Loader({ minHeight = '220px' }: LoaderProps) {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
         minHeight,
-        gap: 2,
+        gap: '20px',
       }}
     >
-      <CircularProgress size={36} thickness={4} />
+      {/* Brand mark */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '4px' }}>
+        <Box sx={{ width: 7, height: 7, bgcolor: '#E85D1F', flexShrink: 0 }} />
+        <Typography
+          sx={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px',
+            letterSpacing: '0.12em',
+            color: '#6B7178',
+            textTransform: 'uppercase',
+          }}
+        >
+          {label ?? 'Loading'}
+        </Typography>
+      </Box>
 
-      <Fade in={showSlow} timeout={600}>
-        <Box sx={{ textAlign: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, mb: 0.5 }}>
-            <CloudOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              Server is starting up…
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', opacity: 0.7 }}>
-            Free tier servers sleep when idle. Please wait a moment.
-          </Typography>
-        </Box>
-      </Fade>
+      {/* Linear progress bar */}
+      <Box sx={{ width: 160 }}>
+        <LinearProgress
+          sx={{
+            height: 3,
+            borderRadius: 2,
+            bgcolor: '#D3CDBA',
+            '& .MuiLinearProgress-bar': {
+              bgcolor: '#E85D1F',
+              borderRadius: 2,
+            },
+          }}
+        />
+      </Box>
+
+      {/* Slow server notice */}
+      {showSlow && (
+        <Typography
+          sx={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '10.5px',
+            color: '#6B7178',
+            opacity: 0.7,
+            textAlign: 'center',
+            maxWidth: 240,
+            lineHeight: 1.6,
+          }}
+        >
+          Free tier server is waking up.
+          <br />
+          Please wait a moment…
+        </Typography>
+      )}
     </Box>
   );
 }
