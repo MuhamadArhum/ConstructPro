@@ -25,6 +25,11 @@ export class CreateUserDto {
   @MinLength(8)
   password: string;
 
+  @ApiPropertyOptional({ example: 'ProjectManager' })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
   @ApiPropertyOptional({ type: [String], example: ['role-uuid-1'] })
   @IsOptional()
   @IsArray()
@@ -47,6 +52,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: 'ProjectManager' })
+  @IsOptional()
+  @IsString()
+  role?: string;
 
   @ApiPropertyOptional({ type: [String], example: ['role-uuid-1'] })
   @IsOptional()

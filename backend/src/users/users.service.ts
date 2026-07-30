@@ -73,19 +73,29 @@ export class UsersService {
     return this.mapUser(user);
   }
 
+  private async resolveRoleIds(dto: { role?: string; roleIds?: string[] }): Promise<string[]> {
+    if (dto.roleIds && dto.roleIds.length > 0) return dto.roleIds;
+    if (dto.role) {
+      const found = await this.prisma.role.findFirst({ where: { name: dto.role } });
+      if (found) return [found.id];
+    }
+    return [];
+  }
+
   async create(dto: CreateUserDto) {
     const passwordHash = await bcrypt.hash(dto.password, 12);
+    const roleIds = await this.resolveRoleIds(dto);
 
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
         email: dto.email,
         passwordHash,
-        ...(dto.roleIds && dto.roleIds.length > 0
+        ...(roleIds.length > 0
           ? {
               roles: {
                 createMany: {
-                  data: dto.roleIds.map((roleId) => ({ roleId })),
+                  data: roleIds.map((roleId) => ({ roleId })),
                   skipDuplicates: true,
                 },
               },
@@ -115,12 +125,13 @@ export class UsersService {
     if (dto.email !== undefined) updateData.email = dto.email;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-    if (dto.roleIds !== undefined) {
+    if (dto.role !== undefined || dto.roleIds !== undefined) {
+      const roleIds = await this.resolveRoleIds(dto);
       await this.prisma.userRole.deleteMany({ where: { userId: id } });
 
-      if (dto.roleIds.length > 0) {
+      if (roleIds.length > 0) {
         await this.prisma.userRole.createMany({
-          data: dto.roleIds.map((roleId) => ({ userId: id, roleId })),
+          data: roleIds.map((roleId) => ({ userId: id, roleId })),
           skipDuplicates: true,
         });
       }
