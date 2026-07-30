@@ -61,8 +61,9 @@ export default function ExpenseListPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetExpensesQuery({

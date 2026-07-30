@@ -5,8 +5,9 @@ import { useGetIncomeExpenseReportQuery, useGetInventoryReportQuery, useGetLabou
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
 export default function ReportsPage() {
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
 
   const { data: ieReport, isLoading: loadingIE } = useGetIncomeExpenseReportQuery(query);
