@@ -4,7 +4,7 @@ services:
     name: constructpro-api
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build && npm run seed
+    buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss && npm run build && npm run seed
     startCommand: node dist/src/main.js
     plan: free
     healthCheckPath: /api/docs
