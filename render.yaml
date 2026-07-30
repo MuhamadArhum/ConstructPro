@@ -1,41 +1,36 @@
 services:
-  # ── Backend API (Docker) ──────────────────────────────────────────────────
+  # ── Backend API (NestJS + Node.js) ───────────────────────────────────────
   - type: web
     name: constructpro-api
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build && npm run seed
+    startCommand: node dist/src/main.js
     plan: free
-    healthCheckPath: /health
+    healthCheckPath: /api/docs
     envVars:
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ASPNETCORE_URLS
-        value: http://+:8080
-      - key: ConnectionStrings__DefaultConnection
-        sync: false          # set manually in Render dashboard
-      - key: Jwt__Secret
-        sync: false          # set manually in Render dashboard
-      - key: Jwt__Issuer
-        value: BuildERP.API
-      - key: Jwt__Audience
-        value: BuildERP.Client
-      - key: Jwt__AccessTokenExpirationMinutes
-        value: "30"
-      - key: Jwt__RefreshTokenExpirationDays
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        sync: false          # Set in Render dashboard — your PostgreSQL connection string
+      - key: JWT_SECRET
+        sync: false          # Set in Render dashboard — min 32 chars
+      - key: JWT_EXPIRES_IN
+        value: "30m"
+      - key: JWT_REFRESH_DAYS
         value: "7"
-      - key: Jwt__RememberMeRefreshTokenExpirationDays
-        value: "30"
-      - key: Cors__AllowedOrigins__0
-        sync: false          # set to your frontend Render URL
-      - key: FrontendBaseUrl
-        sync: false          # set to your frontend Render URL
-      - key: DefaultAdmin__Email
-        value: admin@builderp.local
-      - key: DefaultAdmin__Password
-        sync: false          # set manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false          # Set to your frontend Render URL e.g. https://constructpro.onrender.com
+      - key: CORS_ORIGINS
+        sync: false          # Set to your frontend Render URL e.g. https://constructpro.onrender.com
+      - key: ADMIN_EMAIL
+        value: admin@constructpro.com
+      - key: ADMIN_PASSWORD
+        sync: false          # Set in Render dashboard
 
-  # ── Frontend (Static Site) ────────────────────────────────────────────────
+  # ── Frontend (React + Vite Static Site) ──────────────────────────────────
   - type: web
     name: constructpro-frontend
     runtime: static
@@ -45,7 +40,7 @@ services:
     plan: free
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false          # set to https://constructpro-api.onrender.com/api
+        sync: false          # Set to https://constructpro-api.onrender.com/api
     routes:
       - type: rewrite
         source: /*

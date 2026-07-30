@@ -22,7 +22,18 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(node_modules/.bin/vite build *)",
       "Bash(xargs cat *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git commit -m 'Update sidebar text to soft gray-white \\(#C9D4DE\\) *)",
+      "Bash(git commit -m 'Fix SPA routing: move static files after CORS middleware *)",
+      "Bash(git commit -m 'Fix hard refresh 404: SPA rewrite middleware before static files *)",
+      "Bash(git merge *)",
+      "Bash(git -C \"D:\\\\ConstructPro\\\\.claude\\\\worktrees\\\\agent-a916dd1e\" status --short)",
+      "Bash(git *)",
+      "Bash(npm i *)",
+      "Bash(nest new *)",
+      "Bash(npx prisma *)",
+      "Read(//d/d/**)",
+      "Read(//d/d/ConstructPro/**)"
     ]
   }
 }

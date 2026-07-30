@@ -1,0 +1,193 @@
+import {
+  IsString,
+  IsOptional,
+  IsNotEmpty,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+
+export class CreateEmployeeDto {
+  @ApiProperty({ example: 'Muhammad Ali' })
+  @IsString()
+  @IsNotEmpty()
+  fullName: string;
+
+  @ApiPropertyOptional({ example: 'Site Engineer' })
+  @IsOptional()
+  @IsString()
+  designation?: string;
+
+  @ApiPropertyOptional({ example: 'Engineering' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional({ example: '+92-300-1111111' })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({ example: '35202-7654321-1' })
+  @IsOptional()
+  @IsString()
+  cnic?: string;
+
+  @ApiPropertyOptional({ example: '789 Model Town, Lahore' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ example: 50000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  basicSalary: number;
+
+  @ApiProperty({ example: '2024-01-15' })
+  @IsDateString()
+  joinDate: string;
+}
+
+export class UpdateEmployeeDto {
+  @ApiPropertyOptional({ example: 'Muhammad Ali' })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiPropertyOptional({ example: 'Site Engineer' })
+  @IsOptional()
+  @IsString()
+  designation?: string;
+
+  @ApiPropertyOptional({ example: 'Engineering' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional({ example: '+92-300-1111111' })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({ example: '35202-7654321-1' })
+  @IsOptional()
+  @IsString()
+  cnic?: string;
+
+  @ApiPropertyOptional({ example: '789 Model Town, Lahore' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ example: 55000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  basicSalary?: number;
+
+  @ApiPropertyOptional({ example: '2024-01-15' })
+  @IsOptional()
+  @IsDateString()
+  joinDate?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class ProcessSalaryDto {
+  @ApiProperty({ example: 7, description: 'Month (1-12)' })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(12)
+  month: number;
+
+  @ApiProperty({ example: 2024 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(2000)
+  year: number;
+
+  @ApiProperty({ example: 50000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  basicSalary: number;
+
+  @ApiPropertyOptional({ example: 5000, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  bonus?: number = 0;
+
+  @ApiPropertyOptional({ example: 2000, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  deductions?: number = 0;
+
+  @ApiPropertyOptional({ example: 26 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  daysPresent?: number;
+
+  @ApiPropertyOptional({ example: 30, default: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  totalDays?: number = 30;
+
+  @ApiPropertyOptional({ example: 'On-time payment' })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class EmployeeQueryDto {
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ example: 10, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number = 10;
+
+  @ApiPropertyOptional({ example: 'Muhammad' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 'Engineering' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  isActive?: boolean;
+}
