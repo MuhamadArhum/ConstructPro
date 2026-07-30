@@ -2,8 +2,9 @@ import { useState } from 'react';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircleOutlined';
 import CancelIcon from '@mui/icons-material/CancelOutlined';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
-  Alert, Box, Chip, InputAdornment, Paper,
+  Alert, Box, Chip, IconButton, InputAdornment, Paper, Tooltip,
   Table, TableBody, TableCell, TableContainer, TableHead,
   TablePagination, TableRow, TextField, Typography,
 } from '@mui/material';
@@ -15,11 +16,11 @@ export default function AuditLogListPage() {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  const { data, isLoading, isError } = useGetAuditLogsQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useGetAuditLogsQuery({
     search: search || undefined,
     pageNumber: page + 1,
     pageSize,
-  }, { pollingInterval: 30000 });
+  }, { refetchOnMountOrArgChange: true });
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -30,6 +31,11 @@ export default function AuditLogListPage() {
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">Audit Logs</Typography>
+        <Tooltip title="Refresh">
+          <IconButton onClick={() => refetch()} disabled={isFetching}>
+            <RefreshIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <Box sx={{ mb: 2 }}>
