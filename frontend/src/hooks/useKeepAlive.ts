@@ -5,7 +5,7 @@ const PING_INTERVAL_MS = 10 * 60 * 1000; // ping every 10 minutes
 
 export function useKeepAlive() {
   useEffect(() => {
-    const healthUrl = API_BASE_URL.replace('/api', '/health');
+    const healthUrl = `${API_BASE_URL}/health`;
 
     const ping = () => fetch(healthUrl, { method: 'GET' }).catch(() => {});
 

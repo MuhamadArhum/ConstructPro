@@ -35,7 +35,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   // ─── Global prefix ────────────────────────────────────────────────
-  app.setGlobalPrefix('api', { exclude: ['health', '/uploads/(.*)'] });
+  app.setGlobalPrefix('api', { exclude: ['/uploads/(.*)'] });
 
   // ─── Serve uploads folder as static files ─────────────────────────
   const uploadsPath = join(process.cwd(), 'uploads');

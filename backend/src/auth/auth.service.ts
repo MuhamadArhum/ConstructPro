@@ -140,7 +140,7 @@ export class AuthService {
 
     if (!user) throw new BadRequestException('Invalid or expired reset token');
 
-    const hash = await bcrypt.hash(dto.newPassword, 12);
+    const hash = await bcrypt.hash(dto.newPassword, 10);
     await this.prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: hash, passwordResetToken: null, passwordResetTokenExpiry: null },
@@ -156,7 +156,7 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
     if (!valid) throw new BadRequestException('Current password is incorrect');
 
-    const hash = await bcrypt.hash(dto.newPassword, 12);
+    const hash = await bcrypt.hash(dto.newPassword, 10);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
 
     return { message: 'Password changed successfully' };
