@@ -43,8 +43,8 @@ export default function SupplierListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 250 }} />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 250 } }} />
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={isActive} onChange={(e) => { setIsActive(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>

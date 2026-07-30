@@ -44,7 +44,7 @@ export default function AuditLogListPage() {
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
           size="small"
-          sx={{ width: 320 }}
+          sx={{ width: { xs: '100%', sm: 320 } }}
           slotProps={{
             input: {
               startAdornment: (

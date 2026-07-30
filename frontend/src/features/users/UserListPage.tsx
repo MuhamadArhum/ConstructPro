@@ -94,7 +94,7 @@ export default function UserListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           size="small"
-          sx={{ width: 300 }}
+          sx={{ width: { xs: '100%', sm: 300 } }}
           slotProps={{
             input: {
               startAdornment: (

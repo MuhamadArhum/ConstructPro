@@ -47,8 +47,8 @@ export default function ChartOfAccountsPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 200 }} />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Account Type</InputLabel>
             <Select label="Account Type" value={accountType} onChange={(e) => { setAccountType(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>

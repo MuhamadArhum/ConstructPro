@@ -122,9 +122,9 @@ export default function IncomeListPage() {
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            sx={{ minWidth: 200 }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}
           />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Category</InputLabel>
             <Select
               label="Category"

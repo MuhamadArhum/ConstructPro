@@ -45,8 +45,8 @@ export default function PlantListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 200 }} />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>

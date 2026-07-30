@@ -45,9 +45,9 @@ export default function InventoryListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 200 }} />
-          <TextField label="Category" size="small" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }} sx={{ minWidth: 160 }} />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Category" size="small" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }} />
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Stock</InputLabel>
             <Select label="Stock" value={lowStockOnly ? 'low' : ''} onChange={(e) => { setLowStockOnly(e.target.value === 'low'); setPage(0); }}>
               <MenuItem value="">All Items</MenuItem>

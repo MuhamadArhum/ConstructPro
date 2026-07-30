@@ -64,15 +64,15 @@ export default function TaxListPage() {
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 200 }} />
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 180 } }}>
             <InputLabel>Tax Type</InputLabel>
             <Select label="Tax Type" value={taxType} onChange={(e) => { setTaxType(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
               {(Object.keys(taxTypeLabels) as TaxType[]).map((k) => <MenuItem key={k} value={k}>{taxTypeLabels[k]}</MenuItem>)}
             </Select>
           </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={isPaid} onChange={(e) => { setIsPaid(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>

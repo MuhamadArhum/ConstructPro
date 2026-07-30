@@ -126,9 +126,9 @@ export default function ExpenseListPage() {
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            sx={{ minWidth: 200 }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}
           />
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}>
             <InputLabel>Category</InputLabel>
             <Select
               label="Category"

@@ -87,16 +87,16 @@ export default function LabourListPage() {
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            sx={{ minWidth: 240 }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}
           />
           <TextField
             label="Trade"
             size="small"
             value={trade}
             onChange={(e) => { setTrade(e.target.value); setPage(0); }}
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}
           />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={isActive} onChange={(e) => { setIsActive(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>

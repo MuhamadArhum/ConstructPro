@@ -121,9 +121,9 @@ export default function MachineryListPage() {
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            sx={{ minWidth: 280 }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 280 } }}
           />
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 180 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
