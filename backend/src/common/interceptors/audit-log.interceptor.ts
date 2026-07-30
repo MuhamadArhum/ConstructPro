@@ -1,5 +1,5 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable, tap } from 'rxjs';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import { Observable, tap, catchError, throwError } from 'rxjs';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 
 const METHOD_ACTION_MAP: Record<string, string> = {
@@ -37,13 +37,28 @@ function getEntityType(url: string): string {
   return 'System';
 }
 
-function getEntityId(url: string): string | undefined {
+function getEntityId(url: string, body?: any): string | undefined {
   const match = url.match(/\/([a-f0-9-]{36})/);
-  return match?.[1];
+  return match?.[1] ?? body?.id ?? undefined;
+}
+
+function safeJson(value: any): any {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(JSON.stringify(value, (_key, val) => {
+      if (val && typeof val === 'object' && val.constructor?.name === 'Decimal') return val.toString();
+      if (val instanceof Date) return val.toISOString();
+      return val;
+    }));
+  } catch {
+    return undefined;
+  }
 }
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
+  private readonly logger = new Logger('AuditLog');
+
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -54,36 +69,39 @@ export class AuditLogInterceptor implements NestInterceptor {
     if (!action) return next.handle();
 
     const entityType = getEntityType(url);
-    const entityId = getEntityId(url);
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? ip;
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? ip;
 
     return next.handle().pipe(
-      tap({
-        next: (responseBody) => {
-          const resolvedEntityId = entityId ?? responseBody?.id ?? undefined;
-          this.auditLogsService.createLog({
-            userId: user?.id ?? undefined,
-            userEmail: user?.email ?? undefined,
-            action: `${action} ${entityType}`,
-            entityType,
-            entityId: resolvedEntityId,
-            newValues: method !== 'DELETE' ? responseBody : undefined,
-            ipAddress,
-            succeeded: true,
-          });
-        },
-        error: (err) => {
-          this.auditLogsService.createLog({
-            userId: user?.id ?? undefined,
-            userEmail: user?.email ?? undefined,
-            action: `${action} ${entityType}`,
-            entityType,
-            entityId,
-            ipAddress,
-            succeeded: false,
-            errorMessage: err?.message ?? 'Unknown error',
-          });
-        },
+      tap((responseBody) => {
+        const entityId = getEntityId(url, responseBody);
+        const newValues = method !== 'DELETE' ? safeJson({ id: responseBody?.id, message: responseBody?.message }) : undefined;
+
+        this.auditLogsService.createLog({
+          userId: user?.id ?? undefined,
+          userEmail: user?.email ?? undefined,
+          action: `${action} ${entityType}`,
+          entityType,
+          entityId,
+          newValues,
+          ipAddress,
+          succeeded: true,
+        }).catch((err) => this.logger.error(`Audit log failed: ${err?.message}`));
+      }),
+      catchError((err) => {
+        const entityId = getEntityId(url);
+
+        this.auditLogsService.createLog({
+          userId: user?.id ?? undefined,
+          userEmail: user?.email ?? undefined,
+          action: `${action} ${entityType}`,
+          entityType,
+          entityId,
+          ipAddress,
+          succeeded: false,
+          errorMessage: err?.message ?? 'Unknown error',
+        }).catch((e) => this.logger.error(`Audit log failed: ${e?.message}`));
+
+        return throwError(() => err);
       }),
     );
   }

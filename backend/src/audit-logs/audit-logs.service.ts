@@ -28,25 +28,21 @@ export interface AuditLogQuery {
 export class AuditLogsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createLog(dto: CreateAuditLogDto) {
-    try {
-      await this.prisma.auditLog.create({
-        data: {
-          userId: dto.userId ?? null,
-          userEmail: dto.userEmail ?? null,
-          action: dto.action,
-          entityType: dto.entityType ?? null,
-          entityId: dto.entityId ?? null,
-          oldValues: dto.oldValues ?? undefined,
-          newValues: dto.newValues ?? undefined,
-          ipAddress: dto.ipAddress ?? null,
-          succeeded: dto.succeeded ?? true,
-          errorMessage: dto.errorMessage ?? null,
-        },
-      });
-    } catch {
-      // Never block the main request due to audit log failure
-    }
+  async createLog(dto: CreateAuditLogDto): Promise<void> {
+    await this.prisma.auditLog.create({
+      data: {
+        userId: dto.userId ?? null,
+        userEmail: dto.userEmail ?? null,
+        action: dto.action,
+        entityType: dto.entityType ?? null,
+        entityId: dto.entityId ?? null,
+        oldValues: dto.oldValues ?? undefined,
+        newValues: dto.newValues ?? undefined,
+        ipAddress: dto.ipAddress ?? null,
+        succeeded: dto.succeeded ?? true,
+        errorMessage: dto.errorMessage ?? null,
+      },
+    });
   }
 
   async findAll(query: AuditLogQuery) {
