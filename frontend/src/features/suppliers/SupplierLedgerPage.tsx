@@ -32,6 +32,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -43,6 +44,7 @@ import {
   useDeleteSupplierTransactionMutation,
 } from './supplierApi';
 import type { SupplierTransactionType } from '../../types/supplier.types';
+import { exportLedgerPdf } from '../../utils/exportLedgerPdf';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 const today = () => new Date().toISOString().split('T')[0];
@@ -133,6 +135,22 @@ export default function SupplierLedgerPage() {
             </Typography>
           )}
         </Box>
+        <Button
+          variant="outlined"
+          startIcon={<PictureAsPdfIcon />}
+          disabled={!data || !transactions.length}
+          onClick={() => exportLedgerPdf({
+            title: 'SUPPLIER LEDGER',
+            entityName: supplier?.name ?? '',
+            entityCompany: supplier?.companyName,
+            entityPhone: supplier?.phone,
+            fromDate, toDate,
+            rows: transactions,
+            summary,
+          })}
+        >
+          Export PDF
+        </Button>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>
           Add Transaction
         </Button>
