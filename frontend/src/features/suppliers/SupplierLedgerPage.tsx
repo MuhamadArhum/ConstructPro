@@ -33,6 +33,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import PrintIcon from '@mui/icons-material/Print';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -45,6 +46,7 @@ import {
 } from './supplierApi';
 import type { SupplierTransactionType } from '../../types/supplier.types';
 import { exportLedgerPdf } from '../../utils/exportLedgerPdf';
+import { printLedger } from '../../utils/printLedger';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 const today = () => new Date().toISOString().split('T')[0];
@@ -135,6 +137,24 @@ export default function SupplierLedgerPage() {
             </Typography>
           )}
         </Box>
+        <Button
+          variant="outlined"
+          startIcon={<PrintIcon />}
+          disabled={!data || !transactions.length}
+          onClick={() => printLedger({
+            title: 'SUPPLIER LEDGER',
+            entityName: supplier?.name ?? '',
+            entityCompany: supplier?.companyName,
+            entityPhone: supplier?.phone,
+            fromDate, toDate,
+            rows: transactions,
+            totalDebit: summary?.totalDebit,
+            totalCredit: summary?.totalCredit,
+            closingBalance: summary?.closingBalance,
+          })}
+        >
+          Print
+        </Button>
         <Button
           variant="outlined"
           startIcon={<PictureAsPdfIcon />}
