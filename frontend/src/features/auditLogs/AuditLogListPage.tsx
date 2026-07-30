@@ -19,7 +19,7 @@ export default function AuditLogListPage() {
     search: search || undefined,
     pageNumber: page + 1,
     pageSize,
-  });
+  }, { pollingInterval: 30000 });
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
