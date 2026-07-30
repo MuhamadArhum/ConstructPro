@@ -160,31 +160,18 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
-    <Box component="nav" sx={{ width: { md: SIDEBAR_WIDTH }, flexShrink: { md: 0 } }}>
-      {/* Mobile: temporary drawer */}
+    <Box
+      component="nav"
+      sx={{ width: { md: SIDEBAR_WIDTH }, flexShrink: { md: 0 } }}
+    >
       <Drawer
-        variant="temporary"
-        open={mobileOpen}
+        variant={isDesktop ? 'permanent' : 'temporary'}
+        open={isDesktop ? true : mobileOpen}
         onClose={onClose}
         ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { ...drawerSx, width: SIDEBAR_WIDTH },
-        }}
+        sx={{ '& .MuiDrawer-paper': { ...drawerSx, width: SIDEBAR_WIDTH } }}
       >
-        <DrawerContent onClose={onClose} />
-      </Drawer>
-
-      {/* Desktop: permanent drawer */}
-      <Drawer
-        variant="permanent"
-        open
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { ...drawerSx, width: SIDEBAR_WIDTH },
-        }}
-      >
-        <DrawerContent onClose={() => {}} />
+        <DrawerContent onClose={isDesktop ? () => {} : onClose} />
       </Drawer>
     </Box>
   );
