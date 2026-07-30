@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "seed": "ts-node src/seed.ts",
+    "seed": "npx ts-node src/seed.ts",
     "seed:test": "ts-node src/seed-test-data.ts",
     "test": "jest",
     "test:watch": "jest --watch",
