@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateSupplierDto, UpdateSupplierDto, SupplierQueryDto } from './dto/supplier.dto';
+import { CreateSupplierDto, UpdateSupplierDto, SupplierQueryDto, CreateSupplierTransactionDto } from './dto/supplier.dto';
 
 @Injectable()
 export class SuppliersService {
@@ -103,6 +103,99 @@ export class SuppliersService {
     await this.findById(id);
     await this.prisma.supplier.delete({ where: { id } });
     return { message: 'Supplier deleted successfully' };
+  }
+
+  async getLedger(supplierId: string, fromDate?: string, toDate?: string) {
+    const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) throw new NotFoundException('Supplier not found');
+
+    const where: any = { supplierId };
+    if (fromDate || toDate) {
+      where.date = {};
+      if (fromDate) where.date.gte = new Date(fromDate);
+      if (toDate) where.date.lte = new Date(toDate + 'T23:59:59');
+    }
+
+    const transactions = await this.prisma.supplierTransaction.findMany({
+      where,
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    let runningBalance = 0;
+    const rows = transactions.map((tx) => {
+      const amt = Number(tx.amount);
+      if (tx.type === 'PURCHASE') runningBalance += amt;
+      else runningBalance -= amt;
+      return {
+        id: tx.id,
+        date: tx.date,
+        type: tx.type,
+        description: tx.description,
+        reference: tx.reference,
+        debit: tx.type === 'PURCHASE' ? amt : 0,
+        credit: tx.type === 'PAYMENT' ? amt : 0,
+        balance: runningBalance,
+        createdAt: tx.createdAt,
+      };
+    });
+
+    return {
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        companyName: supplier.companyName,
+        phone: supplier.phone,
+        totalPurchased: Number(supplier.totalPurchased),
+        totalPaid: Number(supplier.totalPaid),
+        outstandingBalance: Number(supplier.totalPurchased) - Number(supplier.totalPaid),
+      },
+      transactions: rows,
+      summary: {
+        totalDebit: rows.reduce((s, r) => s + r.debit, 0),
+        totalCredit: rows.reduce((s, r) => s + r.credit, 0),
+        closingBalance: runningBalance,
+      },
+    };
+  }
+
+  async addTransaction(supplierId: string, dto: CreateSupplierTransactionDto) {
+    const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) throw new NotFoundException('Supplier not found');
+
+    const tx = await this.prisma.supplierTransaction.create({
+      data: {
+        supplierId,
+        type: dto.type,
+        amount: dto.amount,
+        date: new Date(dto.date),
+        description: dto.description,
+        reference: dto.reference,
+      },
+    });
+
+    if (dto.type === 'PURCHASE') {
+      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPurchased: { increment: dto.amount } } });
+    } else {
+      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPaid: { increment: dto.amount } } });
+    }
+
+    return { ...tx, amount: Number(tx.amount) };
+  }
+
+  async deleteTransaction(supplierId: string, txId: string) {
+    const tx = await this.prisma.supplierTransaction.findFirst({ where: { id: txId, supplierId } });
+    if (!tx) throw new NotFoundException('Transaction not found');
+
+    await this.prisma.supplierTransaction.delete({ where: { id: txId } });
+
+    const amt = Number(tx.amount);
+    if (tx.type === 'PURCHASE') {
+      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPurchased: { decrement: amt } } });
+    } else {
+      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPaid: { decrement: amt } } });
+    }
+
+    return { message: 'Transaction deleted' };
   }
 
   private mapSupplier(supplier: {

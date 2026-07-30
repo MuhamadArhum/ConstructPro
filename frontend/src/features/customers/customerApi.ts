@@ -1,6 +1,6 @@
 import { baseApi } from '../../api/baseApi';
 import type { PaginatedList } from '../../types/common.types';
-import type { CustomerDto, CreateCustomerRequest, UpdateCustomerRequest, CustomerQuery } from '../../types/customer.types';
+import type { CustomerDto, CreateCustomerRequest, UpdateCustomerRequest, CustomerQuery, CustomerLedgerResponse, CreateCustomerTransactionRequest } from '../../types/customer.types';
 
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -24,7 +24,28 @@ export const customerApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/customer/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Customer'],
     }),
+    getCustomerLedger: builder.query<CustomerLedgerResponse, { id: string; fromDate?: string; toDate?: string }>({
+      query: ({ id, fromDate, toDate }) => ({ url: `/customer/${id}/ledger`, params: { fromDate, toDate } }),
+      providesTags: (_r, _e, { id }) => [{ type: 'Customer' as const, id: `ledger-${id}` }],
+    }),
+    addCustomerTransaction: builder.mutation<void, { id: string; data: CreateCustomerTransactionRequest }>({
+      query: ({ id, data }) => ({ url: `/customer/${id}/transactions`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => ['Customer', { type: 'Customer' as const, id: `ledger-${id}` }],
+    }),
+    deleteCustomerTransaction: builder.mutation<void, { customerId: string; txId: string }>({
+      query: ({ customerId, txId }) => ({ url: `/customer/${customerId}/transactions/${txId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { customerId }) => ['Customer', { type: 'Customer' as const, id: `ledger-${customerId}` }],
+    }),
   }),
 });
 
-export const { useGetCustomersQuery, useGetCustomerByIdQuery, useCreateCustomerMutation, useUpdateCustomerMutation, useDeleteCustomerMutation } = customerApi;
+export const {
+  useGetCustomersQuery,
+  useGetCustomerByIdQuery,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
+  useGetCustomerLedgerQuery,
+  useAddCustomerTransactionMutation,
+  useDeleteCustomerTransactionMutation,
+} = customerApi;

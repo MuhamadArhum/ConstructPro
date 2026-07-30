@@ -129,3 +129,12 @@ export class SupplierQueryDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class CreateSupplierTransactionDto {
+  supplierId: string;
+  type: 'PURCHASE' | 'PAYMENT';
+  amount: number;
+  date: string; // ISO date string
+  description?: string;
+  reference?: string;
+}

@@ -3,6 +3,7 @@ import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -81,6 +82,7 @@ export default function SupplierListPage() {
                     <TableCell align="right" sx={{ color: (row.outstandingBalance ?? 0) > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>{fmt(row.outstandingBalance)}</TableCell>
                     <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
                     <TableCell align="right">
+                      <Tooltip title="Ledger"><IconButton size="small" onClick={() => navigate(`/suppliers/${row.id}/ledger`)}><ReceiptLongIcon fontSize="small" /></IconButton></Tooltip>
                       <PermissionGate permission={Perms.Suppliers.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/suppliers/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                       <PermissionGate permission={Perms.Suppliers.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                     </TableCell>

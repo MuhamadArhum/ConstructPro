@@ -19,7 +19,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
-import { CreateSupplierDto, UpdateSupplierDto, SupplierQueryDto } from './dto/supplier.dto';
+import { CreateSupplierDto, UpdateSupplierDto, SupplierQueryDto, CreateSupplierTransactionDto } from './dto/supplier.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { HasPermission } from '../common/decorators/permissions.decorator';
@@ -77,5 +77,24 @@ export class SuppliersController {
   @ApiResponse({ status: 404, description: 'Supplier not found' })
   remove(@Param('id') id: string) {
     return this.suppliersService.remove(id);
+  }
+
+  @Get(':id/ledger')
+  @HasPermission('Suppliers.View')
+  getLedger(@Param('id') id: string, @Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
+    return this.suppliersService.getLedger(id, fromDate, toDate);
+  }
+
+  @Post(':id/transactions')
+  @HasPermission('Suppliers.Edit')
+  addTransaction(@Param('id') id: string, @Body() dto: CreateSupplierTransactionDto) {
+    return this.suppliersService.addTransaction(id, dto);
+  }
+
+  @Delete(':id/transactions/:txId')
+  @HasPermission('Suppliers.Edit')
+  @HttpCode(HttpStatus.OK)
+  deleteTransaction(@Param('id') id: string, @Param('txId') txId: string) {
+    return this.suppliersService.deleteTransaction(id, txId);
   }
 }

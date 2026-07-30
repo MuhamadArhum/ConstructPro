@@ -33,8 +33,10 @@ import PlantListPage from '../features/plants/PlantListPage';
 import PlantFormPage from '../features/plants/PlantFormPage';
 import CustomerListPage from '../features/customers/CustomerListPage';
 import CustomerFormPage from '../features/customers/CustomerFormPage';
+import CustomerLedgerPage from '../features/customers/CustomerLedgerPage';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
+import SupplierLedgerPage from '../features/suppliers/SupplierLedgerPage';
 import InventoryListPage from '../features/inventory/InventoryListPage';
 import InventoryFormPage from '../features/inventory/InventoryFormPage';
 import StockTransactionPage from '../features/inventory/StockTransactionPage';
@@ -113,12 +115,14 @@ export default function AppRoutes() {
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/new" element={<CustomerFormPage />} />
             <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
+            <Route path="/customers/:id/ledger" element={<CustomerLedgerPage />} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Suppliers.View} />}>
             <Route path="/suppliers" element={<SupplierListPage />} />
             <Route path="/suppliers/new" element={<SupplierFormPage />} />
             <Route path="/suppliers/:id/edit" element={<SupplierFormPage />} />
+            <Route path="/suppliers/:id/ledger" element={<SupplierLedgerPage />} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Inventory.View} />}>

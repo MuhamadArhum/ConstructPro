@@ -109,6 +109,14 @@ export class UpdateCustomerDto {
   isActive?: boolean;
 }
 
+export class CreateCustomerTransactionDto {
+  type: 'INVOICE' | 'PAYMENT';
+  amount: number;
+  date: string;
+  description?: string;
+  reference?: string;
+}
+
 export class CustomerQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

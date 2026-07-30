@@ -33,7 +33,13 @@
       "Bash(nest new *)",
       "Bash(npx prisma *)",
       "Read(//d/d/**)",
-      "Read(//d/d/ConstructPro/**)"
+      "Read(//d/d/ConstructPro/**)",
+      "Bash(npm ls *)",
+      "Bash(node *)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "Bash(DATABASE_URL=\"postgresql://postgres.ouutupqmgkmqxbcxekmp:BismaRashid%40123@db.ouutupqmgkmqxbcxekmp.supabase.co:5432/postgres\" npx prisma db push --accept-data-loss)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.ouutupqmgkmqxbcxekmp:BismaRashid%40123@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres\" npx prisma db push --accept-data-loss)",
+      "Bash(psql *)"
     ]
   }
 }

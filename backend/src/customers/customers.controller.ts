@@ -20,7 +20,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
-import { CreateCustomerDto, UpdateCustomerDto, CustomerQueryDto } from './dto/customer.dto';
+import { CreateCustomerDto, UpdateCustomerDto, CustomerQueryDto, CreateCustomerTransactionDto } from './dto/customer.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { HasPermission } from '../common/decorators/permissions.decorator';
@@ -78,5 +78,24 @@ export class CustomersController {
   @ApiResponse({ status: 404, description: 'Customer not found' })
   remove(@Param('id') id: string) {
     return this.customersService.remove(id);
+  }
+
+  @Get(':id/ledger')
+  @HasPermission('Customers.View')
+  getLedger(@Param('id') id: string, @Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
+    return this.customersService.getLedger(id, fromDate, toDate);
+  }
+
+  @Post(':id/transactions')
+  @HasPermission('Customers.Edit')
+  addTransaction(@Param('id') id: string, @Body() dto: CreateCustomerTransactionDto) {
+    return this.customersService.addTransaction(id, dto);
+  }
+
+  @Delete(':id/transactions/:txId')
+  @HasPermission('Customers.Edit')
+  @HttpCode(HttpStatus.OK)
+  deleteTransaction(@Param('id') id: string, @Param('txId') txId: string) {
+    return this.customersService.deleteTransaction(id, txId);
   }
 }
