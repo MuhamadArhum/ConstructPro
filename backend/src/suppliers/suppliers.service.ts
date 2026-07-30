@@ -131,6 +131,7 @@ export class SuppliersService {
       category: supplier.category,
       totalPurchased: Number(supplier.totalPurchased),
       totalPaid: Number(supplier.totalPaid),
+      outstandingBalance: Number(supplier.totalPurchased) - Number(supplier.totalPaid),
       isActive: supplier.isActive,
       notes: supplier.notes,
       createdAt: supplier.createdAt,
