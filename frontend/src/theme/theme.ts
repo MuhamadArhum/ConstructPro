@@ -51,17 +51,17 @@ export const theme = createTheme({
     fontFamily: ["'IBM Plex Sans'", 'Helvetica', 'Arial', 'sans-serif'].join(','),
     h1: {
       fontFamily: "'Oswald', sans-serif",
-      fontSize: '1.75rem', fontWeight: 600,
+      fontSize: 'clamp(1.35rem, 4vw, 1.75rem)', fontWeight: 600,
       textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
     },
     h2: {
       fontFamily: "'Oswald', sans-serif",
-      fontSize: '1.4rem', fontWeight: 600,
+      fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', fontWeight: 600,
       textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
     },
     h3: {
       fontFamily: "'Oswald', sans-serif",
-      fontSize: '1.15rem', fontWeight: 600,
+      fontSize: 'clamp(1rem, 2.5vw, 1.15rem)', fontWeight: 600,
       textTransform: 'uppercase', letterSpacing: '0.02em', color: BLUEPRINT,
     },
     h4: {
@@ -285,7 +285,7 @@ export const theme = createTheme({
 
     MuiTableContainer: {
       styleOverrides: {
-        root: { borderRadius: 4 },
+        root: { borderRadius: 4, overflowX: 'auto' },
       },
     },
 

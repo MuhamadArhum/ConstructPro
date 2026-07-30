@@ -2,14 +2,13 @@ import { useState, type MouseEvent } from 'react';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/PersonOutlined';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
-import SearchIcon from '@mui/icons-material/Search';
+import MenuIcon from '@mui/icons-material/Menu';
 import {
   AppBar,
   Avatar,
   Box,
   Divider,
   IconButton,
-  InputBase,
   ListItemIcon,
   Menu,
   MenuItem,
@@ -26,29 +25,33 @@ import { SIDEBAR_WIDTH } from './Sidebar';
 import { API_BASE_URL } from '../../utils/constants';
 
 const ROUTE_LABELS: Record<string, string> = {
-  '/':             'Dashboard',
-  '/income':       'Income',
-  '/expense':      'Expense',
-  '/tax':          'Tax Management',
-  '/accounts':     'Accounts',
-  '/labour':       'Labour',
-  '/employees':    'Employees',
-  '/machinery':    'Machinery',
-  '/vehicles':     'Vehicles',
-  '/plants':       'Plant & Equipment',
-  '/customers':    'Customers',
-  '/suppliers':    'Suppliers',
-  '/inventory':    'Inventory',
-  '/reports':      'Reports',
-  '/notifications':'Notifications',
-  '/settings':     'Settings',
-  '/users':        'User Management',
-  '/roles':        'Role Management',
-  '/audit-logs':   'Audit Logs',
-  '/profile':      'My Profile',
+  '/':              'Dashboard',
+  '/income':        'Income',
+  '/expense':       'Expense',
+  '/tax':           'Tax Management',
+  '/accounts':      'Accounts',
+  '/labour':        'Labour',
+  '/employees':     'Employees',
+  '/machinery':     'Machinery',
+  '/vehicles':      'Vehicles',
+  '/plants':        'Plant & Equipment',
+  '/customers':     'Customers',
+  '/suppliers':     'Suppliers',
+  '/inventory':     'Inventory',
+  '/reports':       'Reports',
+  '/notifications': 'Notifications',
+  '/settings':      'Settings',
+  '/users':         'User Management',
+  '/roles':         'Role Management',
+  '/audit-logs':    'Audit Logs',
+  '/profile':       'My Profile',
 };
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -95,73 +98,59 @@ export default function Header() {
       position="fixed"
       elevation={0}
       sx={{
-        width: `calc(100% - ${SIDEBAR_WIDTH}px)`,
-        ml: `${SIDEBAR_WIDTH}px`,
+        width: { xs: '100%', md: `calc(100% - ${SIDEBAR_WIDTH}px)` },
+        ml: { xs: 0, md: `${SIDEBAR_WIDTH}px` },
         backgroundColor: '#F5F2E8',
         borderBottom: '1px solid #D3CDBA',
         color: '#14181B',
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '64px !important', px: '32px' }}>
+      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '64px !important', px: { xs: '16px', sm: '32px' } }}>
 
-        {/* Left: page title */}
-        <Box>
-          <Typography
+        {/* Left: hamburger (mobile) + page title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <IconButton
+            onClick={onMenuClick}
             sx={{
-              fontFamily: "'Oswald', sans-serif",
-              fontSize: '20px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.02em',
+              display: { xs: 'flex', md: 'none' },
               color: '#0E2A47',
-              lineHeight: 1.1,
+              mr: 0.5,
             }}
           >
-            {pageTitle}
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '11.5px',
-              color: '#6B7178',
-              mt: '2px',
-              lineHeight: 1,
-            }}
-          >
-            {subLine}
-          </Typography>
+            <MenuIcon />
+          </IconButton>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              noWrap
+              sx={{
+                fontFamily: "'Oswald', sans-serif",
+                fontSize: { xs: '16px', sm: '20px' },
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+                color: '#0E2A47',
+                lineHeight: 1.1,
+              }}
+            >
+              {pageTitle}
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11.5px',
+                color: '#6B7178',
+                mt: '2px',
+                lineHeight: 1,
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              {subLine}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Right: search + notification + avatar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-
-          {/* Search box */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: '#fff',
-              border: '1px solid #D3CDBA',
-              borderRadius: '4px',
-              px: '12px',
-              py: '7px',
-              width: 260,
-              '&:focus-within': { borderColor: '#E85D1F' },
-            }}
-          >
-            <SearchIcon sx={{ fontSize: 16, color: '#6B7178', flexShrink: 0 }} />
-            <InputBase
-              placeholder="Search projects, tasks..."
-              sx={{
-                fontSize: '13px',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                color: '#14181B',
-                flex: 1,
-                '& input::placeholder': { color: '#6B7178', opacity: 1 },
-              }}
-            />
-          </Box>
+        {/* Right: notification + avatar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '10px', sm: '18px' }, flexShrink: 0 }}>
 
           {/* Notification bell */}
           <Box sx={{ position: 'relative' }}>
@@ -181,8 +170,7 @@ export default function Header() {
             {unreadCount > 0 && (
               <Box
                 sx={{
-                  position: 'absolute',
-                  top: -3, right: -3,
+                  position: 'absolute', top: -3, right: -3,
                   width: 8, height: 8,
                   borderRadius: '50%',
                   background: '#E85D1F',
@@ -198,12 +186,10 @@ export default function Header() {
               src={avatarSrc}
               sx={{
                 width: 34, height: 34,
-                bgcolor: '#0E2A47',
-                color: '#F5F2E8',
+                bgcolor: '#0E2A47', color: '#F5F2E8',
                 fontSize: '12px',
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontWeight: 600,
-                borderRadius: '50%',
+                fontWeight: 600, borderRadius: '50%',
               }}
             >
               {initials}
@@ -221,9 +207,7 @@ export default function Header() {
           slotProps={{
             paper: {
               sx: {
-                mt: 1,
-                minWidth: 210,
-                borderRadius: '4px',
+                mt: 1, minWidth: 210, borderRadius: '4px',
                 border: '1px solid #D3CDBA',
                 boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
                 backgroundColor: '#F5F2E8',
@@ -240,18 +224,12 @@ export default function Header() {
             </Typography>
           </Box>
           <Divider sx={{ borderColor: '#D3CDBA' }} />
-          <MenuItem
-            onClick={() => { handleMenuClose(); navigate('/profile'); }}
-            sx={{ py: 1.2, fontSize: '0.875rem', color: '#14181B' }}
-          >
+          <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }} sx={{ py: 1.2, fontSize: '0.875rem', color: '#14181B' }}>
             <ListItemIcon><PersonIcon fontSize="small" sx={{ color: '#3B4147' }} /></ListItemIcon>
             My Profile
           </MenuItem>
           <Divider sx={{ borderColor: '#D3CDBA' }} />
-          <MenuItem
-            onClick={handleLogout}
-            sx={{ py: 1.2, fontSize: '0.875rem', color: '#C23B2E' }}
-          >
+          <MenuItem onClick={handleLogout} sx={{ py: 1.2, fontSize: '0.875rem', color: '#C23B2E' }}>
             <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: '#C23B2E' }} /></ListItemIcon>
             Sign Out
           </MenuItem>
