@@ -13,8 +13,8 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: UserQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where = query.search
@@ -41,11 +41,18 @@ export class UsersService {
       this.prisma.user.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: users.map((u) => this.mapUser(u)),
-      total,
-      page,
-      limit,
+      items: users.map((u) => this.mapUser(u)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 

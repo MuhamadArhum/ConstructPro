@@ -13,8 +13,8 @@ export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: InventoryQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -47,14 +47,18 @@ export class InventoryService {
       const total = filtered.length;
       const paginated = filtered.slice(skip, skip + limit);
 
+      const totalPages = Math.ceil(total / limit);
+      const pageNumber = page;
+      const pageSize = limit;
+
       return {
-        data: paginated.map((item) => this.mapInventoryItem(item)),
-        meta: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
-        },
+        items: paginated.map((item) => this.mapInventoryItem(item)),
+        totalCount: total,
+        pageNumber,
+        pageSize,
+        totalPages,
+        hasPreviousPage: pageNumber > 1,
+        hasNextPage: pageNumber < totalPages,
       };
     }
 
@@ -68,14 +72,18 @@ export class InventoryService {
       this.prisma.inventoryItem.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: inventoryItems.map((item) => this.mapInventoryItem(item)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: inventoryItems.map((item) => this.mapInventoryItem(item)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -228,16 +236,20 @@ export class InventoryService {
     notes: string | null;
     createdAt: Date;
   }) {
+    const currentStock = Number(item.currentStock);
+    const lowStockThreshold = Number(item.lowStockThreshold);
+
     return {
       id: item.id,
       name: item.name,
       category: item.category,
       unit: item.unit,
-      currentStock: Number(item.currentStock),
-      lowStockThreshold: Number(item.lowStockThreshold),
+      currentStock,
+      lowStockThreshold,
       unitPrice: Number(item.unitPrice),
       supplierName: item.supplierName,
       location: item.location,
+      isLowStock: currentStock <= lowStockThreshold,
       notes: item.notes,
       createdAt: item.createdAt,
     };

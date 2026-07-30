@@ -13,8 +13,8 @@ export class MachineryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: MachineryQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -41,14 +41,18 @@ export class MachineryService {
       this.prisma.machinery.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: machineries.map((m) => this.mapMachinery(m)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: machineries.map((m) => this.mapMachinery(m)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -199,6 +203,8 @@ export class MachineryService {
     notes: string | null;
     createdAt: Date;
   }) {
+    const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
     return {
       id: machinery.id,
       name: machinery.name,
@@ -207,8 +213,12 @@ export class MachineryService {
       purchaseDate: machinery.purchaseDate,
       purchasePrice: machinery.purchasePrice !== null ? Number(machinery.purchasePrice) : null,
       status: machinery.status,
+      statusDisplay: machinery.status,
       totalRunningHours: Number(machinery.totalRunningHours),
       nextMaintenanceDate: machinery.nextMaintenanceDate,
+      isMaintenanceDue: machinery.nextMaintenanceDate
+        ? new Date(machinery.nextMaintenanceDate) <= sevenDaysFromNow
+        : false,
       notes: machinery.notes,
       createdAt: machinery.createdAt,
     };

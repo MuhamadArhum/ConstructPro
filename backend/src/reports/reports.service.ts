@@ -60,6 +60,7 @@ export class ReportsService {
       .map((entry) => ({
         month: entry.month,
         year: entry.year,
+        monthName: new Date(entry.year, entry.month - 1).toLocaleString('en-US', { month: 'long' }),
         income: entry.income,
         expense: entry.expense,
         profit: entry.income - entry.expense,
@@ -223,8 +224,8 @@ export class ReportsService {
 
     return {
       totalTax,
-      paidTax,
-      unpaidTax,
+      totalPaid: paidTax,
+      totalPending: unpaidTax,
       overdueTax,
       records: mappedRecords,
     };

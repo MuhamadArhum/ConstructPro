@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface AuditLogQuery {
-  page?: number;
-  limit?: number;
+  pageNumber?: number;
+  pageSize?: number;
   userId?: string;
   action?: string;
   entityType?: string;
@@ -16,8 +16,8 @@ export class AuditLogsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: AuditLogQuery) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -55,14 +55,21 @@ export class AuditLogsService {
       this.prisma.auditLog.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: logs,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: logs.map((log) => ({
+        ...log,
+        userEmail: (log as any).userEmail ?? (log as any).user?.email ?? null,
+      })),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 }

@@ -31,7 +31,7 @@ import { HasPermission } from '../common/decorators/permissions.decorator';
 @ApiTags('Plants')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Controller('plants')
+@Controller('plant')
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
 

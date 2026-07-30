@@ -34,6 +34,9 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  // ─── Global prefix ────────────────────────────────────────────────
+  app.setGlobalPrefix('api', { exclude: ['health', '/uploads/(.*)'] });
+
   // ─── Serve uploads folder as static files ─────────────────────────
   const uploadsPath = join(process.cwd(), 'uploads');
   app.use('/uploads', express.static(uploadsPath));
@@ -46,7 +49,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('docs', app, document);
 
   // ─── Listen ───────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3000;

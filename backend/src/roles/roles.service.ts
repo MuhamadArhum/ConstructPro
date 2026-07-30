@@ -101,7 +101,8 @@ export class RolesService {
       },
     });
 
-    return this.mapRole(role!);
+    if (!role) throw new NotFoundException('Role not found');
+    return this.mapRole(role);
   }
 
   private mapRole(role: {
@@ -117,9 +118,13 @@ export class RolesService {
       };
     }>;
   }) {
+    const systemRoles = ['Admin', 'Accountant', 'Manager', 'DataEntryOperator'];
+
     return {
       id: role.id,
       name: role.name,
+      isSystemRole: systemRoles.includes(role.name),
+      permissionCodes: role.permissions.map((rp) => rp.permission.code),
       permissions: role.permissions.map((rp) => ({
         id: rp.permission.id,
         module: rp.permission.module,

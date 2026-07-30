@@ -28,7 +28,7 @@ import { HasPermission } from '../common/decorators/permissions.decorator';
 @ApiTags('Customers')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Controller('customers')
+@Controller('customer')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 

@@ -162,14 +162,14 @@ export class EmployeeQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  page?: number = 1;
+  pageNumber?: number = 1;
 
   @ApiPropertyOptional({ example: 10, default: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  limit?: number = 10;
+  pageSize?: number = 10;
 
   @ApiPropertyOptional({ example: 'Muhammad' })
   @IsOptional()

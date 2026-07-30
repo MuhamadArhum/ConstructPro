@@ -7,8 +7,8 @@ export class SuppliersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: SupplierQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -36,16 +36,18 @@ export class SuppliersService {
       this.prisma.supplier.count({ where }),
     ]);
 
-    const data = suppliers.map((s) => this.mapSupplier(s));
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
 
     return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: suppliers.map((s) => this.mapSupplier(s)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 

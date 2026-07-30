@@ -55,7 +55,12 @@ export class AuthService {
     return {
       accessToken,
       refreshToken: refreshToken.token,
-      user: { id: user.id, fullName: user.fullName, email: user.email, roles, permissions, profilePicturePath: user.profilePicturePath },
+      userId: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roles,
+      permissions,
+      profilePicturePath: user.profilePicturePath ?? null,
     };
   }
 
@@ -90,7 +95,12 @@ export class AuthService {
     return {
       accessToken: this.generateAccessToken(user.id, user.email, roles, permissions),
       refreshToken: newRefreshToken.token,
-      user: { id: user.id, fullName: user.fullName, email: user.email, roles, permissions, profilePicturePath: user.profilePicturePath },
+      userId: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roles,
+      permissions,
+      profilePicturePath: user.profilePicturePath ?? null,
     };
   }
 

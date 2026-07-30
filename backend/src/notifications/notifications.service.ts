@@ -23,14 +23,21 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: notifications,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: notifications.map((n) => ({
+        ...n,
+        typeDisplay: n.type,
+      })),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -43,12 +50,13 @@ export class NotificationsService {
   }
 
   async markAsRead(id: string) {
-    const notification = await this.prisma.notification.update({
+    const existing = await this.prisma.notification.findUnique({ where: { id } });
+    if (!existing) return null;
+
+    return this.prisma.notification.update({
       where: { id },
       data: { isRead: true, readAt: new Date() },
     });
-
-    return notification;
   }
 
   async markAllAsRead(userId: string) {

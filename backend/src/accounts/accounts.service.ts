@@ -20,8 +20,8 @@ export class AccountsService {
   // ─── Chart of Accounts ────────────────────────────────────────────
 
   async findAllAccounts(query: AccountQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -47,19 +47,23 @@ export class AccountsService {
         skip,
         take: limit,
         orderBy: { code: 'asc' },
-        include: { children: true },
+        include: { children: true, parent: true },
       }),
       this.prisma.chartOfAccount.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: accounts.map((a) => this.mapAccount(a)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: accounts.map((a) => this.mapAccount(a)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -148,8 +152,8 @@ export class AccountsService {
   // ─── Journal Entries ──────────────────────────────────────────────
 
   async findAllJournalEntries(query: JournalEntryQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -183,14 +187,18 @@ export class AccountsService {
       this.prisma.journalEntry.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: entries.map((e) => this.mapJournalEntry(e)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: entries.map((e) => this.mapJournalEntry(e)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -271,6 +279,9 @@ export class AccountsService {
   private mapAccount(account: any) {
     return {
       ...account,
+      accountTypeDisplay: account.accountType,
+      parentName: account.parent?.name ?? null,
+      balance: 0,
     };
   }
 
@@ -279,7 +290,7 @@ export class AccountsService {
       ...entry,
       totalDebit: Number(entry.totalDebit),
       totalCredit: Number(entry.totalCredit),
-      lines: entry.lines?.map((line: any) => ({
+      lines: (entry.lines ?? []).map((line: any) => ({
         ...line,
         debit: Number(line.debit),
         credit: Number(line.credit),

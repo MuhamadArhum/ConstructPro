@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Auth')
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,

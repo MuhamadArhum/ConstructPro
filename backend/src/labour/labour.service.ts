@@ -13,8 +13,8 @@ export class LabourService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: LabourQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -41,20 +41,28 @@ export class LabourService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          advances: { select: { amount: true } },
+        },
       }),
       this.prisma.labour.count({ where }),
     ]);
 
-    const data = labours.map((l) => this.mapLabour(l));
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
 
     return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: labours.map(({ advances, ...l }) => ({
+        ...this.mapLabour(l),
+        totalAdvances: advances.reduce((sum, a) => sum + Number(a.amount), 0),
+      })),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -120,7 +128,11 @@ export class LabourService {
   }
 
   async getAttendance(id: string, month: number, year: number) {
-    await this.findById(id);
+    const labour = await this.prisma.labour.findUnique({ where: { id } });
+
+    if (!labour) {
+      throw new NotFoundException(`Labour with id ${id} not found`);
+    }
 
     const firstDay = new Date(year, month - 1, 1);
     const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
@@ -136,7 +148,21 @@ export class LabourService {
       orderBy: { date: 'asc' },
     });
 
-    return attendances.map((a) => this.mapAttendance(a));
+    const dailyWage = Number(labour.dailyWage);
+    const overtimeRatePerHour = Number(labour.overtimeRatePerHour);
+
+    return attendances.map((a) => {
+      const overtimeHours = Number(a.overtimeHours);
+      const overtimePay = overtimeHours * overtimeRatePerHour;
+      const totalPay = a.isPresent ? dailyWage + overtimePay : 0;
+      return {
+        ...this.mapAttendance(a),
+        labourName: labour.name,
+        dailyWage,
+        overtimePay,
+        totalPay,
+      };
+    });
   }
 
   async upsertAttendance(dto: UpsertAttendanceDto) {

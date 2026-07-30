@@ -1,0 +1,549 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                       String    @id @default(uuid())
+  fullName                 String
+  email                    String    @unique
+  passwordHash             String
+  isActive                 Boolean   @default(true)
+  createdAt                DateTime  @default(now())
+  lastLoginAt              DateTime?
+  profilePicturePath       String?
+  passwordResetToken       String?
+  passwordResetTokenExpiry DateTime?
+  lockoutEnd               DateTime?
+  accessFailedCount        Int       @default(0)
+
+  roles          UserRole[]
+  refreshTokens  RefreshToken[]
+  incomes        Income[]
+  expenses       Expense[]
+  journalEntries JournalEntry[]
+  taxRecords     TaxRecord[]
+  stockTxns      StockTransaction[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id   String @id @default(uuid())
+  name String @unique
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  module      String
+  action      String
+  code        String  @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id              String    @id @default(uuid())
+  userId          String
+  token           String    @unique
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  revokedAt       DateTime?
+  replacedByToken String?
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Employee {
+  id             String          @id @default(uuid())
+  fullName       String
+  designation    String?
+  department     String?
+  phoneNumber    String?
+  cnic           String?
+  address        String?
+  basicSalary    Decimal         @db.Decimal(18, 2)
+  joinDate       DateTime
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  salaryPayments SalaryPayment[]
+
+  @@map("employees")
+}
+
+model SalaryPayment {
+  id          String   @id @default(uuid())
+  employeeId  String
+  month       Int
+  year        Int
+  basicSalary Decimal  @db.Decimal(18, 2)
+  bonus       Decimal  @default(0) @db.Decimal(18, 2)
+  deductions  Decimal  @default(0) @db.Decimal(18, 2)
+  netSalary   Decimal  @db.Decimal(18, 2)
+  daysPresent Int      @default(0)
+  totalDays   Int      @default(30)
+  paidAt      DateTime @default(now())
+  remarks     String?
+  createdAt   DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("salary_payments")
+}
+
+model Labour {
+  id                  String             @id @default(uuid())
+  name                String
+  phoneNumber         String?
+  cnic                String?
+  address             String?
+  trade               String?
+  dailyWage           Decimal            @db.Decimal(18, 2)
+  overtimeRatePerHour Decimal            @default(0) @db.Decimal(18, 2)
+  joinDate            DateTime
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  attendances         LabourAttendance[]
+  advances            LabourAdvance[]
+
+  @@map("labours")
+}
+
+model LabourAttendance {
+  id            String   @id @default(uuid())
+  labourId      String
+  date          DateTime @db.Date
+  isPresent     Boolean  @default(true)
+  overtimeHours Decimal  @default(0) @db.Decimal(5, 2)
+  notes         String?
+  labour        Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
+
+  @@unique([labourId, date])
+  @@map("labour_attendances")
+}
+
+model LabourAdvance {
+  id       String   @id @default(uuid())
+  labourId String
+  amount   Decimal  @db.Decimal(18, 2)
+  date     DateTime
+  reason   String?
+  labour   Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
+
+  @@map("labour_advances")
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  companyName String?
+  phone       String?
+  email       String?
+  address     String?
+  ntn         String?
+  cnic        String?
+  projectName String?
+  totalBilled Decimal  @default(0) @db.Decimal(18, 2)
+  totalPaid   Decimal  @default(0) @db.Decimal(18, 2)
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@map("customers")
+}
+
+model Supplier {
+  id             String   @id @default(uuid())
+  name           String
+  companyName    String?
+  phone          String?
+  email          String?
+  address        String?
+  ntn            String?
+  category       String?
+  totalPurchased Decimal  @default(0) @db.Decimal(18, 2)
+  totalPaid      Decimal  @default(0) @db.Decimal(18, 2)
+  isActive       Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@map("suppliers")
+}
+
+model Machinery {
+  id                  String                 @id @default(uuid())
+  name                String
+  model               String?
+  serialNumber        String?
+  purchaseDate        DateTime?
+  purchasePrice       Decimal?               @db.Decimal(18, 2)
+  status              MachineryStatus        @default(Active)
+  totalRunningHours   Decimal                @default(0) @db.Decimal(10, 2)
+  nextMaintenanceDate DateTime?
+  notes               String?
+  createdAt           DateTime               @default(now())
+  maintenanceRecords  MachineryMaintenance[]
+
+  @@map("machineries")
+}
+
+enum MachineryStatus {
+  Active
+  Inactive
+  Maintenance
+  Retired
+}
+
+model MachineryMaintenance {
+  id                    String          @id @default(uuid())
+  machineryId           String
+  maintenanceDate       DateTime
+  type                  MaintenanceType
+  description           String?
+  cost                  Decimal         @default(0) @db.Decimal(18, 2)
+  runningHoursAtService Decimal?        @db.Decimal(10, 2)
+  nextMaintenanceDate   DateTime?
+  serviceProvider       String?
+  createdAt             DateTime        @default(now())
+  machinery             Machinery       @relation(fields: [machineryId], references: [id], onDelete: Cascade)
+
+  @@map("machinery_maintenances")
+}
+
+enum MaintenanceType {
+  Preventive
+  Corrective
+  Inspection
+}
+
+model Vehicle {
+  id                  String               @id @default(uuid())
+  registrationNumber  String               @unique
+  make                String?
+  model               String?
+  year                Int?
+  driverName          String?
+  driverContact       String?
+  purchasePrice       Decimal?             @db.Decimal(18, 2)
+  purchaseDate        DateTime?
+  status              VehicleStatus        @default(Active)
+  totalMileage        Decimal              @default(0) @db.Decimal(10, 2)
+  nextMaintenanceDate DateTime?
+  notes               String?
+  createdAt           DateTime             @default(now())
+  maintenanceRecords  VehicleMaintenance[]
+
+  @@map("vehicles")
+}
+
+enum VehicleStatus {
+  Active
+  Inactive
+  Maintenance
+}
+
+model VehicleMaintenance {
+  id               String    @id @default(uuid())
+  vehicleId        String
+  maintenanceDate  DateTime
+  description      String?
+  cost             Decimal   @default(0) @db.Decimal(18, 2)
+  serviceProvider  String?
+  nextDueDate      DateTime?
+  mileageAtService Decimal?  @db.Decimal(10, 2)
+  notes            String?
+  createdAt        DateTime  @default(now())
+  vehicle          Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_maintenances")
+}
+
+model Plant {
+  id                  String      @id @default(uuid())
+  name                String
+  type                String?
+  manufacturer        String?
+  serialNumber        String?
+  purchaseDate        DateTime?
+  purchasePrice       Decimal?    @db.Decimal(18, 2)
+  currentValue        Decimal?    @db.Decimal(18, 2)
+  status              PlantStatus @default(Active)
+  location            String?
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
+  notes               String?
+  createdAt           DateTime    @default(now())
+
+  @@map("plants")
+}
+
+enum PlantStatus {
+  Active
+  Inactive
+  Maintenance
+  Retired
+}
+
+model InventoryItem {
+  id                String             @id @default(uuid())
+  name              String
+  category          String?
+  unit              String?
+  currentStock      Decimal            @default(0) @db.Decimal(18, 2)
+  lowStockThreshold Decimal            @default(0) @db.Decimal(18, 2)
+  unitPrice         Decimal            @default(0) @db.Decimal(18, 2)
+  supplierName      String?
+  location          String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  stockTransactions StockTransaction[]
+
+  @@map("inventory_items")
+}
+
+model StockTransaction {
+  id              String               @id @default(uuid())
+  inventoryItemId String
+  type            StockTransactionType
+  quantity        Decimal              @db.Decimal(18, 2)
+  unitPrice       Decimal?             @db.Decimal(18, 2)
+  date            DateTime
+  reference       String?
+  projectName     String?
+  notes           String?
+  createdAt       DateTime             @default(now())
+  createdById     String?
+  inventoryItem   InventoryItem        @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  createdBy       User?                @relation(fields: [createdById], references: [id])
+
+  @@map("stock_transactions")
+}
+
+enum StockTransactionType {
+  In
+  Out
+  Adjustment
+}
+
+model Income {
+  id           String         @id @default(uuid())
+  category     IncomeCategory
+  amount       Decimal        @db.Decimal(18, 2)
+  date         DateTime
+  description  String?
+  customerName String?
+  projectName  String?
+  receiptPath  String?
+  isPaid       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  createdById  String?
+  createdBy    User?          @relation(fields: [createdById], references: [id])
+
+  @@map("incomes")
+}
+
+enum IncomeCategory {
+  CustomerPayment
+  ProjectIncome
+  OtherIncome
+}
+
+model Expense {
+  id          String          @id @default(uuid())
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(18, 2)
+  date        DateTime
+  description String?
+  vendor      String?
+  billPath    String?
+  createdAt   DateTime        @default(now())
+  createdById String?
+  createdBy   User?           @relation(fields: [createdById], references: [id])
+
+  @@map("expenses")
+}
+
+enum ExpenseCategory {
+  LabourExpenses
+  Salaries
+  MachineryMaintenance
+  VehicleExpenses
+  Fuel
+  PlantExpenses
+  CarpentryExpenses
+  ElectricalExpenses
+  SuppliesMaterialPurchase
+  OfficeExpenses
+  Miscellaneous
+}
+
+model ChartOfAccount {
+  id          String             @id @default(uuid())
+  code        String             @unique
+  name        String
+  accountType AccountType
+  parentId    String?
+  isActive    Boolean            @default(true)
+  description String?
+  createdAt   DateTime           @default(now())
+  parent      ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    ChartOfAccount[]   @relation("AccountHierarchy")
+  journalLines JournalEntryLine[]
+
+  @@map("chart_of_accounts")
+}
+
+enum AccountType {
+  Asset
+  Liability
+  Equity
+  Revenue
+  Expense
+}
+
+model JournalEntry {
+  id          String             @id @default(uuid())
+  entryNumber String             @unique
+  date        DateTime
+  description String?
+  reference   String?
+  totalDebit  Decimal            @db.Decimal(18, 2)
+  totalCredit Decimal            @db.Decimal(18, 2)
+  isPosted    Boolean            @default(false)
+  notes       String?
+  createdAt   DateTime           @default(now())
+  createdById String?
+  createdBy   User?              @relation(fields: [createdById], references: [id])
+  lines       JournalEntryLine[]
+
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             String         @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  debit          Decimal        @default(0) @db.Decimal(18, 2)
+  credit         Decimal        @default(0) @db.Decimal(18, 2)
+  description    String?
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@map("journal_entry_lines")
+}
+
+model TaxRecord {
+  id          String    @id @default(uuid())
+  taxType     TaxType
+  amount      Decimal   @db.Decimal(18, 2)
+  periodStart DateTime
+  periodEnd   DateTime
+  dueDate     DateTime?
+  paidDate    DateTime?
+  isPaid      Boolean   @default(false)
+  reference   String?
+  description String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id])
+
+  @@map("tax_records")
+}
+
+enum TaxType {
+  VAT
+  GST
+  Income
+  Withholding
+  Other
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  userId    String?
+  entityId  String?
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  System
+  Alert
+  Info
+  Warning
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  userEmail    String?
+  action       String
+  entityType   String?
+  entityId     String?
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  succeeded    Boolean  @default(true)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model CompanySettings {
+  id                 String    @id @default(uuid())
+  companyName        String    @default("ConstructPro")
+  address            String?
+  phone              String?
+  email              String?
+  website            String?
+  ntn                String?
+  strn               String?
+  logoPath           String?
+  currency           String    @default("PKR")
+  financialYearStart DateTime?
+  updatedAt          DateTime  @updatedAt
+
+  @@map("company_settings")
+}

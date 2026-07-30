@@ -12,8 +12,8 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: EmployeeQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -44,16 +44,18 @@ export class EmployeesService {
       this.prisma.employee.count({ where }),
     ]);
 
-    const data = employees.map((e) => this.mapEmployee(e));
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
 
     return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: employees.map((e) => this.mapEmployee(e)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -128,14 +130,21 @@ export class EmployeesService {
   }
 
   async getSalaryHistory(id: string) {
-    await this.findById(id);
+    const employee = await this.prisma.employee.findUnique({ where: { id } });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with id ${id} not found`);
+    }
 
     const payments = await this.prisma.salaryPayment.findMany({
       where: { employeeId: id },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
 
-    return payments.map((sp) => this.mapSalaryPayment(sp));
+    return payments.map((sp) => ({
+      ...this.mapSalaryPayment(sp),
+      employeeName: employee.fullName,
+    }));
   }
 
   async processSalary(id: string, dto: ProcessSalaryDto) {

@@ -12,8 +12,8 @@ export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: VehicleQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -37,18 +37,23 @@ export class VehiclesService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: { _count: { select: { maintenanceRecords: true } } },
       }),
       this.prisma.vehicle.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: vehicles.map((v) => this.mapVehicle(v)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: vehicles.map((v) => this.mapVehicle(v)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -169,6 +174,7 @@ export class VehiclesService {
     nextMaintenanceDate: Date | null;
     notes: string | null;
     createdAt: Date;
+    _count?: { maintenanceRecords: number };
   }) {
     return {
       id: vehicle.id,
@@ -181,10 +187,12 @@ export class VehiclesService {
       purchasePrice: vehicle.purchasePrice !== null ? Number(vehicle.purchasePrice) : null,
       purchaseDate: vehicle.purchaseDate,
       status: vehicle.status,
+      statusDisplay: vehicle.status,
       totalMileage: Number(vehicle.totalMileage),
       nextMaintenanceDate: vehicle.nextMaintenanceDate,
       notes: vehicle.notes,
       createdAt: vehicle.createdAt,
+      maintenanceCount: vehicle._count?.maintenanceRecords ?? 0,
     };
   }
 

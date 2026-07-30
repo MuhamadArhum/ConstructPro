@@ -7,8 +7,8 @@ export class TaxService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: TaxQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const page = query.pageNumber ?? 1;
+    const limit = query.pageSize ?? 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -41,14 +41,18 @@ export class TaxService {
       this.prisma.taxRecord.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const pageNumber = page;
+    const pageSize = limit;
+
     return {
-      data: records.map((r) => this.mapTaxRecord(r)),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: records.map((r) => this.mapTaxRecord(r)),
+      totalCount: total,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
     };
   }
 
@@ -165,6 +169,7 @@ export class TaxService {
     return {
       ...record,
       amount: Number(record.amount),
+      taxTypeDisplay: record.taxType,
     };
   }
 }

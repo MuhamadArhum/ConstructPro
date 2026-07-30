@@ -32,7 +32,7 @@ import { HasPermission } from '../common/decorators/permissions.decorator';
 @ApiTags('Vehicles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Controller('vehicles')
+@Controller('vehicle')
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
