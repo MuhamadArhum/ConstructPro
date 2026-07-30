@@ -1,6 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+export interface CreateAuditLogDto {
+  userId?: string;
+  userEmail?: string;
+  action: string;
+  entityType?: string;
+  entityId?: string;
+  oldValues?: any;
+  newValues?: any;
+  ipAddress?: string;
+  succeeded?: boolean;
+  errorMessage?: string;
+}
+
 export interface AuditLogQuery {
   pageNumber?: number;
   pageSize?: number;
@@ -14,6 +27,27 @@ export interface AuditLogQuery {
 @Injectable()
 export class AuditLogsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createLog(dto: CreateAuditLogDto) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          userId: dto.userId ?? null,
+          userEmail: dto.userEmail ?? null,
+          action: dto.action,
+          entityType: dto.entityType ?? null,
+          entityId: dto.entityId ?? null,
+          oldValues: dto.oldValues ?? undefined,
+          newValues: dto.newValues ?? undefined,
+          ipAddress: dto.ipAddress ?? null,
+          succeeded: dto.succeeded ?? true,
+          errorMessage: dto.errorMessage ?? null,
+        },
+      });
+    } catch {
+      // Never block the main request due to audit log failure
+    }
+  }
 
   async findAll(query: AuditLogQuery) {
     const page = query.pageNumber ?? 1;
