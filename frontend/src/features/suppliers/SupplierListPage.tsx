@@ -12,7 +12,7 @@ import { Perms } from '../../utils/permissions';
 import { useGetSuppliersQuery, useDeleteSupplierMutation } from './supplierApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = (n: number | undefined) => `PKR ${(n ?? 0).toLocaleString()}`;
 
 export default function SupplierListPage() {
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ export default function SupplierListPage() {
                     <TableCell>{row.category ?? '-'}</TableCell>
                     <TableCell>{row.phone ?? '-'}</TableCell>
                     <TableCell align="right">{fmt(row.totalPurchased)}</TableCell>
-                    <TableCell align="right" sx={{ color: row.outstandingBalance > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>{fmt(row.outstandingBalance)}</TableCell>
+                    <TableCell align="right" sx={{ color: (row.outstandingBalance ?? 0) > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>{fmt(row.outstandingBalance)}</TableCell>
                     <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
                     <TableCell align="right">
                       <PermissionGate permission={Perms.Suppliers.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/suppliers/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
