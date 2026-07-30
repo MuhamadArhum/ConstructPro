@@ -131,10 +131,28 @@ export class SupplierQueryDto {
 }
 
 export class CreateSupplierTransactionDto {
-  supplierId: string;
+  @IsOptional()
+  @IsString()
+  supplierId?: string;
+
+  @IsString()
+  @IsNotEmpty()
   type: 'PURCHASE' | 'PAYMENT';
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   amount: number;
-  date: string; // ISO date string
+
+  @IsString()
+  @IsNotEmpty()
+  date: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
   reference?: string;
 }

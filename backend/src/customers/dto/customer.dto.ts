@@ -110,10 +110,25 @@ export class UpdateCustomerDto {
 }
 
 export class CreateCustomerTransactionDto {
+  @IsString()
+  @IsNotEmpty()
   type: 'INVOICE' | 'PAYMENT';
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   amount: number;
+
+  @IsString()
+  @IsNotEmpty()
   date: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
   reference?: string;
 }
 
