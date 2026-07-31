@@ -91,6 +91,15 @@ const PERMISSIONS: { module: string; action: string; code: string }[] = [
 
   { module: 'Settings', action: 'View', code: 'Settings.View' },
   { module: 'Settings', action: 'Edit', code: 'Settings.Edit' },
+
+  { module: 'Project', action: 'View', code: 'Project.View' },
+  { module: 'Project', action: 'Manage', code: 'Project.Manage' },
+
+  { module: 'Invoice', action: 'View', code: 'Invoice.View' },
+  { module: 'Invoice', action: 'Manage', code: 'Invoice.Manage' },
+
+  { module: 'PurchaseOrder', action: 'View', code: 'PurchaseOrder.View' },
+  { module: 'PurchaseOrder', action: 'Manage', code: 'PurchaseOrder.Manage' },
 ];
 
 // ─── Role names ───────────────────────────────────────────────────
@@ -112,7 +121,7 @@ async function main() {
     console.log(`  Role: ${name} (${role.id})`);
   }
 
-  // 2. Create all 57 permissions
+  // 2. Create all 63 permissions
   console.log('\n[2/6] Creating permissions...');
   const permissionIds: string[] = [];
   for (const perm of PERMISSIONS) {
