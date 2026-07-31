@@ -122,12 +122,12 @@ export class IncomeQueryDto {
   @ApiPropertyOptional({ example: '2026-01-01' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ example: '2026-12-31' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ example: 'Ahmed' })
   @IsOptional()

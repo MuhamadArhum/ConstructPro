@@ -61,9 +61,8 @@ export default function ExpenseListPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const today = new Date().toISOString().split('T')[0];
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetExpensesQuery({
@@ -158,6 +157,11 @@ export default function ExpenseListPage() {
             onChange={(e) => { setToDate(e.target.value); setPage(0); }}
             slotProps={{ inputLabel: { shrink: true } }}
           />
+          {(fromDate || toDate || search || category) && (
+            <Button size="small" onClick={() => { setSearch(''); setCategory(''); setFromDate(''); setToDate(''); setPage(0); }}>
+              Clear
+            </Button>
+          )}
         </Stack>
       </Paper>
 

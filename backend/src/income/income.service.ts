@@ -17,13 +17,13 @@ export class IncomeService {
       where.category = query.category;
     }
 
-    if (query.startDate || query.endDate) {
+    if (query.fromDate || query.toDate) {
       where.date = {};
-      if (query.startDate) {
-        where.date.gte = new Date(query.startDate);
+      if (query.fromDate) {
+        where.date.gte = new Date(query.fromDate);
       }
-      if (query.endDate) {
-        where.date.lte = new Date(query.endDate);
+      if (query.toDate) {
+        where.date.lte = new Date(query.toDate + 'T23:59:59');
       }
     }
 
