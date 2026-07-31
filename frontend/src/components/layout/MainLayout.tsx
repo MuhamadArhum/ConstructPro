@@ -14,7 +14,7 @@ export default function MainLayout() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#ECE8DB' }}>
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
+        <Header onMenuClick={() => { (document.activeElement as HTMLElement)?.blur(); setMobileOpen(true); }} />
         <Toolbar sx={{ minHeight: '64px !important' }} />
         <Box sx={{ flexGrow: 1, p: { xs: 2, sm: '28px 32px 60px' } }}>
           <Outlet />
