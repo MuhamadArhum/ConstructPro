@@ -315,12 +315,26 @@ function MuiBarChart({ data }: { data: DashboardChartPoint[] }) {
 
 export default function DashboardPage() {
   const user = useSelector((state: RootState) => state.auth.user);
-  const { data, isLoading, refetch } = useGetDashboardQuery();
+  const { data, isLoading, isError, refetch } = useGetDashboardQuery();
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 2 }}>
+        <Typography variant="h6" color="text.secondary">Failed to load dashboard</Typography>
+        <Typography variant="body2" color="text.secondary">The server may still be starting up. Please try again.</Typography>
+        <Box>
+          <button onClick={() => refetch()} style={{ padding: '8px 20px', cursor: 'pointer', borderRadius: 6, border: '1px solid #ccc', background: '#fff', fontSize: 14 }}>
+            Retry
+          </button>
+        </Box>
       </Box>
     );
   }

@@ -155,183 +155,72 @@ export class DashboardService {
   async getDashboardData() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-    );
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
+    // Core queries — always available
     const [
       incomeThisMonthResult,
       expenseThisMonthResult,
-      activeProjectsCount,
       customers,
       suppliers,
-      lowStockCount,
-      activeProjects,
-      lowStockAlerts,
-      unpaidInvoicesResult,
-      pendingPOCount,
       recentIncomes,
       recentExpenses,
     ] = await Promise.all([
-      // 1. Total income this month
-      this.prisma.income.aggregate({
-        _sum: { amount: true },
-        where: { date: { gte: monthStart, lte: monthEnd } },
-      }),
-      // 2. Total expense this month
-      this.prisma.expense.aggregate({
-        _sum: { amount: true },
-        where: { date: { gte: monthStart, lte: monthEnd } },
-      }),
-      // 3. Active projects count
-      this.prisma.project.count({
-        where: { status: { in: ['Planning', 'Active', 'On Hold'] } },
-      }),
-      // 4. Customer outstanding
-      this.prisma.customer.findMany({
-        select: { totalBilled: true, totalPaid: true },
-      }),
-      // 5. Supplier outstanding
-      this.prisma.supplier.findMany({
-        select: { totalPurchased: true, totalPaid: true },
-      }),
-      // 6. Low stock count (raw query to compare two columns)
-      this.prisma.$queryRaw<[{ count: bigint }]>`
-        SELECT COUNT(*) as count FROM inventory_items
-        WHERE current_stock <= low_stock_threshold
-      `,
-      // 8. Active projects top 5
-      this.prisma.project.findMany({
-        where: { status: { not: 'Completed' } },
-        orderBy: { startDate: 'desc' },
-        take: 5,
-        include: { client: { select: { name: true } } },
-      }),
-      // 9. Low stock alerts top 5
-      this.prisma.$queryRaw<
-        Array<{
-          id: string;
-          name: string;
-          current_stock: any;
-          low_stock_threshold: any;
-          unit: string | null;
-        }>
-      >`
-        SELECT id, name, current_stock, low_stock_threshold, unit
-        FROM inventory_items
-        WHERE current_stock <= low_stock_threshold
-        ORDER BY current_stock ASC
-        LIMIT 5
-      `,
-      // 11. Unpaid invoices
-      this.prisma.invoice.aggregate({
-        _sum: { total: true },
-        _count: { id: true },
-        where: { status: { not: 'Paid' } },
-      }),
-      // 12. Pending PO count
-      this.prisma.purchaseOrder.count({
-        where: { status: { in: ['Draft', 'Sent', 'Approved'] } },
-      }),
-      // 10. Recent income transactions
-      this.prisma.income.findMany({
-        take: 10,
-        orderBy: { date: 'desc' },
-        select: {
-          id: true,
-          category: true,
-          amount: true,
-          date: true,
-          description: true,
-        },
-      }),
-      // 10. Recent expense transactions
-      this.prisma.expense.findMany({
-        take: 10,
-        orderBy: { date: 'desc' },
-        select: {
-          id: true,
-          category: true,
-          amount: true,
-          date: true,
-          description: true,
-        },
-      }),
+      this.prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
+      this.prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
+      this.prisma.customer.findMany({ select: { totalBilled: true, totalPaid: true } }),
+      this.prisma.supplier.findMany({ select: { totalPurchased: true, totalPaid: true } }),
+      this.prisma.income.findMany({ take: 10, orderBy: { date: 'desc' }, select: { id: true, category: true, amount: true, date: true, description: true } }),
+      this.prisma.expense.findMany({ take: 10, orderBy: { date: 'desc' }, select: { id: true, category: true, amount: true, date: true, description: true } }),
+    ]);
+
+    // Optional queries — new tables may not exist in older deployments
+    const [
+      activeProjectsCount,
+      activeProjects,
+      unpaidInvoicesResult,
+      pendingPOCount,
+      lowStockCount,
+      lowStockAlerts,
+    ] = await Promise.all([
+      this.prisma.project.count({ where: { status: { in: ['Planning', 'Active', 'On Hold'] } } }).catch(() => 0),
+      this.prisma.project.findMany({ where: { status: { not: 'Completed' } }, orderBy: { startDate: 'desc' }, take: 5, include: { client: { select: { name: true } } } }).catch(() => []),
+      this.prisma.invoice.aggregate({ _sum: { total: true }, _count: { id: true }, where: { status: { not: 'Paid' } } }).catch(() => ({ _sum: { total: 0 }, _count: { id: 0 } })),
+      this.prisma.purchaseOrder.count({ where: { status: { in: ['Draft', 'Sent', 'Approved'] } } }).catch(() => 0),
+      this.prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM inventory_items WHERE current_stock <= low_stock_threshold`.catch(() => [{ count: BigInt(0) }]),
+      this.prisma.$queryRaw<Array<{ id: string; name: string; current_stock: any; low_stock_threshold: any; unit: string | null }>>`SELECT id, name, current_stock, low_stock_threshold, unit FROM inventory_items WHERE current_stock <= low_stock_threshold ORDER BY current_stock ASC LIMIT 5`.catch(() => []),
     ]);
 
     const totalIncomeThisMonth = Number(incomeThisMonthResult._sum.amount ?? 0);
-    const totalExpenseThisMonth = Number(
-      expenseThisMonthResult._sum.amount ?? 0,
-    );
+    const totalExpenseThisMonth = Number(expenseThisMonthResult._sum.amount ?? 0);
+    const customerOutstanding = customers.reduce((sum, c) => sum + Number(c.totalBilled) - Number(c.totalPaid), 0);
+    const supplierOutstanding = suppliers.reduce((sum, s) => sum + Number(s.totalPurchased) - Number(s.totalPaid), 0);
 
-    const customerOutstanding = customers.reduce(
-      (sum, c) => sum + Number(c.totalBilled) - Number(c.totalPaid),
-      0,
-    );
-    const supplierOutstanding = suppliers.reduce(
-      (sum, s) => sum + Number(s.totalPurchased) - Number(s.totalPaid),
-      0,
-    );
-
-    // Build last 6 months chart (parallel)
     const chart = await this.buildChartData(now);
 
     const recentTransactions = [
-      ...recentIncomes.map((r) => ({
-        id: r.id,
-        type: 'income' as const,
-        category: r.category as string,
-        amount: Number(r.amount),
-        date: r.date,
-        description: r.description ?? null,
-      })),
-      ...recentExpenses.map((r) => ({
-        id: r.id,
-        type: 'expense' as const,
-        category: r.category as string,
-        amount: Number(r.amount),
-        date: r.date,
-        description: r.description ?? null,
-      })),
-    ]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10);
+      ...recentIncomes.map((r) => ({ id: r.id, type: 'income' as const, category: r.category as string, amount: Number(r.amount), date: r.date, description: r.description ?? null })),
+      ...recentExpenses.map((r) => ({ id: r.id, type: 'expense' as const, category: r.category as string, amount: Number(r.amount), date: r.date, description: r.description ?? null })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 
     return {
-      thisMonth: {
-        income: totalIncomeThisMonth,
-        expense: totalExpenseThisMonth,
-        profit: totalIncomeThisMonth - totalExpenseThisMonth,
-      },
+      thisMonth: { income: totalIncomeThisMonth, expense: totalExpenseThisMonth, profit: totalIncomeThisMonth - totalExpenseThisMonth },
       activeProjectsCount,
       customerOutstanding,
       supplierOutstanding,
       lowStockCount: Number((lowStockCount as any)[0]?.count ?? 0),
-      unpaidInvoicesCount: unpaidInvoicesResult._count.id,
-      unpaidInvoicesTotal: Number(unpaidInvoicesResult._sum.total ?? 0),
+      unpaidInvoicesCount: (unpaidInvoicesResult as any)._count?.id ?? 0,
+      unpaidInvoicesTotal: Number((unpaidInvoicesResult as any)._sum?.total ?? 0),
       pendingPOCount,
       chart,
-      activeProjects: activeProjects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        progress: p.progress,
-        budget: Number(p.budget),
-        spent: Number(p.spent),
-        clientName: p.client?.name ?? null,
-        endDate: p.endDate ?? null,
+      activeProjects: (activeProjects as any[]).map((p) => ({
+        id: p.id, name: p.name, status: p.status, progress: p.progress,
+        budget: Number(p.budget), spent: Number(p.spent),
+        clientName: p.client?.name ?? null, endDate: p.endDate ?? null,
       })),
-      lowStockAlerts: lowStockAlerts.map((i) => ({
-        id: i.id,
-        name: i.name,
-        currentStock: Number(i.current_stock),
-        lowStockThreshold: Number(i.low_stock_threshold),
-        unit: i.unit,
+      lowStockAlerts: (lowStockAlerts as any[]).map((i) => ({
+        id: i.id, name: i.name, currentStock: Number(i.current_stock),
+        lowStockThreshold: Number(i.low_stock_threshold), unit: i.unit,
       })),
       recentTransactions,
     };
