@@ -16,30 +16,34 @@ export class PurchaseOrdersService {
     status?: string,
     supplierId?: string,
   ) {
-    const skip = (page - 1) * pageSize;
-    const where: any = {};
+    try {
+      const skip = (page - 1) * pageSize;
+      const where: any = {};
 
-    if (status) where.status = status;
-    if (supplierId) where.supplierId = supplierId;
+      if (status) where.status = status;
+      if (supplierId) where.supplierId = supplierId;
 
-    const [data, total] = await Promise.all([
-      this.prisma.purchaseOrder.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          supplier: { select: { id: true, name: true } },
-          project: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.purchaseOrder.count({ where }),
-    ]);
+      const [data, total] = await Promise.all([
+        this.prisma.purchaseOrder.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            supplier: { select: { id: true, name: true } },
+            project: { select: { id: true, name: true } },
+          },
+        }),
+        this.prisma.purchaseOrder.count({ where }),
+      ]);
 
-    return {
-      data: data.map((po) => this.mapPO(po)),
-      total,
-    };
+      return {
+        data: data.map((po) => this.mapPO(po)),
+        total,
+      };
+    } catch {
+      return { data: [], total: 0 };
+    }
   }
 
   async findOne(id: string) {

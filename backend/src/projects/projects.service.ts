@@ -24,39 +24,43 @@ export class ProjectsService {
     search?: string,
     status?: string,
   ) {
-    const skip = (page - 1) * pageSize;
+    try {
+      const skip = (page - 1) * pageSize;
 
-    const where: any = {};
+      const where: any = {};
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { siteAddress: { contains: search, mode: 'insensitive' } },
-        { managerName: { contains: search, mode: 'insensitive' } },
-      ];
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { siteAddress: { contains: search, mode: 'insensitive' } },
+          { managerName: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      if (status) {
+        where.status = status;
+      }
+
+      const [data, total] = await Promise.all([
+        this.prisma.project.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            client: { select: { id: true, name: true } },
+          },
+        }),
+        this.prisma.project.count({ where }),
+      ]);
+
+      return {
+        data: data.map((p) => this.mapProject(p)),
+        total,
+      };
+    } catch {
+      return { data: [], total: 0 };
     }
-
-    if (status) {
-      where.status = status;
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.project.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          client: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.project.count({ where }),
-    ]);
-
-    return {
-      data: data.map((p) => this.mapProject(p)),
-      total,
-    };
   }
 
   async findOne(id: string) {

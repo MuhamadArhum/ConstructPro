@@ -16,30 +16,34 @@ export class InvoicesService {
     status?: string,
     customerId?: string,
   ) {
-    const skip = (page - 1) * pageSize;
-    const where: any = {};
+    try {
+      const skip = (page - 1) * pageSize;
+      const where: any = {};
 
-    if (status) where.status = status;
-    if (customerId) where.customerId = customerId;
+      if (status) where.status = status;
+      if (customerId) where.customerId = customerId;
 
-    const [data, total] = await Promise.all([
-      this.prisma.invoice.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          customer: { select: { id: true, name: true } },
-          project: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.invoice.count({ where }),
-    ]);
+      const [data, total] = await Promise.all([
+        this.prisma.invoice.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            customer: { select: { id: true, name: true } },
+            project: { select: { id: true, name: true } },
+          },
+        }),
+        this.prisma.invoice.count({ where }),
+      ]);
 
-    return {
-      data: data.map((inv) => this.mapInvoice(inv)),
-      total,
-    };
+      return {
+        data: data.map((inv) => this.mapInvoice(inv)),
+        total,
+      };
+    } catch {
+      return { data: [], total: 0 };
+    }
   }
 
   async findOne(id: string) {

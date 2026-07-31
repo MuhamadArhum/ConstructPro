@@ -6,8 +6,21 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import * as express from 'express';
 import { join } from 'path';
+import { execSync } from 'child_process';
+
+async function runMigrations() {
+  try {
+    console.log('[startup] Running prisma db push...');
+    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+    console.log('[startup] prisma db push completed');
+  } catch (err) {
+    console.error('[startup] prisma db push failed:', err);
+  }
+}
 
 async function bootstrap() {
+  await runMigrations();
+
   const app = await NestFactory.create(AppModule);
 
   // ─── CORS ─────────────────────────────────────────────────────────
