@@ -227,8 +227,7 @@ function TransactionsPanel({ transactions }: { transactions: DashboardRecentTran
                 />
                 <Typography
                   variant="caption"
-                  fontWeight={700}
-                  sx={{ color: isIncome ? 'success.main' : 'error.main', flexShrink: 0, ml: 1 }}
+                  sx={{ fontWeight: 700, color: isIncome ? 'success.main' : 'error.main', flexShrink: 0, ml: 1 }}
                 >
                   {isIncome ? '+' : '-'}{fmt(tx.amount)}
                 </Typography>
@@ -420,7 +419,7 @@ export default function DashboardPage() {
 
       {/* Row 2 — Chart */}
       <Paper variant="outlined" sx={{ mb: 3, p: 2.5 }}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em', mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 2 }}>
           Income vs Expense — Last 6 Months
         </Typography>
         {data.chart.length === 0 ? (

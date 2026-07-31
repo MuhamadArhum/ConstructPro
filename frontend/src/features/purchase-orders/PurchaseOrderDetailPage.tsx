@@ -200,7 +200,7 @@ export default function PurchaseOrderDetailPage() {
       {(canMarkSent || canMarkReceived || canMarkCancelled) && (
         <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Quick Actions</Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
             {canMarkSent && (
               <Button size="small" variant="outlined" color="info" onClick={() => handleStatusUpdate('Sent')} disabled={updatingStatus}>
                 Mark as Sent
@@ -284,7 +284,7 @@ export default function PurchaseOrderDetailPage() {
 
         <Divider sx={{ my: 2 }} />
 
-        <Stack alignItems="flex-end" spacing={1}>
+        <Stack sx={{ alignItems: 'flex-end' }} spacing={1}>
           <Stack direction="row" spacing={6} sx={{ minWidth: 280 }}>
             <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Subtotal</Typography>
             <Typography sx={{ minWidth: 120, textAlign: 'right' }}>{fmt(po.subtotal)}</Typography>

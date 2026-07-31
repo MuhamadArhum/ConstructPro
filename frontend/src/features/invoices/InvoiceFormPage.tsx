@@ -251,7 +251,7 @@ export default function InvoiceFormPage() {
 
         <Divider sx={{ my: 2 }} />
 
-        <Stack alignItems="flex-end" spacing={1}>
+        <Stack sx={{ alignItems: 'flex-end' }} spacing={1}>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320 }}>
             <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Subtotal</Typography>
             <Typography sx={{ minWidth: 120, textAlign: 'right', fontWeight: 600 }}>PKR {subtotal.toLocaleString()}</Typography>
