@@ -59,7 +59,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [logout] = useLogoutMutation();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-  const { data: unreadData } = useGetUnreadCountQuery();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const { data: unreadData } = useGetUnreadCountQuery(undefined, { skip: !isAuthenticated });
   const unreadCount = unreadData?.count ?? 0;
 
   const pageTitle = ROUTE_LABELS[location.pathname] ?? 'ConstructPro';
