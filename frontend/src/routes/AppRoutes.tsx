@@ -1,203 +1,230 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AuthLayout from '../components/layout/AuthLayout';
 import MainLayout from '../components/layout/MainLayout';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import PermissionRoute from '../components/common/PermissionRoute';
-import LoginPage from '../features/auth/LoginPage';
-import ForgotPasswordPage from '../features/auth/ForgotPasswordPage';
-import ResetPasswordPage from '../features/auth/ResetPasswordPage';
-import DashboardPage from '../features/dashboard/DashboardPage';
-import UserListPage from '../features/users/UserListPage';
-import UserFormPage from '../features/users/UserFormPage';
-import RoleListPage from '../features/roles/RoleListPage';
-import RoleFormPage from '../features/roles/RoleFormPage';
-import ProfilePage from '../features/profile/ProfilePage';
-import AuditLogListPage from '../features/auditLogs/AuditLogListPage';
-import IncomeListPage from '../features/income/IncomeListPage';
-import IncomeFormPage from '../features/income/IncomeFormPage';
-import ExpenseListPage from '../features/expense/ExpenseListPage';
-import ExpenseFormPage from '../features/expense/ExpenseFormPage';
-import LabourListPage from '../features/labour/LabourListPage';
-import LabourFormPage from '../features/labour/LabourFormPage';
-import LabourAttendancePage from '../features/labour/LabourAttendancePage';
-import EmployeeListPage from '../features/employees/EmployeeListPage';
-import EmployeeFormPage from '../features/employees/EmployeeFormPage';
-import SalaryPage from '../features/employees/SalaryPage';
-import MachineryListPage from '../features/machinery/MachineryListPage';
-import MachineryFormPage from '../features/machinery/MachineryFormPage';
-import MachineryMaintenancePage from '../features/machinery/MachineryMaintenancePage';
-import VehicleListPage from '../features/vehicles/VehicleListPage';
-import VehicleFormPage from '../features/vehicles/VehicleFormPage';
-import VehicleMaintenancePage from '../features/vehicles/VehicleMaintenancePage';
-import PlantListPage from '../features/plants/PlantListPage';
-import PlantFormPage from '../features/plants/PlantFormPage';
-import CustomerListPage from '../features/customers/CustomerListPage';
-import CustomerFormPage from '../features/customers/CustomerFormPage';
-import CustomerLedgerPage from '../features/customers/CustomerLedgerPage';
-import SupplierListPage from '../features/suppliers/SupplierListPage';
-import SupplierFormPage from '../features/suppliers/SupplierFormPage';
-import SupplierLedgerPage from '../features/suppliers/SupplierLedgerPage';
-import InventoryListPage from '../features/inventory/InventoryListPage';
-import InventoryFormPage from '../features/inventory/InventoryFormPage';
-import StockTransactionPage from '../features/inventory/StockTransactionPage';
-import TaxListPage from '../features/taxes/TaxListPage';
-import TaxFormPage from '../features/taxes/TaxFormPage';
-import ChartOfAccountsPage from '../features/accounts/ChartOfAccountsPage';
-import AccountFormPage from '../features/accounts/AccountFormPage';
-import JournalEntryListPage from '../features/accounts/JournalEntryListPage';
-import JournalEntryFormPage from '../features/accounts/JournalEntryFormPage';
-import InvoiceListPage from '../features/invoices/InvoiceListPage';
-import InvoiceFormPage from '../features/invoices/InvoiceFormPage';
-import InvoiceDetailPage from '../features/invoices/InvoiceDetailPage';
-import PurchaseOrderListPage from '../features/purchase-orders/PurchaseOrderListPage';
-import PurchaseOrderFormPage from '../features/purchase-orders/PurchaseOrderFormPage';
-import PurchaseOrderDetailPage from '../features/purchase-orders/PurchaseOrderDetailPage';
-import ReportsPage from '../features/reports/ReportsPage';
-import NotificationsPage from '../features/notifications/NotificationsPage';
-import SettingsPage from '../features/settings/SettingsPage';
-import { lazy, Suspense } from 'react';
 import Loader from '../components/common/Loader';
 import { Perms } from '../utils/permissions';
 
-const ProjectListPage = lazy(() => import('../features/projects/ProjectListPage'));
+// Auth
+const LoginPage            = lazy(() => import('../features/auth/LoginPage'));
+const ForgotPasswordPage   = lazy(() => import('../features/auth/ForgotPasswordPage'));
+const ResetPasswordPage    = lazy(() => import('../features/auth/ResetPasswordPage'));
+
+// Core
+const DashboardPage        = lazy(() => import('../features/dashboard/DashboardPage'));
+const ProfilePage          = lazy(() => import('../features/profile/ProfilePage'));
+
+// Finance
+const IncomeListPage       = lazy(() => import('../features/income/IncomeListPage'));
+const IncomeFormPage       = lazy(() => import('../features/income/IncomeFormPage'));
+const ExpenseListPage      = lazy(() => import('../features/expense/ExpenseListPage'));
+const ExpenseFormPage      = lazy(() => import('../features/expense/ExpenseFormPage'));
+
+// Labour & HR
+const LabourListPage       = lazy(() => import('../features/labour/LabourListPage'));
+const LabourFormPage       = lazy(() => import('../features/labour/LabourFormPage'));
+const LabourAttendancePage = lazy(() => import('../features/labour/LabourAttendancePage'));
+const EmployeeListPage     = lazy(() => import('../features/employees/EmployeeListPage'));
+const EmployeeFormPage     = lazy(() => import('../features/employees/EmployeeFormPage'));
+const SalaryPage           = lazy(() => import('../features/employees/SalaryPage'));
+
+// Assets
+const MachineryListPage        = lazy(() => import('../features/machinery/MachineryListPage'));
+const MachineryFormPage        = lazy(() => import('../features/machinery/MachineryFormPage'));
+const MachineryMaintenancePage = lazy(() => import('../features/machinery/MachineryMaintenancePage'));
+const VehicleListPage          = lazy(() => import('../features/vehicles/VehicleListPage'));
+const VehicleFormPage          = lazy(() => import('../features/vehicles/VehicleFormPage'));
+const VehicleMaintenancePage   = lazy(() => import('../features/vehicles/VehicleMaintenancePage'));
+const PlantListPage            = lazy(() => import('../features/plants/PlantListPage'));
+const PlantFormPage            = lazy(() => import('../features/plants/PlantFormPage'));
+
+// Projects
+const ProjectListPage   = lazy(() => import('../features/projects/ProjectListPage'));
 const ProjectDetailPage = lazy(() => import('../features/projects/ProjectDetailPage'));
+
+// Customers & Suppliers
+const CustomerListPage   = lazy(() => import('../features/customers/CustomerListPage'));
+const CustomerFormPage   = lazy(() => import('../features/customers/CustomerFormPage'));
+const CustomerLedgerPage = lazy(() => import('../features/customers/CustomerLedgerPage'));
+const SupplierListPage   = lazy(() => import('../features/suppliers/SupplierListPage'));
+const SupplierFormPage   = lazy(() => import('../features/suppliers/SupplierFormPage'));
+const SupplierLedgerPage = lazy(() => import('../features/suppliers/SupplierLedgerPage'));
+
+// Inventory
+const InventoryListPage     = lazy(() => import('../features/inventory/InventoryListPage'));
+const InventoryFormPage     = lazy(() => import('../features/inventory/InventoryFormPage'));
+const StockTransactionPage  = lazy(() => import('../features/inventory/StockTransactionPage'));
+
+// Finance tools
+const TaxListPage           = lazy(() => import('../features/taxes/TaxListPage'));
+const TaxFormPage           = lazy(() => import('../features/taxes/TaxFormPage'));
+const ChartOfAccountsPage   = lazy(() => import('../features/accounts/ChartOfAccountsPage'));
+const AccountFormPage       = lazy(() => import('../features/accounts/AccountFormPage'));
+const JournalEntryListPage  = lazy(() => import('../features/accounts/JournalEntryListPage'));
+const JournalEntryFormPage  = lazy(() => import('../features/accounts/JournalEntryFormPage'));
+
+// Invoices & POs
+const InvoiceListPage         = lazy(() => import('../features/invoices/InvoiceListPage'));
+const InvoiceFormPage         = lazy(() => import('../features/invoices/InvoiceFormPage'));
+const InvoiceDetailPage       = lazy(() => import('../features/invoices/InvoiceDetailPage'));
+const PurchaseOrderListPage   = lazy(() => import('../features/purchase-orders/PurchaseOrderListPage'));
+const PurchaseOrderFormPage   = lazy(() => import('../features/purchase-orders/PurchaseOrderFormPage'));
+const PurchaseOrderDetailPage = lazy(() => import('../features/purchase-orders/PurchaseOrderDetailPage'));
+
+// Admin
+const UserListPage     = lazy(() => import('../features/users/UserListPage'));
+const UserFormPage     = lazy(() => import('../features/users/UserFormPage'));
+const RoleListPage     = lazy(() => import('../features/roles/RoleListPage'));
+const RoleFormPage     = lazy(() => import('../features/roles/RoleFormPage'));
+const AuditLogListPage = lazy(() => import('../features/auditLogs/AuditLogListPage'));
+
+// Other
+const ReportsPage       = lazy(() => import('../features/reports/ReportsPage'));
+const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage'));
+const SettingsPage      = lazy(() => import('../features/settings/SettingsPage'));
+
+const S = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<Loader />}>{children}</Suspense>
+);
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/login"            element={<S><LoginPage /></S>} />
+        <Route path="/forgot-password"  element={<S><ForgotPasswordPage /></S>} />
+        <Route path="/reset-password"   element={<S><ResetPasswordPage /></S>} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/dashboard" element={<S><DashboardPage /></S>} />
+          <Route path="/profile"   element={<S><ProfilePage /></S>} />
 
           <Route element={<PermissionRoute permission={Perms.Income.View} />}>
-            <Route path="/income" element={<IncomeListPage />} />
-            <Route path="/income/new" element={<IncomeFormPage />} />
-            <Route path="/income/:id/edit" element={<IncomeFormPage />} />
+            <Route path="/income"          element={<S><IncomeListPage /></S>} />
+            <Route path="/income/new"      element={<S><IncomeFormPage /></S>} />
+            <Route path="/income/:id/edit" element={<S><IncomeFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Expense.View} />}>
-            <Route path="/expense" element={<ExpenseListPage />} />
-            <Route path="/expense/new" element={<ExpenseFormPage />} />
-            <Route path="/expense/:id/edit" element={<ExpenseFormPage />} />
+            <Route path="/expense"          element={<S><ExpenseListPage /></S>} />
+            <Route path="/expense/new"      element={<S><ExpenseFormPage /></S>} />
+            <Route path="/expense/:id/edit" element={<S><ExpenseFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Labour.View} />}>
-            <Route path="/labour" element={<LabourListPage />} />
-            <Route path="/labour/new" element={<LabourFormPage />} />
-            <Route path="/labour/:id/edit" element={<LabourFormPage />} />
-            <Route path="/labour/:id/attendance" element={<LabourAttendancePage />} />
+            <Route path="/labour"                  element={<S><LabourListPage /></S>} />
+            <Route path="/labour/new"              element={<S><LabourFormPage /></S>} />
+            <Route path="/labour/:id/edit"         element={<S><LabourFormPage /></S>} />
+            <Route path="/labour/:id/attendance"   element={<S><LabourAttendancePage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Employees.View} />}>
-            <Route path="/employees" element={<EmployeeListPage />} />
-            <Route path="/employees/new" element={<EmployeeFormPage />} />
-            <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
-            <Route path="/employees/:id/salary" element={<SalaryPage />} />
+            <Route path="/employees"           element={<S><EmployeeListPage /></S>} />
+            <Route path="/employees/new"       element={<S><EmployeeFormPage /></S>} />
+            <Route path="/employees/:id/edit"  element={<S><EmployeeFormPage /></S>} />
+            <Route path="/employees/:id/salary" element={<S><SalaryPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Machinery.View} />}>
-            <Route path="/machinery" element={<MachineryListPage />} />
-            <Route path="/machinery/new" element={<MachineryFormPage />} />
-            <Route path="/machinery/:id/edit" element={<MachineryFormPage />} />
-            <Route path="/machinery/:id/maintenance" element={<MachineryMaintenancePage />} />
+            <Route path="/machinery"                    element={<S><MachineryListPage /></S>} />
+            <Route path="/machinery/new"                element={<S><MachineryFormPage /></S>} />
+            <Route path="/machinery/:id/edit"           element={<S><MachineryFormPage /></S>} />
+            <Route path="/machinery/:id/maintenance"    element={<S><MachineryMaintenancePage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Vehicles.View} />}>
-            <Route path="/vehicles" element={<VehicleListPage />} />
-            <Route path="/vehicles/new" element={<VehicleFormPage />} />
-            <Route path="/vehicles/:id/edit" element={<VehicleFormPage />} />
-            <Route path="/vehicles/:id/maintenance" element={<VehicleMaintenancePage />} />
+            <Route path="/vehicles"                  element={<S><VehicleListPage /></S>} />
+            <Route path="/vehicles/new"              element={<S><VehicleFormPage /></S>} />
+            <Route path="/vehicles/:id/edit"         element={<S><VehicleFormPage /></S>} />
+            <Route path="/vehicles/:id/maintenance"  element={<S><VehicleMaintenancePage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Plants.View} />}>
-            <Route path="/plants" element={<PlantListPage />} />
-            <Route path="/plants/new" element={<PlantFormPage />} />
-            <Route path="/plants/:id/edit" element={<PlantFormPage />} />
+            <Route path="/plants"          element={<S><PlantListPage /></S>} />
+            <Route path="/plants/new"      element={<S><PlantFormPage /></S>} />
+            <Route path="/plants/:id/edit" element={<S><PlantFormPage /></S>} />
           </Route>
 
-          <Route path="/projects" element={<Suspense fallback={<Loader />}><ProjectListPage /></Suspense>} />
-          <Route path="/projects/:id" element={<Suspense fallback={<Loader />}><ProjectDetailPage /></Suspense>} />
+          <Route path="/projects"    element={<S><ProjectListPage /></S>} />
+          <Route path="/projects/:id" element={<S><ProjectDetailPage /></S>} />
 
           <Route element={<PermissionRoute permission={Perms.Customers.View} />}>
-            <Route path="/customers" element={<CustomerListPage />} />
-            <Route path="/customers/new" element={<CustomerFormPage />} />
-            <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
-            <Route path="/customers/:id/ledger" element={<CustomerLedgerPage />} />
+            <Route path="/customers"            element={<S><CustomerListPage /></S>} />
+            <Route path="/customers/new"        element={<S><CustomerFormPage /></S>} />
+            <Route path="/customers/:id/edit"   element={<S><CustomerFormPage /></S>} />
+            <Route path="/customers/:id/ledger" element={<S><CustomerLedgerPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Suppliers.View} />}>
-            <Route path="/suppliers" element={<SupplierListPage />} />
-            <Route path="/suppliers/new" element={<SupplierFormPage />} />
-            <Route path="/suppliers/:id/edit" element={<SupplierFormPage />} />
-            <Route path="/suppliers/:id/ledger" element={<SupplierLedgerPage />} />
+            <Route path="/suppliers"            element={<S><SupplierListPage /></S>} />
+            <Route path="/suppliers/new"        element={<S><SupplierFormPage /></S>} />
+            <Route path="/suppliers/:id/edit"   element={<S><SupplierFormPage /></S>} />
+            <Route path="/suppliers/:id/ledger" element={<S><SupplierLedgerPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Inventory.View} />}>
-            <Route path="/inventory" element={<InventoryListPage />} />
-            <Route path="/inventory/new" element={<InventoryFormPage />} />
-            <Route path="/inventory/:id/edit" element={<InventoryFormPage />} />
-            <Route path="/inventory/:id/transactions" element={<StockTransactionPage />} />
+            <Route path="/inventory"                    element={<S><InventoryListPage /></S>} />
+            <Route path="/inventory/new"                element={<S><InventoryFormPage /></S>} />
+            <Route path="/inventory/:id/edit"           element={<S><InventoryFormPage /></S>} />
+            <Route path="/inventory/:id/transactions"   element={<S><StockTransactionPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Tax.View} />}>
-            <Route path="/tax" element={<TaxListPage />} />
-            <Route path="/tax/new" element={<TaxFormPage />} />
-            <Route path="/tax/:id/edit" element={<TaxFormPage />} />
+            <Route path="/tax"          element={<S><TaxListPage /></S>} />
+            <Route path="/tax/new"      element={<S><TaxFormPage /></S>} />
+            <Route path="/tax/:id/edit" element={<S><TaxFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Accounts.View} />}>
-            <Route path="/accounts" element={<ChartOfAccountsPage />} />
-            <Route path="/accounts/new" element={<AccountFormPage />} />
-            <Route path="/accounts/:id/edit" element={<AccountFormPage />} />
-            <Route path="/accounts/journal" element={<JournalEntryListPage />} />
-            <Route path="/accounts/journal/new" element={<JournalEntryFormPage />} />
-            <Route path="/accounts/journal/:id" element={<JournalEntryListPage />} />
+            <Route path="/accounts"              element={<S><ChartOfAccountsPage /></S>} />
+            <Route path="/accounts/new"          element={<S><AccountFormPage /></S>} />
+            <Route path="/accounts/:id/edit"     element={<S><AccountFormPage /></S>} />
+            <Route path="/accounts/journal"      element={<S><JournalEntryListPage /></S>} />
+            <Route path="/accounts/journal/new"  element={<S><JournalEntryFormPage /></S>} />
+            <Route path="/accounts/journal/:id"  element={<S><JournalEntryListPage /></S>} />
           </Route>
 
-          <Route path="/invoices" element={<InvoiceListPage />} />
-          <Route path="/invoices/new" element={<InvoiceFormPage />} />
-          <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
-          <Route path="/invoices/:id/edit" element={<InvoiceFormPage />} />
+          <Route path="/invoices"          element={<S><InvoiceListPage /></S>} />
+          <Route path="/invoices/new"      element={<S><InvoiceFormPage /></S>} />
+          <Route path="/invoices/:id"      element={<S><InvoiceDetailPage /></S>} />
+          <Route path="/invoices/:id/edit" element={<S><InvoiceFormPage /></S>} />
 
-          <Route path="/purchase-orders" element={<PurchaseOrderListPage />} />
-          <Route path="/purchase-orders/new" element={<PurchaseOrderFormPage />} />
-          <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
-          <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderFormPage />} />
+          <Route path="/purchase-orders"          element={<S><PurchaseOrderListPage /></S>} />
+          <Route path="/purchase-orders/new"      element={<S><PurchaseOrderFormPage /></S>} />
+          <Route path="/purchase-orders/:id"      element={<S><PurchaseOrderDetailPage /></S>} />
+          <Route path="/purchase-orders/:id/edit" element={<S><PurchaseOrderFormPage /></S>} />
 
           <Route element={<PermissionRoute permission={Perms.Reports.View} />}>
-            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports" element={<S><ReportsPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Notifications.View} />}>
-            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/notifications" element={<S><NotificationsPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Settings.View} />}>
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<S><SettingsPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Users.View} />}>
-            <Route path="/users" element={<UserListPage />} />
-            <Route path="/users/new" element={<UserFormPage />} />
-            <Route path="/users/:id/edit" element={<UserFormPage />} />
+            <Route path="/users"          element={<S><UserListPage /></S>} />
+            <Route path="/users/new"      element={<S><UserFormPage /></S>} />
+            <Route path="/users/:id/edit" element={<S><UserFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Roles.View} />}>
-            <Route path="/roles" element={<RoleListPage />} />
-            <Route path="/roles/new" element={<RoleFormPage />} />
-            <Route path="/roles/:id/edit" element={<RoleFormPage />} />
+            <Route path="/roles"          element={<S><RoleListPage /></S>} />
+            <Route path="/roles/new"      element={<S><RoleFormPage /></S>} />
+            <Route path="/roles/:id/edit" element={<S><RoleFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.AuditLogs.View} />}>
-            <Route path="/audit-logs" element={<AuditLogListPage />} />
+            <Route path="/audit-logs" element={<S><AuditLogListPage /></S>} />
           </Route>
         </Route>
       </Route>
