@@ -12,8 +12,9 @@ const money = (min: number, max: number) => parseFloat((Math.random() * (max - m
 const uuid  = () => crypto.randomUUID();
 
 // Date range 01-Jan-2026 → 31-Jul-2026
-const START = new Date('2026-01-01');
-const END   = new Date('2026-07-31');
+const START       = new Date('2026-01-01');
+const END         = new Date('2026-07-31');
+const PER_DAY     = 5;
 
 function dateRange(): Date[] {
   const dates: Date[] = [];
@@ -39,7 +40,11 @@ const MAINT_DESC         = ['Routine service','Oil change','Filter replacement',
 
 async function main() {
   const DATES = dateRange();
-  console.log(`\n📅 Seeding date range: ${START.toDateString()} → ${END.toDateString()} (${DATES.length} days)\n`);
+  const TOTAL = DATES.length * PER_DAY;
+  console.log(`\n📅 Seeding date range: ${START.toDateString()} → ${END.toDateString()} (${DATES.length} days × ${PER_DAY} = ${TOTAL} entries per table)\n`);
+
+  // Expand: each date appears PER_DAY times
+  const EXPANDED = DATES.flatMap(d => Array.from({ length: PER_DAY }, () => d));
 
   const admin = await prisma.user.findFirst({ where: { email: 'admin@constructpro.com' } });
   const adminId = admin?.id ?? null;
@@ -70,9 +75,9 @@ async function main() {
   const creditAccIds = accounts.filter(a => ['Revenue','Liability','Equity'].includes(a.accountType)).map(a => a.id);
 
   // ── 1. INCOMES ────────────────────────────────────────────────────────────
-  console.log(`[1] Inserting ${DATES.length} income records...`);
+  console.log(`[1] Inserting ${TOTAL} income records...`);
   await prisma.income.createMany({
-    data: DATES.map(date => ({
+    data: EXPANDED.map(date => ({
       id: uuid(),
       category: pick([...INCOME_CATEGORIES]),
       amount: money(50000, 500000),
@@ -88,9 +93,9 @@ async function main() {
   });
 
   // ── 2. EXPENSES ───────────────────────────────────────────────────────────
-  console.log(`[2] Inserting ${DATES.length} expense records...`);
+  console.log(`[2] Inserting ${TOTAL} expense records...`);
   await prisma.expense.createMany({
-    data: DATES.map(date => ({
+    data: EXPANDED.map(date => ({
       id: uuid(),
       category: pick([...EXPENSE_CATEGORIES]),
       amount: money(5000, 200000),
@@ -105,8 +110,8 @@ async function main() {
 
   // ── 3. LABOUR ATTENDANCES ─────────────────────────────────────────────────
   if (labIds.length > 0) {
-    console.log(`[3] Inserting labour attendances (${DATES.length} days × up to 5 labours)...`);
-    const labourSample = labIds.slice(0, Math.min(5, labIds.length));
+    console.log(`[3] Inserting labour attendances (${DATES.length} days × up to 5 labours × ${PER_DAY})...`);
+    const labourSample = labIds.slice(0, Math.min(5 * PER_DAY, labIds.length));
     const attendanceData: any[] = [];
     for (const date of DATES) {
       for (const labourId of labourSample) {
@@ -130,9 +135,9 @@ async function main() {
 
   // ── 4. LABOUR ADVANCES ────────────────────────────────────────────────────
   if (labIds.length > 0) {
-    console.log(`[4] Inserting ${DATES.length} labour advance records...`);
+    console.log(`[4] Inserting ${TOTAL} labour advance records...`);
     await prisma.labourAdvance.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         labourId: pick(labIds),
         amount: money(1000, 15000),
@@ -177,9 +182,9 @@ async function main() {
 
   // ── 6. MACHINERY MAINTENANCES ─────────────────────────────────────────────
   if (macIds.length > 0) {
-    console.log(`[6] Inserting ${DATES.length} machinery maintenance records...`);
+    console.log(`[6] Inserting ${TOTAL} machinery maintenance records...`);
     await prisma.machineryMaintenance.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         machineryId: pick(macIds),
         maintenanceDate: date,
@@ -195,9 +200,9 @@ async function main() {
 
   // ── 7. VEHICLE MAINTENANCES ───────────────────────────────────────────────
   if (vehIds.length > 0) {
-    console.log(`[7] Inserting ${DATES.length} vehicle maintenance records...`);
+    console.log(`[7] Inserting ${TOTAL} vehicle maintenance records...`);
     await prisma.vehicleMaintenance.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         vehicleId: pick(vehIds),
         maintenanceDate: date,
@@ -213,9 +218,9 @@ async function main() {
 
   // ── 8. STOCK TRANSACTIONS ─────────────────────────────────────────────────
   if (invIds.length > 0) {
-    console.log(`[8] Inserting ${DATES.length} stock transaction records...`);
+    console.log(`[8] Inserting ${TOTAL} stock transaction records...`);
     await prisma.stockTransaction.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         inventoryItemId: pick(invIds),
         type: pick([...STOCK_TYPES]),
@@ -253,12 +258,12 @@ async function main() {
 
   // ── 10. JOURNAL ENTRIES ───────────────────────────────────────────────────
   if (debitAccIds.length > 0 && creditAccIds.length > 0) {
-    console.log(`[10] Inserting ${DATES.length} journal entries...`);
-    for (let i = 0; i < DATES.length; i += 50) {
-      const batch = DATES.slice(i, i + 50);
+    console.log(`[10] Inserting ${TOTAL} journal entries...`);
+    for (let i = 0; i < EXPANDED.length; i += 50) {
+      const batch = EXPANDED.slice(i, i + 50);
       for (const date of batch) {
         const dateStr = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
-        const entryNum = `JE-${dateStr}-${rand(100,999)}`;
+        const entryNum = `JE-${dateStr}-${rand(100,999)}-${uuid().slice(0,6)}`;
         const amount = money(10000, 300000);
         await prisma.journalEntry.create({
           data: {
@@ -286,9 +291,9 @@ async function main() {
   }
 
   // ── 11. NOTIFICATIONS ─────────────────────────────────────────────────────
-  console.log(`[11] Inserting ${DATES.length} notifications...`);
+  console.log(`[11] Inserting ${TOTAL} notifications...`);
   await prisma.notification.createMany({
-    data: DATES.map(date => ({
+    data: EXPANDED.map(date => ({
       id: uuid(),
       type: pick([...NOTIF_TYPES]),
       title: pick(NOTIF_TITLES),
@@ -302,9 +307,9 @@ async function main() {
 
   // ── 12. CUSTOMER TRANSACTIONS ─────────────────────────────────────────────
   if (cusIds.length > 0) {
-    console.log(`[12] Inserting ${DATES.length} customer transactions...`);
+    console.log(`[12] Inserting ${TOTAL} customer transactions...`);
     await prisma.customerTransaction.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         customerId: pick(cusIds),
         type: Math.random() > 0.4 ? 'INVOICE' : 'PAYMENT',
@@ -320,9 +325,9 @@ async function main() {
 
   // ── 13. SUPPLIER TRANSACTIONS ─────────────────────────────────────────────
   if (supIds.length > 0) {
-    console.log(`[13] Inserting ${DATES.length} supplier transactions...`);
+    console.log(`[13] Inserting ${TOTAL} supplier transactions...`);
     await prisma.supplierTransaction.createMany({
-      data: DATES.map(date => ({
+      data: EXPANDED.map(date => ({
         id: uuid(),
         supplierId: pick(supIds),
         type: Math.random() > 0.4 ? 'PURCHASE' : 'PAYMENT',
@@ -337,11 +342,11 @@ async function main() {
   }
 
   // ── 14. AUDIT LOGS ────────────────────────────────────────────────────────
-  console.log(`[14] Inserting ${DATES.length} audit log entries...`);
+  console.log(`[14] Inserting ${TOTAL} audit log entries...`);
   const ENTITIES = ['Income','Expense','Labour','Employee','Machinery','Vehicle','Customer','Supplier','Inventory'];
   const ACTIONS  = ['CREATE','UPDATE','DELETE'];
   await prisma.auditLog.createMany({
-    data: DATES.map(date => ({
+    data: EXPANDED.map(date => ({
       id: uuid(),
       userId: adminId,
       userEmail: 'admin@constructpro.com',
