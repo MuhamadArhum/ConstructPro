@@ -117,10 +117,8 @@ export class IncomeService {
   async getSummary() {
     const now = new Date();
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    const [allIncomes, thisMonthResult, lastMonthResult, byCategoryResult] = await Promise.all([
+    const [allIncomes, thisMonthResult, paidResult, pendingResult] = await Promise.all([
       this.prisma.income.aggregate({ _sum: { amount: true } }),
       this.prisma.income.aggregate({
         _sum: { amount: true },
@@ -128,24 +126,19 @@ export class IncomeService {
       }),
       this.prisma.income.aggregate({
         _sum: { amount: true },
-        where: { date: { gte: startOfLastMonth, lte: endOfLastMonth } },
+        where: { isPaid: true },
       }),
-      this.prisma.income.groupBy({
-        by: ['category'],
+      this.prisma.income.aggregate({
         _sum: { amount: true },
+        where: { isPaid: false },
       }),
     ]);
 
-    const byCategory = byCategoryResult.map((item) => ({
-      category: item.category,
-      total: Number(item._sum.amount ?? 0),
-    }));
-
     return {
-      totalIncome: Number(allIncomes._sum.amount ?? 0),
-      thisMonth: Number(thisMonthResult._sum.amount ?? 0),
-      lastMonth: Number(lastMonthResult._sum.amount ?? 0),
-      byCategory,
+      totalAllTime: Number(allIncomes._sum.amount ?? 0),
+      totalThisMonth: Number(thisMonthResult._sum.amount ?? 0),
+      totalPaid: Number(paidResult._sum.amount ?? 0),
+      totalPending: Number(pendingResult._sum.amount ?? 0),
     };
   }
 

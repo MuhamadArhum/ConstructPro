@@ -112,35 +112,18 @@ export class ExpenseService {
   async getSummary() {
     const now = new Date();
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    const [allExpenses, thisMonthResult, lastMonthResult, byCategoryResult] = await Promise.all([
+    const [allExpenses, thisMonthResult] = await Promise.all([
       this.prisma.expense.aggregate({ _sum: { amount: true } }),
       this.prisma.expense.aggregate({
         _sum: { amount: true },
         where: { date: { gte: startOfThisMonth } },
       }),
-      this.prisma.expense.aggregate({
-        _sum: { amount: true },
-        where: { date: { gte: startOfLastMonth, lte: endOfLastMonth } },
-      }),
-      this.prisma.expense.groupBy({
-        by: ['category'],
-        _sum: { amount: true },
-      }),
     ]);
 
-    const byCategory = byCategoryResult.map((item) => ({
-      category: item.category,
-      total: Number(item._sum.amount ?? 0),
-    }));
-
     return {
-      totalExpense: Number(allExpenses._sum.amount ?? 0),
-      thisMonth: Number(thisMonthResult._sum.amount ?? 0),
-      lastMonth: Number(lastMonthResult._sum.amount ?? 0),
-      byCategory,
+      totalAllTime: Number(allExpenses._sum.amount ?? 0),
+      totalThisMonth: Number(thisMonthResult._sum.amount ?? 0),
     };
   }
 
