@@ -36,12 +36,13 @@ export default function JournalEntryFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
     if (!isBalanced) { setError('Debit and Credit must be equal.'); return; }
+    if (totalDebit === 0) { setError('Entry cannot be all zeros — at least one line must have a debit or credit amount.'); return; }
     if (lines.some(l => !l.accountId)) { setError('All lines must have an account selected.'); return; }
     try {
       await createEntry({ date, description, reference: reference || undefined, notes: notes || undefined, lines }).unwrap();
       dispatch(showSnackbar({ message: 'Journal entry created', severity: 'success' }));
       navigate('/accounts/journal');
-    } catch { setError('Failed to create journal entry.'); }
+    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to create journal entry.'); }
   };
 
   return (

@@ -43,7 +43,7 @@ export default function InventoryFormPage() {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Item updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Item created', severity: 'success' })); }
       navigate('/inventory');
-    } catch { setError('Failed to save item.'); }
+    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save item.'); }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -61,11 +61,11 @@ export default function InventoryFormPage() {
               <TextField label="Unit" value={unit} onChange={(e) => setUnit(e.target.value)} fullWidth placeholder="e.g. Bags, Kg, Meters" />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Current Stock" type="number" value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} required fullWidth />
-              <TextField label="Low Stock Threshold" type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} required fullWidth />
+              <TextField label="Current Stock" type="number" value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} required fullWidth slotProps={{ htmlInput: { min: 0 } }} />
+              <TextField label="Low Stock Threshold" type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} required fullWidth slotProps={{ htmlInput: { min: 0 } }} />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Unit Price" type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
+              <TextField label="Unit Price" type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }} />
               <TextField label="Supplier" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} fullWidth />
             </Stack>
             <TextField label="Storage Location" value={location} onChange={(e) => setLocation(e.target.value)} fullWidth />

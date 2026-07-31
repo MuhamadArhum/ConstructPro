@@ -30,7 +30,7 @@ export default function InvoiceListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
   const [searchInput, setSearchInput] = useState('');
   const [status, setStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -161,7 +161,8 @@ export default function InvoiceListPage() {
           page={page}
           onPageChange={(_, p) => setPage(p)}
           rowsPerPage={rowsPerPage}
-          rowsPerPageOptions={[20]}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }}
+          rowsPerPageOptions={[10, 20, 50]}
         />
       </TableContainer>
 

@@ -74,8 +74,8 @@ export default function ExpenseFormPage() {
         dispatch(showSnackbar({ message: 'Expense created', severity: 'success' }));
       }
       navigate('/expense');
-    } catch {
-      setError('Failed to save expense record.');
+    } catch (err) {
+      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save expense record.');
     }
   };
 
@@ -105,7 +105,7 @@ export default function ExpenseFormPage() {
               onChange={(e) => setAmount(e.target.value)}
               required
               fullWidth
-              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }}
             />
 
             <TextField

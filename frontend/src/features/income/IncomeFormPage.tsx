@@ -86,8 +86,8 @@ export default function IncomeFormPage() {
         dispatch(showSnackbar({ message: 'Income created', severity: 'success' }));
       }
       navigate('/income');
-    } catch {
-      setError('Failed to save income record.');
+    } catch (err) {
+      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save income record.');
     }
   };
 
@@ -124,9 +124,8 @@ export default function IncomeFormPage() {
               required
               fullWidth
               slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start">PKR</InputAdornment>,
-                },
+                input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> },
+                htmlInput: { min: 0 },
               }}
             />
 

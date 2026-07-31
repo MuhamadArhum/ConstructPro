@@ -150,8 +150,10 @@ export default function AppRoutes() {
             <Route path="/plants/:id/edit" element={<S><PlantFormPage /></S>} />
           </Route>
 
-          <Route path="/projects"    element={<S><ProjectListPage /></S>} />
-          <Route path="/projects/:id" element={<S><ProjectDetailPage /></S>} />
+          <Route element={<PermissionRoute permission={Perms.Projects.View} />}>
+            <Route path="/projects"     element={<S><ProjectListPage /></S>} />
+            <Route path="/projects/:id" element={<S><ProjectDetailPage /></S>} />
+          </Route>
 
           <Route element={<PermissionRoute permission={Perms.Customers.View} />}>
             <Route path="/customers"            element={<S><CustomerListPage /></S>} />
@@ -186,18 +188,21 @@ export default function AppRoutes() {
             <Route path="/accounts/:id/edit"     element={<S><AccountFormPage /></S>} />
             <Route path="/accounts/journal"      element={<S><JournalEntryListPage /></S>} />
             <Route path="/accounts/journal/new"  element={<S><JournalEntryFormPage /></S>} />
-            <Route path="/accounts/journal/:id"  element={<S><JournalEntryListPage /></S>} />
           </Route>
 
-          <Route path="/invoices"          element={<S><InvoiceListPage /></S>} />
-          <Route path="/invoices/new"      element={<S><InvoiceFormPage /></S>} />
-          <Route path="/invoices/:id"      element={<S><InvoiceDetailPage /></S>} />
-          <Route path="/invoices/:id/edit" element={<S><InvoiceFormPage /></S>} />
+          <Route element={<PermissionRoute permission={Perms.Invoices.View} />}>
+            <Route path="/invoices"          element={<S><InvoiceListPage /></S>} />
+            <Route path="/invoices/new"      element={<S><InvoiceFormPage /></S>} />
+            <Route path="/invoices/:id"      element={<S><InvoiceDetailPage /></S>} />
+            <Route path="/invoices/:id/edit" element={<S><InvoiceFormPage /></S>} />
+          </Route>
 
-          <Route path="/purchase-orders"          element={<S><PurchaseOrderListPage /></S>} />
-          <Route path="/purchase-orders/new"      element={<S><PurchaseOrderFormPage /></S>} />
-          <Route path="/purchase-orders/:id"      element={<S><PurchaseOrderDetailPage /></S>} />
-          <Route path="/purchase-orders/:id/edit" element={<S><PurchaseOrderFormPage /></S>} />
+          <Route element={<PermissionRoute permission={Perms.PurchaseOrders.View} />}>
+            <Route path="/purchase-orders"          element={<S><PurchaseOrderListPage /></S>} />
+            <Route path="/purchase-orders/new"      element={<S><PurchaseOrderFormPage /></S>} />
+            <Route path="/purchase-orders/:id"      element={<S><PurchaseOrderDetailPage /></S>} />
+            <Route path="/purchase-orders/:id/edit" element={<S><PurchaseOrderFormPage /></S>} />
+          </Route>
 
           <Route element={<PermissionRoute permission={Perms.Reports.View} />}>
             <Route path="/reports" element={<S><ReportsPage /></S>} />

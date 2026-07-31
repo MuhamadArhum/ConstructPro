@@ -52,7 +52,7 @@ export default function TaxFormPage() {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Tax record updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Tax record created', severity: 'success' })); }
       navigate('/tax');
-    } catch { setError('Failed to save tax record.'); }
+    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save tax record.'); }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -70,7 +70,7 @@ export default function TaxFormPage() {
                 {taxTypes.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField label="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
+            <TextField label="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }} />
             <Stack direction="row" spacing={2}>
               <TextField label="Period Start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="Period End" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
@@ -81,7 +81,7 @@ export default function TaxFormPage() {
             </Stack>
             <TextField label="Reference" value={reference} onChange={(e) => setReference(e.target.value)} fullWidth />
             <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth multiline rows={2} />
-            <FormControlLabel control={<Switch checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />} label="Payment Completed" />
+            <FormControlLabel control={<Switch checked={isPaid} onChange={(e) => { setIsPaid(e.target.checked); if (!e.target.checked) setPaidDate(''); }} />} label="Payment Completed" />
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/tax')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>{isEdit ? 'Save Changes' : 'Add Record'}</Button>

@@ -67,8 +67,8 @@ export default function LabourFormPage() {
         dispatch(showSnackbar({ message: 'Labour added', severity: 'success' }));
       }
       navigate('/labour');
-    } catch {
-      setError('Failed to save labour record.');
+    } catch (err) {
+      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save labour record.');
     }
   };
 
@@ -94,7 +94,7 @@ export default function LabourFormPage() {
               onChange={(e) => setDailyWage(e.target.value)}
               required
               fullWidth
-              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }}
             />
 
             <TextField
@@ -104,7 +104,7 @@ export default function LabourFormPage() {
               onChange={(e) => setOvertimeRatePerHour(e.target.value)}
               required
               fullWidth
-              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }}
             />
 
             <TextField

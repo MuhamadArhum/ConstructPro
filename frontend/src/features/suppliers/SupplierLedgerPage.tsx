@@ -56,8 +56,8 @@ export default function SupplierLedgerPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const [fromDate, setFromDate] = useState(today());
-  const [toDate, setToDate] = useState(today());
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Dialog state

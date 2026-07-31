@@ -54,7 +54,7 @@ export default function VehicleFormPage() {
       if (isEdit && id) { await update({ id, data: { ...base, totalMileage: parseFloat(totalMileage) } }).unwrap(); dispatch(showSnackbar({ message: 'Vehicle updated', severity: 'success' })); }
       else { await create(base).unwrap(); dispatch(showSnackbar({ message: 'Vehicle created', severity: 'success' })); }
       navigate('/vehicles');
-    } catch { setError('Failed to save vehicle.'); }
+    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save vehicle.'); }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -72,7 +72,7 @@ export default function VehicleFormPage() {
               <TextField label="Model" value={model} onChange={(e) => setModel(e.target.value)} fullWidth />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Year" type="number" value={year} onChange={(e) => setYear(e.target.value)} fullWidth />
+              <TextField label="Year" type="number" value={year} onChange={(e) => setYear(e.target.value)} fullWidth slotProps={{ htmlInput: { min: 1900, max: 2100 } }} />
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as VehicleStatus)}>
@@ -87,10 +87,10 @@ export default function VehicleFormPage() {
               <TextField label="Driver Contact" value={driverContact} onChange={(e) => setDriverContact(e.target.value)} fullWidth />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Purchase Price" type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
+              <TextField label="Purchase Price" type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }} />
               <TextField label="Purchase Date" type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
             </Stack>
-            {isEdit && <TextField label="Total Mileage (km)" type="number" value={totalMileage} onChange={(e) => setTotalMileage(e.target.value)} fullWidth />}
+            {isEdit && <TextField label="Total Mileage (km)" type="number" value={totalMileage} onChange={(e) => setTotalMileage(e.target.value)} fullWidth slotProps={{ htmlInput: { min: 0 } }} />}
             <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth multiline rows={2} />
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/vehicles')}>Cancel</Button>

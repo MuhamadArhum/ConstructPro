@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Box, Button, Chip, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -18,9 +17,8 @@ export default function JournalEntryListPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
-  const today = new Date().toISOString().split('T')[0];
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetJournalEntriesQuery({ pageNumber: page + 1, pageSize: rowsPerPage, search: search || undefined, fromDate: fromDate || undefined, toDate: toDate || undefined });
@@ -74,7 +72,6 @@ export default function JournalEntryListPage() {
                     <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.totalDebit)}</TableCell>
                     <TableCell><Chip label={row.isPosted ? 'Posted' : 'Draft'} color={row.isPosted ? 'success' : 'warning'} size="small" /></TableCell>
                     <TableCell align="right">
-                      <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/accounts/journal/${row.id}`)}><VisibilityIcon fontSize="small" /></IconButton></Tooltip>
                       <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
                     </TableCell>
                   </TableRow>

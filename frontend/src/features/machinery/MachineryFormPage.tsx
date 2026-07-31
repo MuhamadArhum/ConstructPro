@@ -77,8 +77,8 @@ export default function MachineryFormPage() {
         dispatch(showSnackbar({ message: 'Machinery added', severity: 'success' }));
       }
       navigate('/machinery');
-    } catch {
-      setError('Failed to save machinery record.');
+    } catch (err) {
+      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save machinery record.');
     }
   };
 
@@ -111,7 +111,7 @@ export default function MachineryFormPage() {
                 value={purchasePrice}
                 onChange={(e) => setPurchasePrice(e.target.value)}
                 fullWidth
-                slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0 } }}
               />
             </Stack>
 
@@ -121,6 +121,7 @@ export default function MachineryFormPage() {
               value={totalRunningHours}
               onChange={(e) => setTotalRunningHours(e.target.value)}
               fullWidth
+              slotProps={{ htmlInput: { min: 0 } }}
             />
 
             <TextField
