@@ -18,7 +18,7 @@ services:
       - key: JWT_SECRET
         sync: false          # Set in Render dashboard — min 32 chars
       - key: JWT_EXPIRES_IN
-        value: "30m"
+        value: "8h"
       - key: JWT_REFRESH_DAYS
         value: "7"
       - key: FRONTEND_URL
