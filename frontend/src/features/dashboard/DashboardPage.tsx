@@ -89,7 +89,7 @@ function ProjectsPanel({ projects }: { projects: DashboardActiveProject[] }) {
   return (
     <Paper variant="outlined" sx={{ height: '100%' }}>
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Active Projects
         </Typography>
         <Typography
@@ -110,7 +110,7 @@ function ProjectsPanel({ projects }: { projects: DashboardActiveProject[] }) {
           {projects.slice(0, 5).map((p) => (
             <Box key={p.id} sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, mr: 1 }}>
+                <Typography variant="body2" noWrap sx={{ fontWeight: 600, flex: 1, mr: 1 }}>
                   {p.name}
                 </Typography>
                 <Chip
@@ -149,7 +149,7 @@ function LowStockPanel({ alerts }: { alerts: DashboardLowStockAlert[] }) {
   return (
     <Paper variant="outlined" sx={{ height: '100%' }}>
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Low Stock Alerts
         </Typography>
         <Typography
@@ -174,7 +174,7 @@ function LowStockPanel({ alerts }: { alerts: DashboardLowStockAlert[] }) {
               <ListItem key={a.id} divider sx={{ py: 1.25, px: 2 }}>
                 <ListItemText
                   primary={
-                    <Typography variant="body2" fontWeight={600} noWrap>{a.name}</Typography>
+                    <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{a.name}</Typography>
                   }
                   secondary={
                     <Typography variant="caption" sx={{ color: itemColor, fontWeight: 600 }}>
@@ -196,7 +196,7 @@ function TransactionsPanel({ transactions }: { transactions: DashboardRecentTran
   return (
     <Paper variant="outlined" sx={{ height: '100%' }}>
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Recent Transactions
         </Typography>
       </Box>
@@ -217,7 +217,7 @@ function TransactionsPanel({ transactions }: { transactions: DashboardRecentTran
                 </Box>
                 <ListItemText
                   primary={
-                    <Typography variant="caption" fontWeight={600} sx={{ display: 'block' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
                       {tx.category}
                     </Typography>
                   }
