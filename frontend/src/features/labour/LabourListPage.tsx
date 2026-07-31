@@ -42,9 +42,7 @@ export default function LabourListPage() {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [tradeInput, setTradeInput] = useState('');
   const [trade, setTrade] = useState('');
   const [isActive, setIsActive] = useState('');
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
@@ -87,19 +85,17 @@ export default function LabourListPage() {
           <TextField
             label="Search by name, trade, CNIC"
             size="small"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
-            onBlur={() => { setSearch(searchInput); setPage(0); }}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}
           />
           <TextField
             label="Trade"
             size="small"
-            value={tradeInput}
-            onChange={(e) => setTradeInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setTrade(tradeInput); setPage(0); } }}
-            onBlur={() => { setTrade(tradeInput); setPage(0); }}
+            value={trade}
+            onChange={(e) => { setTrade(e.target.value); setPage(0); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>

@@ -56,7 +56,6 @@ export default function MachineryListPage() {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -120,10 +119,9 @@ export default function MachineryListPage() {
           <TextField
             label="Search by name, model, serial number"
             size="small"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
-            onBlur={() => { setSearch(searchInput); setPage(0); }}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 280 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 180 } }}>

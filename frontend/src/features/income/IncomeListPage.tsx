@@ -51,7 +51,6 @@ export default function IncomeListPage() {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const today = new Date().toISOString().split('T')[0];
@@ -121,10 +120,9 @@ export default function IncomeListPage() {
           <TextField
             label="Search"
             size="small"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
-            onBlur={() => { setSearch(searchInput); setPage(0); }}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
