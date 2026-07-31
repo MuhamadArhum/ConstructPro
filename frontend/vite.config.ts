@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null,        // We handle SW registration manually (defer in index.html)
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
         name: 'ConstructPro',
@@ -64,4 +65,19 @@ export default defineConfig({
       },
     }),
   ],
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':  ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui':    ['@mui/material', '@mui/system', '@mui/icons-material'],
+          'vendor-redux':  ['@reduxjs/toolkit', 'react-redux'],
+          'vendor-http':   ['axios'],
+        },
+      },
+    },
+    // Raise warning threshold so CI doesn't warn on normal vendor chunks
+    chunkSizeWarningLimit: 1000,
+  },
 })
