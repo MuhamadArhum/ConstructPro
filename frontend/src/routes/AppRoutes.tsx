@@ -46,10 +46,21 @@ import ChartOfAccountsPage from '../features/accounts/ChartOfAccountsPage';
 import AccountFormPage from '../features/accounts/AccountFormPage';
 import JournalEntryListPage from '../features/accounts/JournalEntryListPage';
 import JournalEntryFormPage from '../features/accounts/JournalEntryFormPage';
+import InvoiceListPage from '../features/invoices/InvoiceListPage';
+import InvoiceFormPage from '../features/invoices/InvoiceFormPage';
+import InvoiceDetailPage from '../features/invoices/InvoiceDetailPage';
+import PurchaseOrderListPage from '../features/purchase-orders/PurchaseOrderListPage';
+import PurchaseOrderFormPage from '../features/purchase-orders/PurchaseOrderFormPage';
+import PurchaseOrderDetailPage from '../features/purchase-orders/PurchaseOrderDetailPage';
 import ReportsPage from '../features/reports/ReportsPage';
 import NotificationsPage from '../features/notifications/NotificationsPage';
 import SettingsPage from '../features/settings/SettingsPage';
+import { lazy, Suspense } from 'react';
+import Loader from '../components/common/Loader';
 import { Perms } from '../utils/permissions';
+
+const ProjectListPage = lazy(() => import('../features/projects/ProjectListPage'));
+const ProjectDetailPage = lazy(() => import('../features/projects/ProjectDetailPage'));
 
 export default function AppRoutes() {
   return (
@@ -62,7 +73,8 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
 
           <Route element={<PermissionRoute permission={Perms.Income.View} />}>
@@ -111,6 +123,9 @@ export default function AppRoutes() {
             <Route path="/plants/:id/edit" element={<PlantFormPage />} />
           </Route>
 
+          <Route path="/projects" element={<Suspense fallback={<Loader />}><ProjectListPage /></Suspense>} />
+          <Route path="/projects/:id" element={<Suspense fallback={<Loader />}><ProjectDetailPage /></Suspense>} />
+
           <Route element={<PermissionRoute permission={Perms.Customers.View} />}>
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/new" element={<CustomerFormPage />} />
@@ -147,6 +162,16 @@ export default function AppRoutes() {
             <Route path="/accounts/journal/:id" element={<JournalEntryListPage />} />
           </Route>
 
+          <Route path="/invoices" element={<InvoiceListPage />} />
+          <Route path="/invoices/new" element={<InvoiceFormPage />} />
+          <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/invoices/:id/edit" element={<InvoiceFormPage />} />
+
+          <Route path="/purchase-orders" element={<PurchaseOrderListPage />} />
+          <Route path="/purchase-orders/new" element={<PurchaseOrderFormPage />} />
+          <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
+          <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderFormPage />} />
+
           <Route element={<PermissionRoute permission={Perms.Reports.View} />}>
             <Route path="/reports" element={<ReportsPage />} />
           </Route>
@@ -177,7 +202,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

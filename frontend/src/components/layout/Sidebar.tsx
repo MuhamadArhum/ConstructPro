@@ -1,4 +1,5 @@
 import DashboardIcon from '@mui/icons-material/DashboardOutlined';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 import ShieldIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import HistoryIcon from '@mui/icons-material/HistoryOutlined';
@@ -13,6 +14,8 @@ import PersonIcon from '@mui/icons-material/PersonOutlined';
 import LocalShippingIcon from '@mui/icons-material/LocalShippingOutlined';
 import InventoryIcon from '@mui/icons-material/InventoryOutlined';
 import ReceiptIcon from '@mui/icons-material/ReceiptOutlined';
+import InvoiceIcon from '@mui/icons-material/Receipt';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalanceOutlined';
 import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
@@ -35,7 +38,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: <DashboardIcon fontSize="small" />, permission: Perms.Dashboard.View },
+  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon fontSize="small" />, permission: Perms.Dashboard.View },
+  { label: 'Projects', path: '/projects', icon: <BusinessCenterIcon fontSize="small" /> },
 
   { label: 'Income',        path: '/income',   icon: <AttachMoneyIcon fontSize="small" />, permission: Perms.Income.View,   section: 'Finance' },
   { label: 'Expense',       path: '/expense',  icon: <MoneyOffIcon fontSize="small" />,    permission: Perms.Expense.View   },
@@ -49,9 +53,11 @@ const navItems: NavItem[] = [
   { label: 'Vehicles',          path: '/vehicles',  icon: <DirectionsCarIcon fontSize="small" />,          permission: Perms.Vehicles.View  },
   { label: 'Plant & Equipment', path: '/plants',    icon: <FactoryIcon fontSize="small" />,                permission: Perms.Plants.View    },
 
-  { label: 'Customers',  path: '/customers',  icon: <PersonIcon fontSize="small" />,        permission: Perms.Customers.View,  section: 'Procurement' },
-  { label: 'Suppliers',  path: '/suppliers',  icon: <LocalShippingIcon fontSize="small" />, permission: Perms.Suppliers.View   },
-  { label: 'Inventory',  path: '/inventory',  icon: <InventoryIcon fontSize="small" />,     permission: Perms.Inventory.View   },
+  { label: 'Customers',       path: '/customers',       icon: <PersonIcon fontSize="small" />,        permission: Perms.Customers.View,  section: 'Procurement' },
+  { label: 'Suppliers',       path: '/suppliers',       icon: <LocalShippingIcon fontSize="small" />, permission: Perms.Suppliers.View   },
+  { label: 'Inventory',       path: '/inventory',       icon: <InventoryIcon fontSize="small" />,     permission: Perms.Inventory.View   },
+  { label: 'Invoices',        path: '/invoices',        icon: <InvoiceIcon fontSize="small" />        },
+  { label: 'Purchase Orders', path: '/purchase-orders', icon: <ShoppingCartIcon fontSize="small" />   },
 
   { label: 'Reports',         path: '/reports',       icon: <BarChartIcon fontSize="small" />,      permission: Perms.Reports.View,       section: 'System' },
   { label: 'Notifications',   path: '/notifications', icon: <NotificationsIcon fontSize="small" />, permission: Perms.Notifications.View  },
@@ -105,7 +111,7 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
             <ListItemButton
               component={NavLink}
               to={item.path}
-              end={item.path === '/'}
+              end
               onClick={onClose}
               sx={{
                 borderRadius: '4px', mb: '2px', px: '12px', py: '10px',

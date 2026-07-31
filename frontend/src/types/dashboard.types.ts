@@ -1,31 +1,56 @@
-export interface MonthlyChartDataDto {
-  month: string;
+export interface DashboardThisMonth {
   income: number;
   expense: number;
   profit: number;
 }
 
-export interface RecentTransactionDto {
+export interface DashboardChartPoint {
+  monthName: string;
+  year: number;
+  month: number;
+  income: number;
+  expense: number;
+}
+
+export interface DashboardActiveProject {
   id: string;
-  type: string;
+  name: string;
+  status: string;
+  progress: number;
+  budget: number;
+  spent: number;
+  clientName?: string;
+  endDate?: string;
+}
+
+export interface DashboardLowStockAlert {
+  id: string;
+  name: string;
+  currentStock: number;
+  lowStockThreshold: number;
+  unit?: string;
+}
+
+export interface DashboardRecentTransaction {
+  id: string;
+  type: 'income' | 'expense';
   category: string;
   amount: number;
   date: string;
-  description: string;
+  description?: string;
 }
 
-export interface DashboardStatsDto {
-  totalIncomeAllTime: number;
-  totalExpenseAllTime: number;
-  profitLossAllTime: number;
-  totalIncomeThisMonth: number;
-  totalExpenseThisMonth: number;
-  profitLossThisMonth: number;
-  pendingPayments: number;
-  activeLabourCount: number;
-  activeEmployeeCount: number;
-  activeMachineryCount: number;
-  maintenanceDueCount: number;
-  monthlyChart: MonthlyChartDataDto[];
-  recentTransactions: RecentTransactionDto[];
+export interface DashboardDto {
+  thisMonth: DashboardThisMonth;
+  activeProjectsCount: number;
+  customerOutstanding: number;
+  supplierOutstanding: number;
+  lowStockCount: number;
+  unpaidInvoicesCount: number;
+  unpaidInvoicesTotal: number;
+  pendingPOCount: number;
+  chart: DashboardChartPoint[];
+  activeProjects: DashboardActiveProject[];
+  lowStockAlerts: DashboardLowStockAlert[];
+  recentTransactions: DashboardRecentTransaction[];
 }

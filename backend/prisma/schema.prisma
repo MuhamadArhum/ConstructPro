@@ -137,6 +137,7 @@ model Labour {
   createdAt           DateTime           @default(now())
   attendances         LabourAttendance[]
   advances            LabourAdvance[]
+  projectAssignments  ProjectLabour[]
 
   @@map("labours")
 }
@@ -181,6 +182,8 @@ model Customer {
   notes        String?
   createdAt    DateTime             @default(now())
   transactions CustomerTransaction[]
+  projects     Project[]
+  invoices     Invoice[]
 
   @@map("customers")
 }
@@ -214,6 +217,7 @@ model Supplier {
   notes          String?
   createdAt      DateTime              @default(now())
   transactions   SupplierTransaction[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("suppliers")
 }
@@ -245,6 +249,7 @@ model Machinery {
   notes               String?
   createdAt           DateTime               @default(now())
   maintenanceRecords  MachineryMaintenance[]
+  projectAssignments  ProjectMachinery[]
 
   @@map("machineries")
 }
@@ -577,3 +582,163 @@ model CompanySettings {
 
   @@map("company_settings")
 }
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  clientId    String?
+  siteAddress String?
+  startDate   DateTime
+  endDate     DateTime?
+  budget      Decimal   @default(0) @db.Decimal(18, 2)
+  spent       Decimal   @default(0) @db.Decimal(18, 2)
+  status      String    @default("Planning")
+  progress    Int       @default(0)
+  managerName String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  client         Customer?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  milestones     ProjectMilestone[]
+  expenses       ProjectExpense[]
+  labours        ProjectLabour[]
+  machinery      ProjectMachinery[]
+  invoices       Invoice[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String    @id @default(uuid())
+  projectId   String
+  title       String
+  description String?
+  dueDate     DateTime
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_milestones")
+}
+
+model ProjectExpense {
+  id          String   @id @default(uuid())
+  projectId   String
+  category    String
+  amount      Decimal  @db.Decimal(18, 2)
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_expenses")
+}
+
+model ProjectLabour {
+  id         String   @id @default(uuid())
+  projectId  String
+  labourId   String
+  assignedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  labour     Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, labourId])
+  @@map("project_labours")
+}
+
+model ProjectMachinery {
+  id          String    @id @default(uuid())
+  projectId   String
+  machineryId String
+  assignedAt  DateTime  @default(now())
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  machinery   Machinery @relation(fields: [machineryId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, machineryId])
+  @@map("project_machineries")
+}
+
+// ── Invoices ─────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  customerId    String
+  projectId     String?
+  issueDate     DateTime
+  dueDate       DateTime
+  status        String        @default("Draft")
+  subtotal      Decimal       @default(0) @db.Decimal(18, 2)
+  taxAmount     Decimal       @default(0) @db.Decimal(18, 2)
+  total         Decimal       @default(0) @db.Decimal(18, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items         InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  description String
+  quantity    Decimal  @default(1) @db.Decimal(18, 2)
+  unitPrice   Decimal  @default(0) @db.Decimal(18, 2)
+  total       Decimal  @default(0) @db.Decimal(18, 2)
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+// ── Purchase Orders ───────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id               String              @id @default(uuid())
+  poNumber         String              @unique
+  supplierId       String
+  projectId        String?
+  issueDate        DateTime
+  expectedDelivery DateTime?
+  status           String              @default("Draft")
+  subtotal         Decimal             @default(0) @db.Decimal(18, 2)
+  taxAmount        Decimal             @default(0) @db.Decimal(18, 2)
+  total            Decimal             @default(0) @db.Decimal(18, 2)
+  notes            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  project          Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items            PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  description     String
+  quantity        Decimal       @default(1) @db.Decimal(18, 2)
+  unitPrice       Decimal       @default(0) @db.Decimal(18, 2)
+  total           Decimal       @default(0) @db.Decimal(18, 2)
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_order_items")
+}
+

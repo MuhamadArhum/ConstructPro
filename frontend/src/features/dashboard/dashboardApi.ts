@@ -1,13 +1,13 @@
 import { baseApi } from '../../api/baseApi';
-import type { DashboardStatsDto } from '../../types/dashboard.types';
+import type { DashboardDto } from '../../types/dashboard.types';
 
 export const dashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getDashboardStats: builder.query<DashboardStatsDto, void>({
-      query: () => ({ url: '/dashboard/stats' }),
-      providesTags: ['Dashboard'],
+    getDashboard: builder.query<DashboardDto, void>({
+      query: () => ({ url: '/dashboard' }),
+      providesTags: ['Income', 'Expense', 'Project', 'Customer', 'Supplier', 'Inventory'],
     }),
   }),
 });
 
-export const { useGetDashboardStatsQuery } = dashboardApi;
+export const { useGetDashboardQuery } = dashboardApi;

@@ -21,6 +21,9 @@ import { AccountsModule } from './accounts/accounts.module';
 import { TaxModule } from './tax/tax.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ProjectsModule } from './projects/projects.module';
+import { InvoicesModule } from './invoices/invoices.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
@@ -47,6 +50,9 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     TaxModule,
     ReportsModule,
     DashboardModule,
+    ProjectsModule,
+    InvoicesModule,
+    PurchaseOrdersModule,
     NotificationsModule,
     SettingsModule,
     AuditLogsModule,

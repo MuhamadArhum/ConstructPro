@@ -2,328 +2,448 @@ import {
   Box,
   Card,
   CardContent,
-  Divider,
+  Chip,
+  CircularProgress,
   Grid,
+  IconButton,
   LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   Paper,
-  Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import Loader from '../../components/common/Loader';
-import { useGetDashboardStatsQuery } from './dashboardApi';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import PersonIcon from '@mui/icons-material/Person';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../app/store';
+import { useGetDashboardQuery } from './dashboardApi';
+import type { DashboardActiveProject, DashboardChartPoint, DashboardLowStockAlert, DashboardRecentTransaction } from '../../types/dashboard.types';
 
-const BP   = '#0E2A47';
-const INK  = '#14181B';
-const STL  = '#6B7178';
-const ORG  = '#E85D1F';
-const GRN  = '#3E8E5A';
-const AMB  = '#C98A1E';
-const RED  = '#C23B2E';
-const RULE = '#D3CDBA';
-const PL   = '#F5F2E8';
-const P    = '#ECE8DB';
+const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
-const pkr = (n: number) =>
-  new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(n);
-
-const shortPkr = (n: number) => {
-  if (n >= 1_000_000) return `PKR ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `PKR ${(n / 1_000).toFixed(0)}K`;
-  return pkr(n);
-};
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography
-      sx={{
-        fontFamily: "'Oswald', sans-serif",
-        fontSize: '14px',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.03em',
-        color: BP,
-      }}
-    >
-      {children}
-    </Typography>
-  );
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
-function MonoLabel({ children, sx }: { children: React.ReactNode; sx?: object }) {
-  return (
-    <Typography
-      sx={{
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '11px',
-        letterSpacing: '0.04em',
-        color: STL,
-        textTransform: 'uppercase',
-        ...sx,
-      }}
-    >
-      {children}
-    </Typography>
-  );
-}
-
-function KpiCard({
-  label, value, sub, trend, trendUp, borderColor,
-}: {
+interface KpiCardProps {
   label: string;
   value: string;
   sub?: string;
-  trend?: string;
-  trendUp?: boolean;
-  borderColor?: string;
-}) {
+  color: string;
+  icon: React.ReactNode;
+}
+
+function KpiCard({ label, value, sub, color, icon }: KpiCardProps) {
   return (
-    <Card
-      sx={{
-        border: `1px solid ${RULE}`,
-        borderTop: `3px solid ${borderColor ?? ORG}`,
-        borderRadius: '4px',
-        bgcolor: PL,
-        backgroundImage: 'none',
-      }}
-    >
+    <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: '14px' }}>
-          <MonoLabel>{label}</MonoLabel>
-          {trend && (
-            <Box
-              sx={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px',
-                px: '6px',
-                py: '2px',
-                borderRadius: '10px',
-                bgcolor: trendUp ? 'rgba(62,142,90,0.12)' : 'rgba(194,59,46,0.12)',
-                color: trendUp ? GRN : RED,
-              }}
-            >
-              {trend}
-            </Box>
-          )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+              {label}
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, lineHeight: 1.2, color }}>
+              {value}
+            </Typography>
+            {sub && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                {sub}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ color, opacity: 0.8, mt: 0.5 }}>
+            {icon}
+          </Box>
         </Box>
-        <Typography
-          sx={{
-            fontFamily: "'Oswald', sans-serif",
-            fontSize: '28px',
-            fontWeight: 600,
-            color: BP,
-            lineHeight: 1,
-          }}
-        >
-          {value}
-        </Typography>
-        {sub && (
-          <Typography sx={{ fontSize: '12px', color: STL, mt: '4px' }}>{sub}</Typography>
-        )}
       </CardContent>
     </Card>
   );
 }
 
-function BarChart({ data }: { data: { month: string; income: number; expense: number; profit: number }[] }) {
-  const max = Math.max(...data.flatMap((d) => [d.income, d.expense]), 1);
+const statusColors: Record<string, 'info' | 'success' | 'warning' | 'primary' | 'default'> = {
+  Planning: 'info',
+  Active: 'success',
+  'On Hold': 'warning',
+  Completed: 'primary',
+};
+
+function ProjectsPanel({ projects }: { projects: DashboardActiveProject[] }) {
+  return (
+    <Paper variant="outlined" sx={{ height: '100%' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Active Projects
+        </Typography>
+        <Typography
+          component={Link}
+          to="/projects"
+          variant="caption"
+          sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+        >
+          View All
+        </Typography>
+      </Box>
+      {projects.length === 0 ? (
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">No active projects</Typography>
+        </Box>
+      ) : (
+        <Box>
+          {projects.slice(0, 5).map((p) => (
+            <Box key={p.id} sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, mr: 1 }}>
+                  {p.name}
+                </Typography>
+                <Chip
+                  label={p.status}
+                  size="small"
+                  color={statusColors[p.status] ?? 'default'}
+                  sx={{ fontSize: '10px', height: 20 }}
+                />
+              </Box>
+              {p.clientName && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  {p.clientName}
+                </Typography>
+              )}
+              <Box sx={{ mt: 0.75 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                  <Typography variant="caption" color="text.secondary">Progress</Typography>
+                  <Typography variant="caption" color="text.secondary">{p.progress}%</Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={p.progress} sx={{ height: 5, borderRadius: 3 }} />
+              </Box>
+              {p.endDate && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Due: {fmtDate(p.endDate)}
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Paper>
+  );
+}
+
+function LowStockPanel({ alerts }: { alerts: DashboardLowStockAlert[] }) {
+  return (
+    <Paper variant="outlined" sx={{ height: '100%' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Low Stock Alerts
+        </Typography>
+        <Typography
+          component={Link}
+          to="/inventory"
+          variant="caption"
+          sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+        >
+          View Inventory
+        </Typography>
+      </Box>
+      {alerts.length === 0 ? (
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">All stock levels OK</Typography>
+        </Box>
+      ) : (
+        <List disablePadding>
+          {alerts.slice(0, 5).map((a) => {
+            const isOut = a.currentStock === 0;
+            const itemColor = isOut ? 'error.main' : 'warning.main';
+            return (
+              <ListItem key={a.id} divider sx={{ py: 1.25, px: 2 }}>
+                <ListItemText
+                  primary={
+                    <Typography variant="body2" fontWeight={600} noWrap>{a.name}</Typography>
+                  }
+                  secondary={
+                    <Typography variant="caption" sx={{ color: itemColor, fontWeight: 600 }}>
+                      {a.currentStock}{a.unit ? ` ${a.unit}` : ''} / threshold: {a.lowStockThreshold}{a.unit ? ` ${a.unit}` : ''}
+                    </Typography>
+                  }
+                />
+                <WarningAmberIcon sx={{ color: itemColor, fontSize: 18, ml: 1, flexShrink: 0 }} />
+              </ListItem>
+            );
+          })}
+        </List>
+      )}
+    </Paper>
+  );
+}
+
+function TransactionsPanel({ transactions }: { transactions: DashboardRecentTransaction[] }) {
+  return (
+    <Paper variant="outlined" sx={{ height: '100%' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Recent Transactions
+        </Typography>
+      </Box>
+      {transactions.length === 0 ? (
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">No transactions yet</Typography>
+        </Box>
+      ) : (
+        <List disablePadding>
+          {transactions.slice(0, 10).map((tx) => {
+            const isIncome = tx.type === 'income';
+            return (
+              <ListItem key={tx.id} divider sx={{ py: 1, px: 2 }}>
+                <Box sx={{ mr: 1.5, color: isIncome ? 'success.main' : 'error.main', display: 'flex', alignItems: 'center' }}>
+                  {isIncome
+                    ? <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                    : <ArrowDownwardIcon sx={{ fontSize: 16 }} />}
+                </Box>
+                <ListItemText
+                  primary={
+                    <Typography variant="caption" fontWeight={600} sx={{ display: 'block' }}>
+                      {tx.category}
+                    </Typography>
+                  }
+                  secondary={
+                    <Typography variant="caption" color="text.secondary">{fmtDate(tx.date)}</Typography>
+                  }
+                />
+                <Typography
+                  variant="caption"
+                  fontWeight={700}
+                  sx={{ color: isIncome ? 'success.main' : 'error.main', flexShrink: 0, ml: 1 }}
+                >
+                  {isIncome ? '+' : '-'}{fmt(tx.amount)}
+                </Typography>
+              </ListItem>
+            );
+          })}
+        </List>
+      )}
+    </Paper>
+  );
+}
+
+function MuiBarChart({ data }: { data: DashboardChartPoint[] }) {
+  const allValues = data.flatMap((d) => [d.income, d.expense]);
+  const max = Math.max(...allValues, 1);
+  const MAX_H = 200;
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', gap: '18px', mb: '14px' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         {[
-          { color: BP,  label: 'Income' },
-          { color: ORG, label: 'Expense' },
-          { color: GRN, label: 'Profit' },
-        ].map((item) => (
-          <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Box sx={{ width: 9, height: 9, bgcolor: item.color, borderRadius: '2px' }} />
-            <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: STL }}>
-              {item.label}
-            </Typography>
+          { color: 'success.main', label: 'Income' },
+          { color: 'error.main', label: 'Expense' },
+        ].map((leg) => (
+          <Box key={leg.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: leg.color }} />
+            <Typography variant="caption" color="text.secondary">{leg.label}</Typography>
           </Box>
         ))}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', height: 160, gap: '2px' }}>
-        {data.map((d) => (
-          <Box key={d.month} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', height: 140, width: '100%', justifyContent: 'center', gap: '2px' }}>
-              <Box title={`Income: ${pkr(d.income)}`} sx={{ width: 10, height: `${(d.income / max) * 100}%`, minHeight: 4, bgcolor: BP, borderRadius: '3px 3px 0 0' }} />
-              <Box title={`Expense: ${pkr(d.expense)}`} sx={{ width: 10, height: `${(d.expense / max) * 100}%`, minHeight: 4, bgcolor: ORG, borderRadius: '3px 3px 0 0' }} />
-              <Box title={`Profit: ${pkr(d.profit)}`} sx={{ width: 10, height: `${(Math.max(d.profit, 0) / max) * 100}%`, minHeight: 4, bgcolor: d.profit >= 0 ? GRN : RED, borderRadius: '3px 3px 0 0' }} />
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, overflowX: 'auto', pb: 1 }}>
+        {data.map((d) => {
+          const incH = Math.max((d.income / max) * MAX_H, d.income > 0 ? 4 : 0);
+          const expH = Math.max((d.expense / max) * MAX_H, d.expense > 0 ? 4 : 0);
+          return (
+            <Box key={`${d.year}-${d.month}`} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1 1 0', minWidth: 40 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: MAX_H }}>
+                <Tooltip title={`Income: ${fmt(d.income)}`} arrow>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: incH,
+                      bgcolor: 'success.main',
+                      borderRadius: '3px 3px 0 0',
+                      opacity: 0.85,
+                      cursor: 'default',
+                      transition: 'opacity .2s',
+                      '&:hover': { opacity: 1 },
+                    }}
+                  />
+                </Tooltip>
+                <Tooltip title={`Expense: ${fmt(d.expense)}`} arrow>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: expH,
+                      bgcolor: 'error.main',
+                      borderRadius: '3px 3px 0 0',
+                      opacity: 0.75,
+                      cursor: 'default',
+                      transition: 'opacity .2s',
+                      '&:hover': { opacity: 1 },
+                    }}
+                  />
+                </Tooltip>
+              </Box>
+              <Box sx={{ mt: 1, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px', display: 'block', fontWeight: 600 }}>
+                  {d.monthName.slice(0, 3).toUpperCase()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '9px', display: 'block' }}>
+                  {d.year}
+                </Typography>
+              </Box>
             </Box>
-            <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: STL }}>
-              {d.month.slice(0, 3).toUpperCase()}
-            </Typography>
-          </Box>
-        ))}
+          );
+        })}
       </Box>
 
-      <Box sx={{ height: 1, bgcolor: RULE, mt: '4px' }} />
+      <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mt: 1 }} />
     </Box>
   );
 }
 
 export default function DashboardPage() {
-  const { data: s, isLoading } = useGetDashboardStatsQuery();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { data, isLoading, refetch } = useGetDashboardQuery();
 
-  if (isLoading || !s) return <Loader />;
+  if (isLoading || !data) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  const profitRatio = s.totalIncomeThisMonth > 0
-    ? Math.round((s.profitLossThisMonth / s.totalIncomeThisMonth) * 100)
-    : 0;
-
-  const expenseRatio = s.totalIncomeThisMonth > 0
-    ? Math.min(Math.round((s.totalExpenseThisMonth / s.totalIncomeThisMonth) * 100), 100)
-    : 0;
-
-  const isProfit = s.profitLossThisMonth >= 0;
+  const profit = data.thisMonth.profit;
+  const isProfit = profit >= 0;
 
   return (
-    <Box sx={{ pb: 3 }}>
-
-      {/* ── KPI Cards ─────────────────────────────── */}
-      <Grid container spacing={2} sx={{ mb: '28px' }}>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <KpiCard label="Total Income" value={shortPkr(s.totalIncomeThisMonth)} sub="This month" trend="+2.4%" trendUp borderColor={ORG} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <KpiCard label="Total Expense" value={shortPkr(s.totalExpenseThisMonth)} sub="This month" trend={`${expenseRatio}% of income`} trendUp={false} borderColor={BP} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <KpiCard label={isProfit ? 'Net Profit' : 'Net Loss'} value={shortPkr(Math.abs(s.profitLossThisMonth))} sub="This month" trend={`${Math.abs(profitRatio)}% margin`} trendUp={isProfit} borderColor={isProfit ? GRN : RED} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <KpiCard label="Pending Payments" value={shortPkr(s.pendingPayments)} sub="Awaiting collection" borderColor={AMB} />
-        </Grid>
-      </Grid>
-
-      {/* ── Row 2: Performance + Chart ─────────────── */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper elevation={0} sx={{ border: `1px solid ${RULE}`, borderRadius: '4px', bgcolor: PL, overflow: 'hidden', height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: '16px 20px', borderBottom: `1px solid ${RULE}` }}>
-              <SectionTitle>Monthly Performance</SectionTitle>
-            </Box>
-            <Box sx={{ p: '20px' }}>
-              <Stack spacing={2.5}>
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '6px' }}>
-                    <MonoLabel>Income</MonoLabel>
-                    <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: GRN, fontWeight: 600 }}>{shortPkr(s.totalIncomeThisMonth)}</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={100} sx={{ height: 6, borderRadius: 4, bgcolor: RULE, '& .MuiLinearProgress-bar': { bgcolor: GRN } }} />
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '6px' }}>
-                    <MonoLabel>Expense</MonoLabel>
-                    <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: RED, fontWeight: 600 }}>{shortPkr(s.totalExpenseThisMonth)}</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={expenseRatio} sx={{ height: 6, borderRadius: 4, bgcolor: RULE, '& .MuiLinearProgress-bar': { bgcolor: RED } }} />
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '6px' }}>
-                    <MonoLabel>{isProfit ? 'Profit Margin' : 'Loss'}</MonoLabel>
-                    <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: isProfit ? GRN : RED, fontWeight: 600 }}>{Math.abs(profitRatio)}%</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={Math.max(Math.abs(profitRatio), 0)} sx={{ height: 6, borderRadius: 4, bgcolor: RULE, '& .MuiLinearProgress-bar': { bgcolor: isProfit ? GRN : RED } }} />
-                </Box>
-              </Stack>
-
-              <Divider sx={{ my: 2.5, borderColor: RULE }} />
-
-              <Grid container spacing={1.5}>
-                {[
-                  { label: 'Labour',      value: s.activeLabourCount,    icon: <GroupsOutlinedIcon sx={{ fontSize: 16 }} />,       color: BP  },
-                  { label: 'Employees',   value: s.activeEmployeeCount,  icon: <BadgeOutlinedIcon sx={{ fontSize: 16 }} />,        color: GRN },
-                  { label: 'Machinery',   value: s.activeMachineryCount, icon: <BuildOutlinedIcon sx={{ fontSize: 16 }} />,        color: ORG },
-                  { label: 'Maintenance', value: s.maintenanceDueCount,  icon: <WarningAmberOutlinedIcon sx={{ fontSize: 16 }} />, color: s.maintenanceDueCount > 0 ? RED : STL },
-                ].map((c) => (
-                  <Grid key={c.label} size={{ xs: 6 }}>
-                    <Box sx={{ p: '10px 12px', border: `1px solid ${RULE}`, borderRadius: '4px', bgcolor: P, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ color: c.color, opacity: 0.8 }}>{c.icon}</Box>
-                      <Box>
-                        <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '16px', fontWeight: 600, color: c.color, lineHeight: 1 }}>{c.value}</Typography>
-                        <Typography sx={{ fontSize: '10px', color: STL, mt: '2px', fontFamily: "'IBM Plex Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper elevation={0} sx={{ border: `1px solid ${RULE}`, borderRadius: '4px', bgcolor: PL, overflow: 'hidden', height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: '16px 20px', borderBottom: `1px solid ${RULE}` }}>
-              <SectionTitle>6-Month Overview</SectionTitle>
-              <Box sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11.5px', color: ORG, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <TrendingFlatIcon sx={{ fontSize: 14 }} /> Last 6 months
-              </Box>
-            </Box>
-            <Box sx={{ p: '20px' }}>
-              {s.monthlyChart.length > 0
-                ? <BarChart data={s.monthlyChart} />
-                : <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160 }}>
-                    <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: STL }}>NO DATA YET</Typography>
-                  </Box>
-              }
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* ── Recent Transactions ─────────────────────── */}
-      <Paper elevation={0} sx={{ border: `1px solid ${RULE}`, borderRadius: '4px', bgcolor: PL, overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: '16px 20px', borderBottom: `1px solid ${RULE}` }}>
-          <SectionTitle>Recent Transactions</SectionTitle>
-          <MonoLabel>Latest financial activity</MonoLabel>
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', md: '2rem' }, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Dashboard
+          </Typography>
+          {user && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {greeting()}, {user.fullName.split(' ')[0]}
+            </Typography>
+          )}
         </Box>
+        <Tooltip title="Refresh data">
+          <IconButton onClick={() => refetch()} size="small">
+            <RefreshIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
-        {s.recentTransactions.length === 0 ? (
+      {/* Row 1 — KPI Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="This Month Income"
+            value={fmt(data.thisMonth.income)}
+            color="success.main"
+            icon={<AttachMoneyIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="This Month Expense"
+            value={fmt(data.thisMonth.expense)}
+            color="error.main"
+            icon={<MoneyOffIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label={isProfit ? 'Net Profit' : 'Net Loss'}
+            value={fmt(Math.abs(profit))}
+            color={isProfit ? 'success.main' : 'error.main'}
+            icon={isProfit ? <TrendingUpIcon /> : <TrendingDownIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="Active Projects"
+            value={String(data.activeProjectsCount)}
+            color="info.main"
+            icon={<BusinessCenterIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="Customer Outstanding"
+            value={fmt(data.customerOutstanding)}
+            color="warning.main"
+            icon={<PersonIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="Supplier Outstanding"
+            value={fmt(data.supplierOutstanding)}
+            color="error.main"
+            icon={<LocalShippingIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="Unpaid Invoices"
+            value={fmt(data.unpaidInvoicesTotal)}
+            sub={`${data.unpaidInvoicesCount} invoice${data.unpaidInvoicesCount !== 1 ? 's' : ''}`}
+            color="warning.dark"
+            icon={<ReceiptIcon />}
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <KpiCard
+            label="Pending POs"
+            value={String(data.pendingPOCount)}
+            color="info.main"
+            icon={<ShoppingCartIcon />}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Row 2 — Chart */}
+      <Paper variant="outlined" sx={{ mb: 3, p: 2.5 }}>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em', mb: 2 }}>
+          Income vs Expense — Last 6 Months
+        </Typography>
+        {data.chart.length === 0 ? (
           <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: STL }}>NO TRANSACTIONS YET</Typography>
+            <Typography variant="body2" color="text.secondary">No chart data available</Typography>
           </Box>
         ) : (
-          <Grid container spacing={0}>
-            {s.recentTransactions.slice(0, 10).map((tx) => (
-              <Grid key={tx.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    p: '13px 20px',
-                    borderBottom: `1px solid ${RULE}`,
-                    borderRight: `1px solid ${RULE}`,
-                    '&:hover': { bgcolor: 'rgba(154,198,232,0.06)' },
-                  }}
-                >
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: tx.type === 'Income' ? GRN : RED }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography noWrap sx={{ fontSize: '13px', fontWeight: 600, color: INK, lineHeight: 1.3 }}>
-                      {tx.description || tx.category}
-                    </Typography>
-                    <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10.5px', color: STL, mt: '2px' }}>
-                      {tx.category} · {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 600, flexShrink: 0, color: tx.type === 'Income' ? GRN : RED }}>
-                    {tx.type === 'Income' ? '+' : '−'}{shortPkr(tx.amount)}
-                  </Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
+          <MuiBarChart data={data.chart} />
         )}
       </Paper>
 
+      {/* Row 3 — Three Columns */}
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <ProjectsPanel projects={data.activeProjects} />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <LowStockPanel alerts={data.lowStockAlerts} />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <TransactionsPanel transactions={data.recentTransactions} />
+        </Grid>
+      </Grid>
     </Box>
   );
 }

@@ -18,4 +18,11 @@ export class DashboardController {
   getStats() {
     return this.dashboardService.getStats();
   }
+
+  @Get()
+  @HasPermission('Dashboard.View')
+  @ApiOperation({ summary: 'Get full dashboard data including projects, invoices, and alerts' })
+  getDashboardData() {
+    return this.dashboardService.getDashboardData();
+  }
 }
