@@ -20,6 +20,7 @@ export default function ChartOfAccountsPage() {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [accountType, setAccountType] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export default function ChartOfAccountsPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Search" size="small" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }} onBlur={() => { setSearch(searchInput); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Account Type</InputLabel>
             <Select label="Account Type" value={accountType} onChange={(e) => { setAccountType(e.target.value); setPage(0); }}>

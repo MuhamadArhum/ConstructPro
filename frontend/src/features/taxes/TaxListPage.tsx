@@ -21,6 +21,7 @@ export default function TaxListPage() {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [taxType, setTaxType] = useState('');
   const [isPaid, setIsPaid] = useState('');
@@ -64,7 +65,7 @@ export default function TaxListPage() {
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Search" size="small" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }} onBlur={() => { setSearch(searchInput); setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 180 } }}>
             <InputLabel>Tax Type</InputLabel>
             <Select label="Tax Type" value={taxType} onChange={(e) => { setTaxType(e.target.value); setPage(0); }}>

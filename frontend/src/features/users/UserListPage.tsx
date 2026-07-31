@@ -22,6 +22,7 @@ import type { ApiError } from '../../types/common.types';
 
 export default function UserListPage() {
   const dispatch = useAppDispatch();
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const { data, isLoading, isError } = useGetUsersQuery({
     pageNumber: 1,
@@ -91,8 +92,10 @@ export default function UserListPage() {
       <Box sx={{ mb: 2 }}>
         <TextField
           placeholder="Search by name or email…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); } }}
+          onBlur={() => { setSearch(searchInput); }}
           size="small"
           sx={{ width: { xs: '100%', sm: 300 } }}
           slotProps={{

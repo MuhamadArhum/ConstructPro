@@ -15,25 +15,25 @@ export class ReportsController {
   @Get('income-expense')
   @HasPermission('Reports.View')
   @ApiOperation({ summary: 'Get income vs expense report grouped by month' })
-  @ApiQuery({ name: 'startDate', required: false, type: String })
-  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'fromDate', required: false, type: String })
+  @ApiQuery({ name: 'toDate', required: false, type: String })
   getIncomeExpenseReport(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
   ) {
-    return this.reportsService.getIncomeExpenseReport(startDate, endDate);
+    return this.reportsService.getIncomeExpenseReport(fromDate, toDate);
   }
 
   @Get('labour')
   @HasPermission('Reports.View')
   @ApiOperation({ summary: 'Get labour report with attendance and wage summary' })
-  @ApiQuery({ name: 'startDate', required: false, type: String })
-  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'fromDate', required: false, type: String })
+  @ApiQuery({ name: 'toDate', required: false, type: String })
   getLabourReport(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
   ) {
-    return this.reportsService.getLabourReport(startDate, endDate);
+    return this.reportsService.getLabourReport(fromDate, toDate);
   }
 
   @Get('inventory')
@@ -46,12 +46,57 @@ export class ReportsController {
   @Get('tax')
   @HasPermission('Reports.View')
   @ApiOperation({ summary: 'Get tax report with paid/unpaid/overdue breakdown' })
-  @ApiQuery({ name: 'startDate', required: false, type: String })
-  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'fromDate', required: false, type: String })
+  @ApiQuery({ name: 'toDate', required: false, type: String })
   getTaxReport(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
   ) {
-    return this.reportsService.getTaxReport(startDate, endDate);
+    return this.reportsService.getTaxReport(fromDate, toDate);
+  }
+
+  @Get('customers')
+  @HasPermission('Reports.View')
+  @ApiOperation({ summary: 'Get customer report with billing and outstanding balances' })
+  getCustomerReport() {
+    return this.reportsService.getCustomerReport();
+  }
+
+  @Get('suppliers')
+  @HasPermission('Reports.View')
+  @ApiOperation({ summary: 'Get supplier report with purchases and outstanding balances' })
+  getSupplierReport() {
+    return this.reportsService.getSupplierReport();
+  }
+
+  @Get('employees')
+  @HasPermission('Reports.View')
+  @ApiOperation({ summary: 'Get employee report with salary payment summary' })
+  getEmployeeReport() {
+    return this.reportsService.getEmployeeReport();
+  }
+
+  @Get('machinery')
+  @HasPermission('Reports.View')
+  @ApiOperation({ summary: 'Get machinery report with maintenance cost summary' })
+  @ApiQuery({ name: 'fromDate', required: false, type: String })
+  @ApiQuery({ name: 'toDate', required: false, type: String })
+  getMachineryReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.reportsService.getMachineryReport(fromDate, toDate);
+  }
+
+  @Get('vehicles')
+  @HasPermission('Reports.View')
+  @ApiOperation({ summary: 'Get vehicle report with maintenance cost summary' })
+  @ApiQuery({ name: 'fromDate', required: false, type: String })
+  @ApiQuery({ name: 'toDate', required: false, type: String })
+  getVehicleReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.reportsService.getVehicleReport(fromDate, toDate);
   }
 }

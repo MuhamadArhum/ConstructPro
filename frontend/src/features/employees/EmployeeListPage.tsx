@@ -42,7 +42,9 @@ export default function EmployeeListPage() {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [departmentInput, setDepartmentInput] = useState('');
   const [department, setDepartment] = useState('');
   const [isActive, setIsActive] = useState('');
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
@@ -85,15 +87,19 @@ export default function EmployeeListPage() {
           <TextField
             label="Search by name, designation, department"
             size="small"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
+            onBlur={() => { setSearch(searchInput); setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 280 } }}
           />
           <TextField
             label="Department"
             size="small"
-            value={department}
-            onChange={(e) => { setDepartment(e.target.value); setPage(0); }}
+            value={departmentInput}
+            onChange={(e) => setDepartmentInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setDepartment(departmentInput); setPage(0); } }}
+            onBlur={() => { setDepartment(departmentInput); setPage(0); }}
             sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>

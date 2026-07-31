@@ -12,6 +12,7 @@ import { useGetAuditLogsQuery } from './auditLogsApi';
 import Loader from '../../components/common/Loader';
 
 export default function AuditLogListPage() {
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 20;
@@ -21,11 +22,6 @@ export default function AuditLogListPage() {
     pageNumber: page + 1,
     pageSize,
   }, { refetchOnMountOrArgChange: true });
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(0);
-  };
 
   return (
     <>
@@ -41,8 +37,10 @@ export default function AuditLogListPage() {
       <Box sx={{ mb: 2 }}>
         <TextField
           placeholder="Search by email or action…"
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
+          onBlur={() => { setSearch(searchInput); setPage(0); }}
           size="small"
           sx={{ width: { xs: '100%', sm: 320 } }}
           slotProps={{
