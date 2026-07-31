@@ -30,18 +30,16 @@ services:
       - key: ADMIN_PASSWORD
         sync: false          # Set in Render dashboard
 
-  # ── Frontend (React + Vite Static Site) ──────────────────────────────────
+  # ── Frontend (React + Vite) ───────────────────────────────────────────────
   - type: web
     name: constructpro-frontend
-    runtime: static
+    env: node
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    startCommand: npx serve -s dist -l $PORT
     plan: free
     envVars:
       - key: VITE_API_BASE_URL
         sync: false          # Set to https://constructpro-api.onrender.com/api
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      - key: PORT
+        value: "3000"
