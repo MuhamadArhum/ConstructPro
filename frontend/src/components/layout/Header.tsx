@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/PersonOutlined';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
@@ -64,6 +64,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const unreadCount = unreadData?.count ?? 0;
 
   const pageTitle = ROUTE_LABELS[location.pathname] ?? 'ConstructPro';
+
+  useEffect(() => {
+    document.title = pageTitle === 'ConstructPro' ? 'ConstructPro' : `${pageTitle} | ConstructPro`;
+  }, [pageTitle]);
 
   const now = new Date();
   const week = Math.ceil(((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
