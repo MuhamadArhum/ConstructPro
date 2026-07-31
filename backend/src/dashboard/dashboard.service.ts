@@ -278,7 +278,7 @@ export class DashboardService {
       0,
     );
 
-    // Build last 6 months chart
+    // Build last 6 months chart (parallel)
     const chart = await this.buildChartData(now);
 
     const recentTransactions = [
@@ -338,23 +338,20 @@ export class DashboardService {
   }
 
   private async buildChartData(now: Date) {
-    const chart: Array<{
-      monthName: string;
-      year: number;
-      month: number;
-      income: number;
-      expense: number;
-    }> = [];
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      return {
+        d,
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        monthName: d.toLocaleString('en-US', { month: 'long' }),
+        monthStart: new Date(d.getFullYear(), d.getMonth(), 1),
+        monthEnd: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59),
+      };
+    });
 
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const monthStart = new Date(year, month, 1);
-      const monthEnd = new Date(year, month + 1, 0, 23, 59, 59);
-      const monthName = d.toLocaleString('en-US', { month: 'long' });
-
-      const [incResult, expResult] = await Promise.all([
+    const results = await Promise.all(
+      months.flatMap(({ monthStart, monthEnd }) => [
         this.prisma.income.aggregate({
           _sum: { amount: true },
           where: { date: { gte: monthStart, lte: monthEnd } },
@@ -363,17 +360,15 @@ export class DashboardService {
           _sum: { amount: true },
           where: { date: { gte: monthStart, lte: monthEnd } },
         }),
-      ]);
+      ]),
+    );
 
-      chart.push({
-        monthName,
-        year,
-        month: month + 1,
-        income: Number(incResult._sum.amount ?? 0),
-        expense: Number(expResult._sum.amount ?? 0),
-      });
-    }
-
-    return chart;
+    return months.map(({ year, month, monthName }, i) => ({
+      monthName,
+      year,
+      month: month + 1,
+      income: Number(results[i * 2]._sum.amount ?? 0),
+      expense: Number(results[i * 2 + 1]._sum.amount ?? 0),
+    }));
   }
 }
