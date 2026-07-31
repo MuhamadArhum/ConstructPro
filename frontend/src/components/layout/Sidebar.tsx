@@ -86,6 +86,11 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
   const permissions = useAppSelector((state) => state.auth.user?.permissions ?? []);
   const visibleItems = navItems.filter((item) => !item.permission || permissions.includes(item.permission));
 
+  const handleNavClick = () => {
+    (document.activeElement as HTMLElement)?.blur();
+    onClose();
+  };
+
   return (
     <>
       <Box sx={{ px: 2.5, py: '22px', borderBottom: '1px solid rgba(154,198,232,0.18)' }}>
@@ -112,7 +117,7 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
               component={NavLink}
               to={item.path}
               end
-              onClick={onClose}
+              onClick={handleNavClick}
               sx={{
                 borderRadius: '4px', mb: '2px', px: '12px', py: '10px',
                 color: '#9AC6E8', borderLeft: '2px solid transparent',
