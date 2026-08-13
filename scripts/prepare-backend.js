@@ -97,11 +97,21 @@ const nm = path.join(STAGE, 'node_modules');
 
 // Packages that are dev/tool-only and not needed at runtime
 const pruneDirs = [
-  path.join(nm, '@prisma', 'studio-core'),   // Prisma Studio GUI  ~43MB
-  path.join(nm, '@prisma', 'dev'),            // Dev utilities       ~19MB
-  path.join(nm, 'prisma'),                    // Prisma CLI          ~42MB
-  path.join(nm, 'typescript'),                // TS compiler         ~23MB
-  path.join(nm, 'libphonenumber-js'),         // Optional phone val  ~12MB
+  // Prisma tooling (not needed at runtime)
+  path.join(nm, '@prisma', 'studio-core'),   // Prisma Studio GUI         ~43MB
+  path.join(nm, '@prisma', 'dev'),            // Dev utilities             ~19MB
+  path.join(nm, 'prisma'),                    // Prisma CLI                ~42MB
+  // Orphan deps of studio-core / @prisma/dev (remain after parent is deleted)
+  path.join(nm, 'elkjs'),                     // Graph layout (Studio)     ~8MB
+  path.join(nm, 'react-dom'),                 // React UI (Studio)         ~7MB
+  path.join(nm, 'react'),                     // React (Studio)            ~3MB
+  path.join(nm, 'remeda'),                    // FP utils (@prisma/dev)    ~4MB
+  path.join(nm, '@visx'),                     // Data viz (Studio)         ~3MB
+  // Compiler / type tooling (not needed for compiled JS)
+  path.join(nm, 'typescript'),                // TS compiler               ~23MB
+  path.join(nm, '@types'),                    // Type defs (TS only)       ~6MB
+  // Optional runtime deps we don't use
+  path.join(nm, 'libphonenumber-js'),         // Phone validator (unused)  ~12MB
 ];
 
 for (const dir of pruneDirs) {
