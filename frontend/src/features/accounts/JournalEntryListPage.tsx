@@ -17,8 +17,9 @@ export default function JournalEntryListPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [fromDate, setFromDate] = useState(todayStr);
+  const [toDate, setToDate] = useState(todayStr);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetJournalEntriesQuery({ pageNumber: page + 1, pageSize: rowsPerPage, search: search || undefined, fromDate: fromDate || undefined, toDate: toDate || undefined });
