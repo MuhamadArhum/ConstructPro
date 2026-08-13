@@ -71,7 +71,7 @@ export default function AuditLogListPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.items.map((log) => (
+                {(data.items ?? []).map((log) => (
                   <TableRow key={log.id} hover>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       {new Date(log.createdAt).toLocaleString()}
@@ -101,7 +101,7 @@ export default function AuditLogListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {data.items.length === 0 && (
+                {(data.items ?? []).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                       {search ? 'No logs match your search.' : 'No audit logs found.'}

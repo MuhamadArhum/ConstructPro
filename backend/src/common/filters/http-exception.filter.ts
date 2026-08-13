@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -29,6 +30,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (typeof res === 'object') {
         message = (res as any).message ?? message;
         errors = (res as any).errors;
+      }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (exception.code === 'P2002') {
+        status = HttpStatus.CONFLICT;
+        message = 'A record with this value already exists.';
+      } else if (exception.code === 'P2025') {
+        status = HttpStatus.NOT_FOUND;
+        message = 'Record not found.';
+      } else {
+        this.logger.error(`Prisma ${exception.code}: ${exception.message}`, exception.stack);
       }
     } else if (exception instanceof Error) {
       message = exception.message;

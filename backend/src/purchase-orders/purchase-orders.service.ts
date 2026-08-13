@@ -41,7 +41,8 @@ export class PurchaseOrdersService {
         data: data.map((po) => this.mapPO(po)),
         total,
       };
-    } catch {
+    } catch (err) {
+      console.error('[PurchaseOrdersService.findAll]', err);
       return { data: [], total: 0 };
     }
   }

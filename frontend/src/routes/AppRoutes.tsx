@@ -84,6 +84,7 @@ const AuditLogListPage = lazy(() => import('../features/auditLogs/AuditLogListPa
 const ReportsPage       = lazy(() => import('../features/reports/ReportsPage'));
 const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage'));
 const SettingsPage      = lazy(() => import('../features/settings/SettingsPage'));
+const NotFoundPage      = lazy(() => import('../features/errors/NotFoundPage'));
 
 const S = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<Loader />}>{children}</Suspense>
@@ -234,7 +235,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<S><NotFoundPage /></S>} />
     </Routes>
   );
 }

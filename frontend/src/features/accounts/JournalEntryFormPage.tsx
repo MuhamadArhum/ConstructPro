@@ -69,7 +69,7 @@ export default function JournalEntryFormPage() {
                       <FormControl fullWidth size="small">
                         <Select value={line.accountId} onChange={(e) => updateLine(index, 'accountId', e.target.value)} displayEmpty>
                           <MenuItem value=""><em>Select Account</em></MenuItem>
-                          {accounts?.items.map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name}</MenuItem>)}
+                          {accounts?.items?.map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name}</MenuItem>)}
                         </Select>
                       </FormControl>
                     </TableCell>

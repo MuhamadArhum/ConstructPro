@@ -60,7 +60,8 @@ export class ProjectsService {
         data: data.map((p) => this.mapProject(p)),
         total,
       };
-    } catch {
+    } catch (err) {
+      console.error('[ProjectsService.findAll]', err);
       return { data: [], total: 0 };
     }
   }

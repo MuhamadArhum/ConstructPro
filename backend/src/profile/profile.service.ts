@@ -76,7 +76,11 @@ export class ProfileService {
     const fileName = `${userId}-${timestamp}${ext}`;
     const filePath = path.join(uploadDir, fileName);
 
-    fs.writeFileSync(filePath, file.buffer);
+    try {
+      fs.writeFileSync(filePath, file.buffer);
+    } catch (err) {
+      throw new Error(`Failed to save profile picture: ${(err as Error).message}`);
+    }
 
     const profilePicturePath = `uploads/profile-pictures/${fileName}`;
 

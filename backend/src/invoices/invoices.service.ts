@@ -41,7 +41,8 @@ export class InvoicesService {
         data: data.map((inv) => this.mapInvoice(inv)),
         total,
       };
-    } catch {
+    } catch (err) {
+      console.error('[InvoicesService.findAll]', err);
       return { data: [], total: 0 };
     }
   }
