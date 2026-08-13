@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 
@@ -115,7 +115,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) return { message: 'If that email exists, a reset link has been sent.' };
 
-    const token = uuidv4();
+    const token = randomBytes(32).toString('hex');
     const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
     await this.prisma.user.update({
@@ -140,7 +140,7 @@ export class AuthService {
 
     if (!user) throw new BadRequestException('Invalid or expired reset token');
 
-    const hash = await bcrypt.hash(dto.newPassword, 10);
+    const hash = await bcrypt.hash(dto.newPassword, 12);
     await this.prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: hash, passwordResetToken: null, passwordResetTokenExpiry: null },
@@ -156,7 +156,7 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
     if (!valid) throw new BadRequestException('Current password is incorrect');
 
-    const hash = await bcrypt.hash(dto.newPassword, 10);
+    const hash = await bcrypt.hash(dto.newPassword, 12);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
 
     return { message: 'Password changed successfully' };
@@ -188,7 +188,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
     return this.prisma.refreshToken.create({
-      data: { userId, token: uuidv4(), expiresAt },
+      data: { userId, token: randomBytes(32).toString('hex'), expiresAt },
     });
   }
 

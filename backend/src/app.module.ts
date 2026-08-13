@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AppController } from './app.controller';
@@ -36,6 +37,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
   controllers: [AppController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       exclude: ['/api/{*path}'],
@@ -68,6 +70,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
   ],
   providers: [
     AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditLogInterceptor,

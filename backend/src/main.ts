@@ -9,6 +9,7 @@ import { join } from 'path';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import helmet from 'helmet';
 
 async function runMigrations() {
   try {
@@ -31,11 +32,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  // ─── Security headers ─────────────────────────────────────────────
+  app.use(helmet({ contentSecurityPolicy: false }));
+
   // ─── CORS ─────────────────────────────────────────────────────────
   const rawOrigins = process.env.CORS_ORIGINS;
   const origins: string | string[] = rawOrigins
     ? rawOrigins.split(',').map((o) => o.trim())
-    : '*';
+    : ['http://localhost:3000'];
 
   app.enableCors({
     origin: origins,
@@ -47,7 +51,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
     }),
   );
 

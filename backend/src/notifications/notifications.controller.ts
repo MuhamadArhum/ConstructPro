@@ -52,13 +52,13 @@ export class NotificationsController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark a notification as read' })
-  markAsRead(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(id);
+  markAsRead(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.notificationsService.markAsRead(id, userId);
   }
 
   @Post('generate')
   @ApiOperation({ summary: 'Generate system notifications for low stock and machinery maintenance' })
-  generateSystemNotifications() {
+  generateSystemNotifications(@CurrentUser('id') _userId: string) {
     return this.notificationsService.generateSystemNotifications();
   }
 }

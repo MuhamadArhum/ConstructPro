@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -16,6 +17,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

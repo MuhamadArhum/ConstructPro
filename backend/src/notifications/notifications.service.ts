@@ -49,9 +49,9 @@ export class NotificationsService {
     return { count };
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(id: string, userId: string) {
     const existing = await this.prisma.notification.findUnique({ where: { id } });
-    if (!existing) return null;
+    if (!existing || existing.userId !== userId) return null;
 
     return this.prisma.notification.update({
       where: { id },

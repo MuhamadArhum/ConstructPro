@@ -83,7 +83,7 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
     const roleIds = await this.resolveRoleIds(dto);
 
     const user = await this.prisma.user.create({
@@ -167,7 +167,7 @@ export class UsersService {
   async adminResetPassword(id: string, dto: AdminResetPasswordDto) {
     await this.findById(id);
 
-    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
 
     await this.prisma.user.update({
       where: { id },
