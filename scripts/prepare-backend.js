@@ -90,4 +90,48 @@ execSync('npx ts-node --transpile-only src/seed.ts', {
   env: { ...process.env, DATABASE_URL: `file:${stageDbAbsolute}`, NODE_ENV: 'production' },
 });
 
-console.log('[prepare-backend] Backend bundle ready at:', STAGE);
+// ─── Prune unnecessary production files (~200MB savings) ─────────────────────
+console.log('[prepare-backend] Pruning unnecessary production packages...');
+
+const nm = path.join(STAGE, 'node_modules');
+
+// Packages that are dev/tool-only and not needed at runtime
+const pruneDirs = [
+  path.join(nm, '@prisma', 'studio-core'),   // Prisma Studio GUI  ~43MB
+  path.join(nm, '@prisma', 'dev'),            // Dev utilities       ~19MB
+  path.join(nm, 'prisma'),                    // Prisma CLI          ~42MB
+  path.join(nm, 'typescript'),                // TS compiler         ~23MB
+  path.join(nm, 'libphonenumber-js'),         // Optional phone val  ~12MB
+];
+
+for (const dir of pruneDirs) {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`[prepare-backend] Pruned: ${path.relative(nm, dir)}`);
+  }
+}
+
+// schema-engine binary — used for db push/migrate (already done above), not needed at runtime
+const schemaEng = path.join(nm, '@prisma', 'engines', 'schema-engine-windows.exe');
+if (fs.existsSync(schemaEng)) {
+  fs.rmSync(schemaEng, { force: true });
+  console.log('[prepare-backend] Pruned: schema-engine-windows.exe (~20MB)');
+}
+
+// Non-SQLite WASM query compiler files — we only use SQLite; remove postgres/mysql/etc
+const runtimeDir = path.join(nm, '@prisma', 'client', 'runtime');
+if (fs.existsSync(runtimeDir)) {
+  const nonSqliteWasm = /query_compiler.*(?:postgresql|mysql|sqlserver|cockroachdb).*wasm-base64\.(js|mjs)$/;
+  for (const file of fs.readdirSync(runtimeDir)) {
+    if (nonSqliteWasm.test(file)) {
+      fs.rmSync(path.join(runtimeDir, file), { force: true });
+      console.log(`[prepare-backend] Pruned WASM: ${file}`);
+    }
+    // Also remove source maps (not useful in production)
+    if (file.endsWith('.map')) {
+      fs.rmSync(path.join(runtimeDir, file), { force: true });
+    }
+  }
+}
+
+console.log('[prepare-backend] Pruning complete — bundle ready at:', STAGE);
