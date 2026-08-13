@@ -165,12 +165,22 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] Error:', err.message);
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Update Error',
+      message: err.message,
+    });
   });
 
   // Window show hone ke 5 second baad check karo
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch((err) => {
       console.error('[updater] Check failed:', err.message);
+      dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'Update Check Failed',
+        message: err.message,
+      });
     });
   }, 5000);
 }
