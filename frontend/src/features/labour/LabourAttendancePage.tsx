@@ -24,6 +24,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -138,9 +139,11 @@ export default function LabourAttendancePage() {
   return (
     <Box>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/labour')}>
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title="Back to Labour">
+          <IconButton onClick={() => navigate('/labour')} aria-label="Back to Labour">
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
         <Box>
           <Typography variant="h1">{labour?.name} — Attendance</Typography>
           <Typography variant="body2" color="text.secondary">

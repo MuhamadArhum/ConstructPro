@@ -210,7 +210,9 @@ export default function ProjectDetailPage() {
   return (
     <Box>
       <Stack direction="row" sx={{ alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
-        <IconButton onClick={() => navigate('/projects')}><ArrowBackIcon /></IconButton>
+        <Tooltip title="Back to Projects">
+          <IconButton onClick={() => navigate('/projects')} aria-label="Back to Projects"><ArrowBackIcon /></IconButton>
+        </Tooltip>
         <Typography variant="h1" sx={{ flex: 1 }}>{project.name}</Typography>
         <Chip label={project.status} color={STATUS_COLORS[project.status] ?? 'default'} />
         <Button startIcon={<EditIcon />} variant="outlined" onClick={() => setEditOpen(true)}>Edit</Button>

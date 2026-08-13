@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Box, Button, Chip, CircularProgress, Divider, Grid, IconButton, Paper,
-  Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
+  Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -181,7 +181,9 @@ export default function InvoiceDetailPage() {
   return (
     <Box>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <IconButton onClick={() => navigate('/invoices')}><ArrowBackIcon /></IconButton>
+        <Tooltip title="Back to Invoices">
+          <IconButton onClick={() => navigate('/invoices')} aria-label="Back to Invoices"><ArrowBackIcon /></IconButton>
+        </Tooltip>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{invoice.invoiceNumber}</Typography>
         </Box>

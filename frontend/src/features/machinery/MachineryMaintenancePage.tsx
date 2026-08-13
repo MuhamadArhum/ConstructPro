@@ -23,6 +23,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -86,9 +87,11 @@ export default function MachineryMaintenancePage() {
   return (
     <Box>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/machinery')}>
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title="Back to Machinery">
+          <IconButton onClick={() => navigate('/machinery')} aria-label="Back to Machinery">
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{machinery?.name} — Maintenance</Typography>
           <Typography variant="body2" color="text.secondary">
