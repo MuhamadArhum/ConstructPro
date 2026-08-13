@@ -152,9 +152,9 @@ function setupAutoUpdater() {
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Update Ready',
-      message: `ConstructPro v${info.version} ready to install.`,
-      detail: 'Restart karne pe new version install ho jayega.',
-      buttons: ['Abhi Restart Karo', 'Baad Mein'],
+      message: `ConstructPro v${info.version} is ready to install.`,
+      detail: 'The update will be applied the next time you restart the application.',
+      buttons: ['Restart Now', 'Later'],
       defaultId: 0,
     }).then(({ response }) => {
       if (response === 0) {
