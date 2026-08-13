@@ -146,7 +146,8 @@ export class ProjectsService {
   }
 
   async update(id: string, dto: UpdateProjectDto) {
-    await this.findOne(id);
+    const exists = await this.prisma.project.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Project not found');
 
     if (dto.code !== undefined) {
       const conflict = await this.prisma.project.findFirst({ where: { code: dto.code, NOT: { id } } });

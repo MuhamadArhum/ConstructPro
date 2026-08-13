@@ -34,27 +34,39 @@ export class InventoryService {
     }
 
     // lowStock filter: currentStock <= lowStockThreshold
-    // Prisma does not support column-to-column comparisons in findMany where clauses,
-    // so we fetch all matching items and filter in memory.
+    // Use $queryRaw for column-to-column comparison which Prisma's findMany does not support.
     if (query.lowStock === true) {
-      const allItems = await this.prisma.inventoryItem.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-      });
+      const items = await this.prisma.$queryRaw<any[]>`
+        SELECT * FROM inventory_items
+        WHERE current_stock <= low_stock_threshold
+        ORDER BY current_stock ASC
+        LIMIT ${limit} OFFSET ${skip}
+      `;
+      const totalCount = await this.prisma.$queryRaw<any[]>`
+        SELECT COUNT(*) as count FROM inventory_items
+        WHERE current_stock <= low_stock_threshold
+      `;
 
-      const filtered = allItems.filter(
-        (item) => Number(item.currentStock) <= Number(item.lowStockThreshold),
-      );
-
-      const total = filtered.length;
-      const paginated = filtered.slice(skip, skip + limit);
-
+      const total = Number(totalCount[0].count);
       const totalPages = Math.ceil(total / limit);
       const pageNumber = page;
       const pageSize = limit;
 
       return {
-        items: paginated.map((item) => this.mapInventoryItem(item)),
+        items: items.map((item) => this.mapInventoryItem({
+          id: item.id,
+          code: item.code,
+          name: item.name,
+          category: item.category,
+          unit: item.unit,
+          currentStock: item.current_stock,
+          lowStockThreshold: item.low_stock_threshold,
+          unitPrice: item.unit_price,
+          supplierName: item.supplier_name,
+          location: item.location,
+          notes: item.notes,
+          createdAt: new Date(item.created_at),
+        })),
         totalCount: total,
         pageNumber,
         pageSize,

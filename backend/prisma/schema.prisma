@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
@@ -84,35 +84,39 @@ model RefreshToken {
   replacedByToken String?
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("refresh_tokens")
 }
 
 model Employee {
   id             String          @id @default(uuid())
+  code           String?         @unique
   fullName       String
   designation    String?
   department     String?
   phoneNumber    String?
   cnic           String?
   address        String?
-  basicSalary    Decimal         @db.Decimal(18, 2)
+  basicSalary    Decimal
   joinDate       DateTime
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   salaryPayments SalaryPayment[]
 
+  @@index([isActive])
   @@map("employees")
 }
 
 model SalaryPayment {
   id          String   @id @default(uuid())
+  code        String?  @unique
   employeeId  String
   month       Int
   year        Int
-  basicSalary Decimal  @db.Decimal(18, 2)
-  bonus       Decimal  @default(0) @db.Decimal(18, 2)
-  deductions  Decimal  @default(0) @db.Decimal(18, 2)
-  netSalary   Decimal  @db.Decimal(18, 2)
+  basicSalary Decimal
+  bonus       Decimal  @default(0)
+  deductions  Decimal  @default(0)
+  netSalary   Decimal
   daysPresent Int      @default(0)
   totalDays   Int      @default(30)
   paidAt      DateTime @default(now())
@@ -120,18 +124,21 @@ model SalaryPayment {
   createdAt   DateTime @default(now())
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId])
+  @@index([year, month])
   @@map("salary_payments")
 }
 
 model Labour {
   id                  String             @id @default(uuid())
+  code                String?            @unique
   name                String
   phoneNumber         String?
   cnic                String?
   address             String?
   trade               String?
-  dailyWage           Decimal            @db.Decimal(18, 2)
-  overtimeRatePerHour Decimal            @default(0) @db.Decimal(18, 2)
+  dailyWage           Decimal
+  overtimeRatePerHour Decimal            @default(0)
   joinDate            DateTime
   isActive            Boolean            @default(true)
   createdAt           DateTime           @default(now())
@@ -139,35 +146,40 @@ model Labour {
   advances            LabourAdvance[]
   projectAssignments  ProjectLabour[]
 
+  @@index([isActive])
   @@map("labours")
 }
 
 model LabourAttendance {
   id            String   @id @default(uuid())
   labourId      String
-  date          DateTime @db.Date
+  date          DateTime
   isPresent     Boolean  @default(true)
-  overtimeHours Decimal  @default(0) @db.Decimal(5, 2)
+  overtimeHours Decimal  @default(0)
   notes         String?
   labour        Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
 
   @@unique([labourId, date])
+  @@index([labourId])
+  @@index([date])
   @@map("labour_attendances")
 }
 
 model LabourAdvance {
   id       String   @id @default(uuid())
   labourId String
-  amount   Decimal  @db.Decimal(18, 2)
+  amount   Decimal
   date     DateTime
   reason   String?
   labour   Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
 
+  @@index([labourId])
   @@map("labour_advances")
 }
 
 model Customer {
   id           String               @id @default(uuid())
+  code         String?              @unique
   name         String
   companyName  String?
   phone        String?
@@ -176,8 +188,8 @@ model Customer {
   ntn          String?
   cnic         String?
   projectName  String?
-  totalBilled  Decimal              @default(0) @db.Decimal(18, 2)
-  totalPaid    Decimal              @default(0) @db.Decimal(18, 2)
+  totalBilled  Decimal              @default(0)
+  totalPaid    Decimal              @default(0)
   isActive     Boolean              @default(true)
   notes        String?
   createdAt    DateTime             @default(now())
@@ -185,6 +197,8 @@ model Customer {
   projects     Project[]
   invoices     Invoice[]
 
+  @@index([isActive])
+  @@index([createdAt])
   @@map("customers")
 }
 
@@ -193,17 +207,20 @@ model CustomerTransaction {
   customerId  String
   customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   type        String
-  amount      Decimal  @db.Decimal(18, 2)
+  amount      Decimal
   date        DateTime
   description String?
   reference   String?
   createdAt   DateTime @default(now())
 
+  @@index([customerId])
+  @@index([date])
   @@map("customer_transactions")
 }
 
 model Supplier {
   id             String                @id @default(uuid())
+  code           String?               @unique
   name           String
   companyName    String?
   phone          String?
@@ -211,14 +228,16 @@ model Supplier {
   address        String?
   ntn            String?
   category       String?
-  totalPurchased Decimal               @default(0) @db.Decimal(18, 2)
-  totalPaid      Decimal               @default(0) @db.Decimal(18, 2)
+  totalPurchased Decimal               @default(0)
+  totalPaid      Decimal               @default(0)
   isActive       Boolean               @default(true)
   notes          String?
   createdAt      DateTime              @default(now())
   transactions   SupplierTransaction[]
   purchaseOrders PurchaseOrder[]
 
+  @@index([isActive])
+  @@index([createdAt])
   @@map("suppliers")
 }
 
@@ -227,30 +246,34 @@ model SupplierTransaction {
   supplierId  String
   supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   type        String
-  amount      Decimal  @db.Decimal(18, 2)
+  amount      Decimal
   date        DateTime
   description String?
   reference   String?
   createdAt   DateTime @default(now())
 
+  @@index([supplierId])
+  @@index([date])
   @@map("supplier_transactions")
 }
 
 model Machinery {
   id                  String                 @id @default(uuid())
+  code                String?                @unique
   name                String
   model               String?
   serialNumber        String?
   purchaseDate        DateTime?
-  purchasePrice       Decimal?               @db.Decimal(18, 2)
+  purchasePrice       Decimal?
   status              MachineryStatus        @default(Active)
-  totalRunningHours   Decimal                @default(0) @db.Decimal(10, 2)
+  totalRunningHours   Decimal                @default(0)
   nextMaintenanceDate DateTime?
   notes               String?
   createdAt           DateTime               @default(now())
   maintenanceRecords  MachineryMaintenance[]
   projectAssignments  ProjectMachinery[]
 
+  @@index([status])
   @@map("machineries")
 }
 
@@ -267,13 +290,15 @@ model MachineryMaintenance {
   maintenanceDate       DateTime
   type                  MaintenanceType
   description           String?
-  cost                  Decimal         @default(0) @db.Decimal(18, 2)
-  runningHoursAtService Decimal?        @db.Decimal(10, 2)
+  cost                  Decimal         @default(0)
+  runningHoursAtService Decimal?
   nextMaintenanceDate   DateTime?
   serviceProvider       String?
   createdAt             DateTime        @default(now())
   machinery             Machinery       @relation(fields: [machineryId], references: [id], onDelete: Cascade)
 
+  @@index([machineryId])
+  @@index([maintenanceDate])
   @@map("machinery_maintenances")
 }
 
@@ -285,21 +310,23 @@ enum MaintenanceType {
 
 model Vehicle {
   id                  String               @id @default(uuid())
+  code                String?              @unique
   registrationNumber  String               @unique
   make                String?
   model               String?
   year                Int?
   driverName          String?
   driverContact       String?
-  purchasePrice       Decimal?             @db.Decimal(18, 2)
+  purchasePrice       Decimal?
   purchaseDate        DateTime?
   status              VehicleStatus        @default(Active)
-  totalMileage        Decimal              @default(0) @db.Decimal(10, 2)
+  totalMileage        Decimal              @default(0)
   nextMaintenanceDate DateTime?
   notes               String?
   createdAt           DateTime             @default(now())
   maintenanceRecords  VehicleMaintenance[]
 
+  @@index([status])
   @@map("vehicles")
 }
 
@@ -314,26 +341,29 @@ model VehicleMaintenance {
   vehicleId        String
   maintenanceDate  DateTime
   description      String?
-  cost             Decimal   @default(0) @db.Decimal(18, 2)
+  cost             Decimal   @default(0)
   serviceProvider  String?
   nextDueDate      DateTime?
-  mileageAtService Decimal?  @db.Decimal(10, 2)
+  mileageAtService Decimal?
   notes            String?
   createdAt        DateTime  @default(now())
   vehicle          Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
+  @@index([vehicleId])
+  @@index([maintenanceDate])
   @@map("vehicle_maintenances")
 }
 
 model Plant {
   id                  String      @id @default(uuid())
+  code                String?     @unique
   name                String
   type                String?
   manufacturer        String?
   serialNumber        String?
   purchaseDate        DateTime?
-  purchasePrice       Decimal?    @db.Decimal(18, 2)
-  currentValue        Decimal?    @db.Decimal(18, 2)
+  purchasePrice       Decimal?
+  currentValue        Decimal?
   status              PlantStatus @default(Active)
   location            String?
   lastMaintenanceDate DateTime?
@@ -341,6 +371,7 @@ model Plant {
   notes               String?
   createdAt           DateTime    @default(now())
 
+  @@index([status])
   @@map("plants")
 }
 
@@ -353,12 +384,13 @@ enum PlantStatus {
 
 model InventoryItem {
   id                String             @id @default(uuid())
+  code              String?            @unique
   name              String
   category          String?
   unit              String?
-  currentStock      Decimal            @default(0) @db.Decimal(18, 2)
-  lowStockThreshold Decimal            @default(0) @db.Decimal(18, 2)
-  unitPrice         Decimal            @default(0) @db.Decimal(18, 2)
+  currentStock      Decimal            @default(0)
+  lowStockThreshold Decimal            @default(0)
+  unitPrice         Decimal            @default(0)
   supplierName      String?
   location          String?
   notes             String?
@@ -372,8 +404,8 @@ model StockTransaction {
   id              String               @id @default(uuid())
   inventoryItemId String
   type            StockTransactionType
-  quantity        Decimal              @db.Decimal(18, 2)
-  unitPrice       Decimal?             @db.Decimal(18, 2)
+  quantity        Decimal
+  unitPrice       Decimal?
   date            DateTime
   reference       String?
   projectName     String?
@@ -383,6 +415,8 @@ model StockTransaction {
   inventoryItem   InventoryItem        @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   createdBy       User?                @relation(fields: [createdById], references: [id])
 
+  @@index([inventoryItemId])
+  @@index([date])
   @@map("stock_transactions")
 }
 
@@ -394,8 +428,9 @@ enum StockTransactionType {
 
 model Income {
   id           String         @id @default(uuid())
+  code         String?        @unique
   category     IncomeCategory
-  amount       Decimal        @db.Decimal(18, 2)
+  amount       Decimal
   date         DateTime
   description  String?
   customerName String?
@@ -406,6 +441,8 @@ model Income {
   createdById  String?
   createdBy    User?          @relation(fields: [createdById], references: [id])
 
+  @@index([date])
+  @@index([category])
   @@map("incomes")
 }
 
@@ -417,8 +454,9 @@ enum IncomeCategory {
 
 model Expense {
   id          String          @id @default(uuid())
+  code        String?         @unique
   category    ExpenseCategory
-  amount      Decimal         @db.Decimal(18, 2)
+  amount      Decimal
   date        DateTime
   description String?
   vendor      String?
@@ -427,6 +465,8 @@ model Expense {
   createdById String?
   createdBy   User?           @relation(fields: [createdById], references: [id])
 
+  @@index([date])
+  @@index([category])
   @@map("expenses")
 }
 
@@ -474,8 +514,8 @@ model JournalEntry {
   date        DateTime
   description String?
   reference   String?
-  totalDebit  Decimal            @db.Decimal(18, 2)
-  totalCredit Decimal            @db.Decimal(18, 2)
+  totalDebit  Decimal
+  totalCredit Decimal
   isPosted    Boolean            @default(false)
   notes       String?
   createdAt   DateTime           @default(now())
@@ -490,19 +530,22 @@ model JournalEntryLine {
   id             String         @id @default(uuid())
   journalEntryId String
   accountId      String
-  debit          Decimal        @default(0) @db.Decimal(18, 2)
-  credit         Decimal        @default(0) @db.Decimal(18, 2)
+  debit          Decimal        @default(0)
+  credit         Decimal        @default(0)
   description    String?
   journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account        ChartOfAccount @relation(fields: [accountId], references: [id])
 
+  @@index([journalEntryId])
+  @@index([accountId])
   @@map("journal_entry_lines")
 }
 
 model TaxRecord {
   id          String    @id @default(uuid())
+  code        String?   @unique
   taxType     TaxType
-  amount      Decimal   @db.Decimal(18, 2)
+  amount      Decimal
   periodStart DateTime
   periodEnd   DateTime
   dueDate     DateTime?
@@ -515,6 +558,8 @@ model TaxRecord {
   createdById String?
   createdBy   User?     @relation(fields: [createdById], references: [id])
 
+  @@index([isPaid])
+  @@index([periodStart])
   @@map("tax_records")
 }
 
@@ -538,6 +583,9 @@ model Notification {
   readAt    DateTime?
   user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
   @@map("notifications")
 }
 
@@ -555,14 +603,17 @@ model AuditLog {
   action       String
   entityType   String?
   entityId     String?
-  oldValues    Json?
-  newValues    Json?
+  oldValues    String?
+  newValues    String?
   ipAddress    String?
   succeeded    Boolean  @default(true)
   errorMessage String?
   createdAt    DateTime @default(now())
   user         User?    @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entityType])
   @@map("audit_logs")
 }
 
@@ -583,18 +634,17 @@ model CompanySettings {
   @@map("company_settings")
 }
 
-// ── Projects ──────────────────────────────────────────────────────────────────
-
 model Project {
   id          String    @id @default(uuid())
+  code        String?   @unique
   name        String
   description String?
   clientId    String?
   siteAddress String?
   startDate   DateTime
   endDate     DateTime?
-  budget      Decimal   @default(0) @db.Decimal(18, 2)
-  spent       Decimal   @default(0) @db.Decimal(18, 2)
+  budget      Decimal   @default(0)
+  spent       Decimal   @default(0)
   status      String    @default("Planning")
   progress    Int       @default(0)
   managerName String?
@@ -610,6 +660,9 @@ model Project {
   invoices       Invoice[]
   purchaseOrders PurchaseOrder[]
 
+  @@index([status])
+  @@index([clientId])
+  @@index([createdAt])
   @@map("projects")
 }
 
@@ -625,6 +678,7 @@ model ProjectMilestone {
 
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("project_milestones")
 }
 
@@ -632,13 +686,14 @@ model ProjectExpense {
   id          String   @id @default(uuid())
   projectId   String
   category    String
-  amount      Decimal  @db.Decimal(18, 2)
+  amount      Decimal
   date        DateTime
   description String?
   createdAt   DateTime @default(now())
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("project_expenses")
 }
 
@@ -668,8 +723,6 @@ model ProjectMachinery {
   @@map("project_machineries")
 }
 
-// ── Invoices ─────────────────────────────────────────────────────────────────
-
 model Invoice {
   id            String        @id @default(uuid())
   invoiceNumber String        @unique
@@ -678,9 +731,9 @@ model Invoice {
   issueDate     DateTime
   dueDate       DateTime
   status        String        @default("Draft")
-  subtotal      Decimal       @default(0) @db.Decimal(18, 2)
-  taxAmount     Decimal       @default(0) @db.Decimal(18, 2)
-  total         Decimal       @default(0) @db.Decimal(18, 2)
+  subtotal      Decimal       @default(0)
+  taxAmount     Decimal       @default(0)
+  total         Decimal       @default(0)
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -689,6 +742,9 @@ model Invoice {
   project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items         InvoiceItem[]
 
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
   @@map("invoices")
 }
 
@@ -696,16 +752,15 @@ model InvoiceItem {
   id          String   @id @default(uuid())
   invoiceId   String
   description String
-  quantity    Decimal  @default(1) @db.Decimal(18, 2)
-  unitPrice   Decimal  @default(0) @db.Decimal(18, 2)
-  total       Decimal  @default(0) @db.Decimal(18, 2)
+  quantity    Decimal  @default(1)
+  unitPrice   Decimal  @default(0)
+  total       Decimal  @default(0)
 
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@index([invoiceId])
   @@map("invoice_items")
 }
-
-// ── Purchase Orders ───────────────────────────────────────────────────────────
 
 model PurchaseOrder {
   id               String              @id @default(uuid())
@@ -715,9 +770,9 @@ model PurchaseOrder {
   issueDate        DateTime
   expectedDelivery DateTime?
   status           String              @default("Draft")
-  subtotal         Decimal             @default(0) @db.Decimal(18, 2)
-  taxAmount        Decimal             @default(0) @db.Decimal(18, 2)
-  total            Decimal             @default(0) @db.Decimal(18, 2)
+  subtotal         Decimal             @default(0)
+  taxAmount        Decimal             @default(0)
+  total            Decimal             @default(0)
   notes            String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
@@ -726,6 +781,9 @@ model PurchaseOrder {
   project          Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items            PurchaseOrderItem[]
 
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdAt])
   @@map("purchase_orders")
 }
 
@@ -733,12 +791,12 @@ model PurchaseOrderItem {
   id              String        @id @default(uuid())
   purchaseOrderId String
   description     String
-  quantity        Decimal       @default(1) @db.Decimal(18, 2)
-  unitPrice       Decimal       @default(0) @db.Decimal(18, 2)
-  total           Decimal       @default(0) @db.Decimal(18, 2)
+  quantity        Decimal       @default(1)
+  unitPrice       Decimal       @default(0)
+  total           Decimal       @default(0)
 
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
+  @@index([purchaseOrderId])
   @@map("purchase_order_items")
 }
-

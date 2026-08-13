@@ -33,8 +33,8 @@ export default function PurchaseOrderFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: loadingExisting } = useGetPurchaseOrderQuery(id ?? '', { skip: !isEdit });
-  const { data: suppliersData } = useGetSuppliersQuery({ pageSize: 500 });
-  const { data: projectsData } = useGetProjectsQuery({ pageSize: 500 });
+  const { data: suppliersData } = useGetSuppliersQuery({ pageSize: 100 });
+  const { data: projectsData } = useGetProjectsQuery({ pageSize: 100 });
 
   const [createPO, { isLoading: creating }] = useCreatePurchaseOrderMutation();
   const [updatePO, { isLoading: updating }] = useUpdatePurchaseOrderMutation();

@@ -183,22 +183,23 @@ export class SuppliersService {
     const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
     if (!supplier) throw new NotFoundException('Supplier not found');
 
-    const tx = await this.prisma.supplierTransaction.create({
-      data: {
-        supplierId,
-        type: dto.type,
-        amount: dto.amount,
-        date: new Date(dto.date),
-        description: dto.description,
-        reference: dto.reference,
-      },
-    });
+    const updateData = dto.type === 'PURCHASE'
+      ? { totalPurchased: { increment: dto.amount } }
+      : { totalPaid: { increment: dto.amount } };
 
-    if (dto.type === 'PURCHASE') {
-      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPurchased: { increment: dto.amount } } });
-    } else {
-      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPaid: { increment: dto.amount } } });
-    }
+    const [tx] = await this.prisma.$transaction([
+      this.prisma.supplierTransaction.create({
+        data: {
+          supplierId,
+          type: dto.type,
+          amount: dto.amount,
+          date: new Date(dto.date),
+          description: dto.description,
+          reference: dto.reference,
+        },
+      }),
+      this.prisma.supplier.update({ where: { id: supplierId }, data: updateData }),
+    ]);
 
     return { ...tx, amount: Number(tx.amount) };
   }
@@ -207,14 +208,15 @@ export class SuppliersService {
     const tx = await this.prisma.supplierTransaction.findFirst({ where: { id: txId, supplierId } });
     if (!tx) throw new NotFoundException('Transaction not found');
 
-    await this.prisma.supplierTransaction.delete({ where: { id: txId } });
-
     const amt = Number(tx.amount);
-    if (tx.type === 'PURCHASE') {
-      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPurchased: { decrement: amt } } });
-    } else {
-      await this.prisma.supplier.update({ where: { id: supplierId }, data: { totalPaid: { decrement: amt } } });
-    }
+    const updateData = tx.type === 'PURCHASE'
+      ? { totalPurchased: { decrement: amt } }
+      : { totalPaid: { decrement: amt } };
+
+    await this.prisma.$transaction([
+      this.prisma.supplierTransaction.delete({ where: { id: txId } }),
+      this.prisma.supplier.update({ where: { id: supplierId }, data: updateData }),
+    ]);
 
     return { message: 'Transaction deleted' };
   }

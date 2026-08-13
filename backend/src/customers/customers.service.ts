@@ -185,22 +185,23 @@ export class CustomersService {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Customer not found');
 
-    const tx = await this.prisma.customerTransaction.create({
-      data: {
-        customerId,
-        type: dto.type,
-        amount: dto.amount,
-        date: new Date(dto.date),
-        description: dto.description,
-        reference: dto.reference,
-      },
-    });
+    const updateData = dto.type === 'INVOICE'
+      ? { totalBilled: { increment: dto.amount } }
+      : { totalPaid: { increment: dto.amount } };
 
-    if (dto.type === 'INVOICE') {
-      await this.prisma.customer.update({ where: { id: customerId }, data: { totalBilled: { increment: dto.amount } } });
-    } else {
-      await this.prisma.customer.update({ where: { id: customerId }, data: { totalPaid: { increment: dto.amount } } });
-    }
+    const [tx] = await this.prisma.$transaction([
+      this.prisma.customerTransaction.create({
+        data: {
+          customerId,
+          type: dto.type,
+          amount: dto.amount,
+          date: new Date(dto.date),
+          description: dto.description,
+          reference: dto.reference,
+        },
+      }),
+      this.prisma.customer.update({ where: { id: customerId }, data: updateData }),
+    ]);
 
     return { ...tx, amount: Number(tx.amount) };
   }
@@ -209,14 +210,15 @@ export class CustomersService {
     const tx = await this.prisma.customerTransaction.findFirst({ where: { id: txId, customerId } });
     if (!tx) throw new NotFoundException('Transaction not found');
 
-    await this.prisma.customerTransaction.delete({ where: { id: txId } });
-
     const amt = Number(tx.amount);
-    if (tx.type === 'INVOICE') {
-      await this.prisma.customer.update({ where: { id: customerId }, data: { totalBilled: { decrement: amt } } });
-    } else {
-      await this.prisma.customer.update({ where: { id: customerId }, data: { totalPaid: { decrement: amt } } });
-    }
+    const updateData = tx.type === 'INVOICE'
+      ? { totalBilled: { decrement: amt } }
+      : { totalPaid: { decrement: amt } };
+
+    await this.prisma.$transaction([
+      this.prisma.customerTransaction.delete({ where: { id: txId } }),
+      this.prisma.customer.update({ where: { id: customerId }, data: updateData }),
+    ]);
 
     return { message: 'Transaction deleted' };
   }

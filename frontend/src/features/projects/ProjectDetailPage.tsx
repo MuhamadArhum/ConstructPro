@@ -77,8 +77,8 @@ export default function ProjectDetailPage() {
   const [removeMachineryId, setRemoveMachineryId] = useState<string | null>(null);
 
   const { data: project, isLoading } = useGetProjectQuery(id ?? '', { skip: !id });
-  const { data: laboursData } = useGetLaboursQuery({ pageSize: 500 });
-  const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 500 });
+  const { data: laboursData } = useGetLaboursQuery({ pageSize: 100 });
+  const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 100 });
 
   const [deleteProject] = useDeleteProjectMutation();
   const [addMilestone, { isLoading: addingMs }] = useAddMilestoneMutation();
