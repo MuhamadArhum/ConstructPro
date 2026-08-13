@@ -1,8 +1,9 @@
-const { app, BrowserWindow, shell, globalShortcut } = require('electron');
+const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
 let backendProcess = null;
@@ -34,6 +35,36 @@ function ensureDatabase() {
   }
 
   return dbDest;
+}
+
+function runMigrations(dbPath) {
+  if (!app.isPackaged) return; // dev mein skip karo
+
+  const backendPath = getBackendPath();
+  const prismaEntry = path.join(backendPath, 'node_modules', 'prisma', 'build', 'index.js');
+
+  if (!fs.existsSync(prismaEntry)) {
+    console.warn('[migrations] Prisma CLI not found, skipping migrations');
+    return;
+  }
+
+  console.log('[migrations] Syncing database schema...');
+  const result = spawnSync(process.execPath, [prismaEntry, 'db', 'push'], {
+    cwd: backendPath,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      DATABASE_URL: `file:${dbPath}`,
+    },
+    stdio: 'pipe',
+    timeout: 30000,
+  });
+
+  if (result.status === 0) {
+    console.log('[migrations] Completed successfully');
+  } else {
+    console.error('[migrations] Failed:', result.stderr?.toString()?.trim());
+  }
 }
 
 function waitForBackend(url, retries = 40, delay = 1000) {
@@ -96,6 +127,54 @@ function startBackend(dbPath) {
   });
 }
 
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[updater] Checking for updates...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[updater] Update available:', info.version);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[updater] App is up to date');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`[updater] Downloading: ${Math.round(progress.percent)}%`);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[updater] Update downloaded:', info.version);
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Ready',
+      message: `ConstructPro v${info.version} ready to install.`,
+      detail: 'Restart karne pe new version install ho jayega.',
+      buttons: ['Abhi Restart Karo', 'Baad Mein'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[updater] Error:', err.message);
+  });
+
+  // Window show hone ke 5 second baad check karo
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('[updater] Check failed:', err.message);
+    });
+  }, 5000);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -114,6 +193,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.maximize();
+    if (app.isPackaged) setupAutoUpdater();
   });
 
   mainWindow.loadURL(`http://localhost:${PORT}`);
@@ -147,6 +227,7 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   const dbPath = ensureDatabase();
+  runMigrations(dbPath);
   startBackend(dbPath);
 
   try {

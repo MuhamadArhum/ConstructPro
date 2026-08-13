@@ -48,6 +48,9 @@ copyDir(path.join(BACKEND_SRC, 'prisma'), path.join(STAGE, 'prisma'));
 console.log('[prepare-backend] Copying package.json...');
 fs.copyFileSync(path.join(BACKEND_SRC, 'package.json'), path.join(STAGE, 'package.json'));
 
+console.log('[prepare-backend] Copying prisma.config.ts...');
+fs.copyFileSync(path.join(BACKEND_SRC, 'prisma.config.ts'), path.join(STAGE, 'prisma.config.ts'));
+
 // Do NOT copy the dev database — always generate a fresh one with only the admin seed.
 
 console.log('[prepare-backend] Installing production dependencies...');
@@ -72,23 +75,19 @@ execSync('npx prisma generate', {
   env: { ...process.env, DATABASE_URL: 'file:./constructpro.db' },
 });
 
-// Run both db push and seed from BACKEND_SRC so prisma.config.ts is found.
-// DATABASE_URL uses an absolute path so the DB is created in STAGE, not BACKEND_SRC.
-const stageDbAbsolute = path.resolve(STAGE, 'constructpro.db');
-const stageDbUrl = `file:${stageDbAbsolute}`;
-
 console.log('[prepare-backend] Creating fresh database schema...');
 execSync('npx prisma db push', {
-  cwd: BACKEND_SRC,
+  cwd: STAGE,
   stdio: 'inherit',
-  env: { ...process.env, DATABASE_URL: stageDbUrl },
+  env: { ...process.env, DATABASE_URL: 'file:./constructpro.db' },
 });
 
 console.log('[prepare-backend] Seeding admin user...');
+const stageDbAbsolute = path.resolve(STAGE, 'constructpro.db');
 execSync('npx ts-node --transpile-only src/seed.ts', {
   cwd: BACKEND_SRC,
   stdio: 'inherit',
-  env: { ...process.env, DATABASE_URL: stageDbUrl, NODE_ENV: 'production' },
+  env: { ...process.env, DATABASE_URL: `file:${stageDbAbsolute}`, NODE_ENV: 'production' },
 });
 
 console.log('[prepare-backend] Backend bundle ready at:', STAGE);
