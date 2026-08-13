@@ -11,6 +11,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
 export class CreateLabourDto {
+  @ApiPropertyOptional({ example: 'LAB-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Rashid Masih' })
   @IsString()
   @IsNotEmpty()
@@ -55,6 +60,11 @@ export class CreateLabourDto {
 }
 
 export class UpdateLabourDto {
+  @ApiPropertyOptional({ example: 'LAB-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Rashid Masih' })
   @IsOptional()
   @IsString()

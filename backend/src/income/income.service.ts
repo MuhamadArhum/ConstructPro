@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateIncomeDto, UpdateIncomeDto, IncomeQueryDto } from './dto/income.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class IncomeService {
@@ -29,9 +30,10 @@ export class IncomeService {
 
     if (query.search) {
       where.OR = [
-        { description: { contains: query.search, mode: 'insensitive' } },
-        { customerName: { contains: query.search, mode: 'insensitive' } },
-        { projectName: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { description: { contains: query.search } },
+        { customerName: { contains: query.search } },
+        { projectName: { contains: query.search } },
       ];
     }
 
@@ -70,9 +72,22 @@ export class IncomeService {
     return this.mapIncome(income);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'income');
+  }
+
   async create(dto: CreateIncomeDto, userId?: string) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.income.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'income');
+    }
     const income = await this.prisma.income.create({
       data: {
+        code,
         category: dto.category,
         amount: dto.amount,
         date: new Date(dto.date),
@@ -90,8 +105,14 @@ export class IncomeService {
   async update(id: string, dto: UpdateIncomeDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.income.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const data: any = {};
 
+    if (dto.code !== undefined) data.code = dto.code;
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.amount !== undefined) data.amount = dto.amount;
     if (dto.date !== undefined) data.date = new Date(dto.date);

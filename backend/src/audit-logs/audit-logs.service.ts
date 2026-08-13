@@ -36,8 +36,8 @@ export class AuditLogsService {
         action: dto.action,
         entityType: dto.entityType ?? null,
         entityId: dto.entityId ?? null,
-        oldValues: dto.oldValues ?? undefined,
-        newValues: dto.newValues ?? undefined,
+        oldValues: dto.oldValues != null ? JSON.stringify(dto.oldValues) : undefined,
+        newValues: dto.newValues != null ? JSON.stringify(dto.newValues) : undefined,
         ipAddress: dto.ipAddress ?? null,
         succeeded: dto.succeeded ?? true,
         errorMessage: dto.errorMessage ?? null,
@@ -57,7 +57,7 @@ export class AuditLogsService {
     }
 
     if (query.action) {
-      where.action = { contains: query.action, mode: 'insensitive' };
+      where.action = { contains: query.action };
     }
 
     if (query.entityType) {

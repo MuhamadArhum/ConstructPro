@@ -40,6 +40,14 @@ export class TaxController {
     return this.taxService.getSummary();
   }
 
+  @Get('next-code')
+  @HasPermission('Tax.View')
+  @ApiOperation({ summary: 'Get the next auto-generated tax record code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.taxService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get()
   @HasPermission('Tax.View')
   @ApiOperation({ summary: 'Get all tax records with pagination and filters' })

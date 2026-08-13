@@ -13,6 +13,7 @@ export type ExpenseCategory =
 
 export interface ExpenseDto {
   id: string;
+  code?: string;
   category: ExpenseCategory;
   categoryDisplay: string;
   amount: number;

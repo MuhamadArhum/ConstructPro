@@ -13,6 +13,7 @@ import {
   AssignLabourDto,
   AssignMachineryDto,
 } from './dto/project.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class ProjectsService {
@@ -31,9 +32,10 @@ export class ProjectsService {
 
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { siteAddress: { contains: search, mode: 'insensitive' } },
-          { managerName: { contains: search, mode: 'insensitive' } },
+          { code: { contains: search } },
+          { name: { contains: search } },
+          { siteAddress: { contains: search } },
+          { managerName: { contains: search } },
         ];
       }
 
@@ -108,9 +110,22 @@ export class ProjectsService {
     };
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'project');
+  }
+
   async create(dto: CreateProjectDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.project.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'project');
+    }
     const project = await this.prisma.project.create({
       data: {
+        code,
         name: dto.name,
         description: dto.description,
         clientId: dto.clientId,
@@ -133,9 +148,15 @@ export class ProjectsService {
   async update(id: string, dto: UpdateProjectDto) {
     await this.findOne(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.project.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const project = await this.prisma.project.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.clientId !== undefined && { clientId: dto.clientId }),
@@ -356,6 +377,7 @@ export class ProjectsService {
   private mapProject(project: any) {
     return {
       id: project.id,
+      code: project.code ?? null,
       name: project.name,
       description: project.description,
       clientId: project.clientId,

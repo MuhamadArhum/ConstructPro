@@ -13,7 +13,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateLabourMutation, useGetLabourByIdQuery, useUpdateLabourMutation } from './labourApi';
+import { useCreateLabourMutation, useGetLabourByIdQuery, useUpdateLabourMutation, useGetNextLabourCodeQuery } from './labourApi';
 
 export default function LabourFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,9 +22,11 @@ export default function LabourFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetLabourByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextLabourCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateLabourMutation();
   const [update, { isLoading: isUpdating }] = useUpdateLabourMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [cnic, setCnic] = useState('');
@@ -35,7 +37,14 @@ export default function LabourFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name);
       setPhoneNumber(existing.phoneNumber ?? '');
       setCnic(existing.cnic ?? '');
@@ -50,6 +59,7 @@ export default function LabourFormPage() {
     e.preventDefault();
     setError(null);
     const payload = {
+      code: code || undefined,
       name,
       phoneNumber: phoneNumber || undefined,
       cnic: cnic || undefined,
@@ -68,7 +78,12 @@ export default function LabourFormPage() {
       }
       navigate('/labour');
     } catch (err) {
-      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save labour record.');
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save labour record.');
+      }
     }
   };
 
@@ -81,6 +96,15 @@ export default function LabourFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
 
             <TextField label="Full Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <TextField label="Trade / Skill" value={trade} onChange={(e) => setTrade(e.target.value)} fullWidth />

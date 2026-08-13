@@ -36,6 +36,9 @@ export const customerApi = baseApi.injectEndpoints({
       query: ({ customerId, txId }) => ({ url: `/customer/${customerId}/transactions/${txId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { customerId }) => ['Customer', { type: 'Customer' as const, id: `ledger-${customerId}` }],
     }),
+    getNextCustomerCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/customer/next-code' }),
+    }),
   }),
 });
 
@@ -48,4 +51,5 @@ export const {
   useGetCustomerLedgerQuery,
   useAddCustomerTransactionMutation,
   useDeleteCustomerTransactionMutation,
+  useGetNextCustomerCodeQuery,
 } = customerApi;

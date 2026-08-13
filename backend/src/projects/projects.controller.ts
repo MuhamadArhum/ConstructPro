@@ -41,6 +41,13 @@ export class ProjectsController {
 
   // ── Projects ────────────────────────────────────────────────────────────────
 
+  @Get('next-code')
+  @HasPermission('Project.View')
+  @ApiOperation({ summary: 'Get the next auto-generated project code' })
+  getNextCode() {
+    return this.projectsService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get()
   @HasPermission('Project.View')
   @ApiOperation({ summary: 'Get all projects with pagination and filters' })

@@ -17,7 +17,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateMachineryMutation, useGetMachineryByIdQuery, useUpdateMachineryMutation } from './machineryApi';
+import { useCreateMachineryMutation, useGetMachineryByIdQuery, useUpdateMachineryMutation, useGetNextMachineryCodeQuery } from './machineryApi';
 import type { MachineryStatus } from '../../types/machinery.types';
 
 export default function MachineryFormPage() {
@@ -27,9 +27,11 @@ export default function MachineryFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetMachineryByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextMachineryCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateMachineryMutation();
   const [update, { isLoading: isUpdating }] = useUpdateMachineryMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
@@ -42,7 +44,14 @@ export default function MachineryFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name);
       setModel(existing.model ?? '');
       setSerialNumber(existing.serialNumber ?? '');
@@ -59,6 +68,7 @@ export default function MachineryFormPage() {
     e.preventDefault();
     setError(null);
     const payload = {
+      code: code || undefined,
       name,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
@@ -78,7 +88,12 @@ export default function MachineryFormPage() {
       }
       navigate('/machinery');
     } catch (err) {
-      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save machinery record.');
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save machinery record.');
+      }
     }
   };
 
@@ -91,6 +106,14 @@ export default function MachineryFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
 
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <TextField label="Model" value={model} onChange={(e) => setModel(e.target.value)} fullWidth />

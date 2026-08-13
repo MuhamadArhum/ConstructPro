@@ -3,6 +3,7 @@ export type MaintenanceType = 'Scheduled' | 'Repair';
 
 export interface MachineryDto {
   id: string;
+  code?: string;
   name: string;
   model?: string;
   serialNumber?: string;

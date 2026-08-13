@@ -13,6 +13,11 @@ import { Transform, Type } from 'class-transformer';
 import { IncomeCategory } from '@prisma/client';
 
 export class CreateIncomeDto {
+  @ApiPropertyOptional({ example: 'INC-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ enum: IncomeCategory, example: IncomeCategory.CustomerPayment })
   @IsEnum(IncomeCategory)
   @IsNotEmpty()
@@ -56,6 +61,11 @@ export class CreateIncomeDto {
 }
 
 export class UpdateIncomeDto {
+  @ApiPropertyOptional({ example: 'INC-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ enum: IncomeCategory })
   @IsOptional()
   @IsEnum(IncomeCategory)

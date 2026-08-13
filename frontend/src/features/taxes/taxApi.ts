@@ -28,10 +28,14 @@ export const taxApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/tax/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Tax'],
     }),
+    getNextTaxCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/tax/next-code' }),
+    }),
   }),
 });
 
 export const {
   useGetTaxRecordsQuery, useGetTaxRecordByIdQuery, useGetTaxSummaryQuery,
   useCreateTaxRecordMutation, useUpdateTaxRecordMutation, useDeleteTaxRecordMutation,
+  useGetNextTaxCodeQuery,
 } = taxApi;

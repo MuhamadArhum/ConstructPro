@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateInventoryItemDto,
@@ -7,6 +7,7 @@ import {
   InventoryQueryDto,
 } from './dto/inventory.dto';
 import { StockTransactionType } from '@prisma/client';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class InventoryService {
@@ -21,14 +22,15 @@ export class InventoryService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { category: { contains: query.search, mode: 'insensitive' } },
-        { supplierName: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
+        { category: { contains: query.search } },
+        { supplierName: { contains: query.search } },
       ];
     }
 
     if (query.category) {
-      where.category = { contains: query.category, mode: 'insensitive' };
+      where.category = { contains: query.category };
     }
 
     // lowStock filter: currentStock <= lowStockThreshold
@@ -109,9 +111,22 @@ export class InventoryService {
     };
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'inventoryItem');
+  }
+
   async create(dto: CreateInventoryItemDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.inventoryItem.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'inventoryItem');
+    }
     const item = await this.prisma.inventoryItem.create({
       data: {
+        code,
         name: dto.name,
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.unit !== undefined && { unit: dto.unit }),
@@ -130,9 +145,15 @@ export class InventoryService {
   async update(id: string, dto: UpdateInventoryItemDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.inventoryItem.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const item = await this.prisma.inventoryItem.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.unit !== undefined && { unit: dto.unit }),
@@ -225,6 +246,7 @@ export class InventoryService {
 
   private mapInventoryItem(item: {
     id: string;
+    code?: string | null;
     name: string;
     category: string | null;
     unit: string | null;
@@ -241,6 +263,7 @@ export class InventoryService {
 
     return {
       id: item.id,
+      code: item.code ?? null,
       name: item.name,
       category: item.category,
       unit: item.unit,

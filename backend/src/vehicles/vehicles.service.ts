@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateVehicleDto,
@@ -6,6 +6,7 @@ import {
   CreateVehicleMaintenanceDto,
   VehicleQueryDto,
 } from './dto/vehicle.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class VehiclesService {
@@ -20,10 +21,11 @@ export class VehiclesService {
 
     if (query.search) {
       where.OR = [
-        { registrationNumber: { contains: query.search, mode: 'insensitive' } },
-        { make: { contains: query.search, mode: 'insensitive' } },
-        { model: { contains: query.search, mode: 'insensitive' } },
-        { driverName: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { registrationNumber: { contains: query.search } },
+        { make: { contains: query.search } },
+        { model: { contains: query.search } },
+        { driverName: { contains: query.search } },
       ];
     }
 
@@ -79,9 +81,22 @@ export class VehiclesService {
     };
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'vehicle');
+  }
+
   async create(dto: CreateVehicleDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.vehicle.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'vehicle');
+    }
     const vehicle = await this.prisma.vehicle.create({
       data: {
+        code,
         registrationNumber: dto.registrationNumber,
         ...(dto.make !== undefined && { make: dto.make }),
         ...(dto.model !== undefined && { model: dto.model }),
@@ -102,9 +117,15 @@ export class VehiclesService {
   async update(id: string, dto: UpdateVehicleDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.vehicle.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const vehicle = await this.prisma.vehicle.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.make !== undefined && { make: dto.make }),
         ...(dto.model !== undefined && { model: dto.model }),
         ...(dto.year !== undefined && { year: dto.year }),
@@ -161,6 +182,7 @@ export class VehiclesService {
 
   private mapVehicle(vehicle: {
     id: string;
+    code?: string | null;
     registrationNumber: string;
     make: string | null;
     model: string | null;
@@ -178,6 +200,7 @@ export class VehiclesService {
   }) {
     return {
       id: vehicle.id,
+      code: vehicle.code ?? null,
       registrationNumber: vehicle.registrationNumber,
       make: vehicle.make,
       model: vehicle.model,

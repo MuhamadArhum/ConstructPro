@@ -121,12 +121,12 @@ export default function ExpenseListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search"
+            label="Search by code / description"
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
-            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}>
             <InputLabel>Category</InputLabel>
@@ -169,6 +169,7 @@ export default function ExpenseListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Description</TableCell>
@@ -178,10 +179,11 @@ export default function ExpenseListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={6} /> : (
+            {isLoading ? <TableSkeleton cols={7} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Chip label={categoryLabels[row.category]} size="small" />
@@ -211,7 +213,7 @@ export default function ExpenseListPage() {
                 ))}
                 {!data?.items.length && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">No records found</TableCell>
+                    <TableCell colSpan={7} align="center">No records found</TableCell>
                   </TableRow>
                 )}
               </>

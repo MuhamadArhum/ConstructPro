@@ -83,7 +83,7 @@ export default function LabourListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search by name, trade, CNIC"
+            label="Search by code, name, trade, CNIC"
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
@@ -113,6 +113,7 @@ export default function LabourListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Trade</TableCell>
               <TableCell>Phone</TableCell>
@@ -126,10 +127,11 @@ export default function LabourListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={10} /> : (
+            {isLoading ? <TableSkeleton cols={11} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
                     <TableCell>{row.trade ?? '-'}</TableCell>
                     <TableCell>{row.phoneNumber ?? '-'}</TableCell>
@@ -177,7 +179,7 @@ export default function LabourListPage() {
                 ))}
                 {!data?.items.length && (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">No records found</TableCell>
+                    <TableCell colSpan={11} align="center">No records found</TableCell>
                   </TableRow>
                 )}
               </>

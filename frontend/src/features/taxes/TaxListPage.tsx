@@ -64,7 +64,7 @@ export default function TaxListPage() {
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Search by code / desc" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 180 } }}>
             <InputLabel>Tax Type</InputLabel>
             <Select label="Tax Type" value={taxType} onChange={(e) => { setTaxType(e.target.value); setPage(0); }}>
@@ -87,6 +87,7 @@ export default function TaxListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Tax Type</TableCell>
               <TableCell>Period</TableCell>
               <TableCell>Due Date</TableCell>
@@ -97,10 +98,11 @@ export default function TaxListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={7} /> : (
+            {isLoading ? <TableSkeleton cols={8} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{(row as any).code ?? '-'}</TableCell>
                     <TableCell><Chip label={taxTypeLabels[row.taxType]} size="small" variant="outlined" /></TableCell>
                     <TableCell>{new Date(row.periodStart).toLocaleDateString()} – {new Date(row.periodEnd).toLocaleDateString()}</TableCell>
                     <TableCell>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '-'}</TableCell>
@@ -113,7 +115,7 @@ export default function TaxListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No tax records found</TableCell></TableRow>}
+                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No tax records found</TableCell></TableRow>}
               </>
             )}
           </TableBody>

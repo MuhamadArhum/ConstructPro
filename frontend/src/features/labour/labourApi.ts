@@ -65,6 +65,9 @@ export const labourApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Labour'],
     }),
+    getNextLabourCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/labour/next-code' }),
+    }),
   }),
 });
 
@@ -79,4 +82,5 @@ export const {
   useGetLabourAdvancesQuery,
   useAddLabourAdvanceMutation,
   useGetLabourLedgerQuery,
+  useGetNextLabourCodeQuery,
 } = labourApi;

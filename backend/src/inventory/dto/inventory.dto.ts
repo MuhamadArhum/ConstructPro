@@ -12,6 +12,11 @@ import { Type, Transform } from 'class-transformer';
 import { StockTransactionType } from '@prisma/client';
 
 export class CreateInventoryItemDto {
+  @ApiPropertyOptional({ example: 'STK-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Portland Cement' })
   @IsString()
   @IsNotEmpty()
@@ -65,6 +70,11 @@ export class CreateInventoryItemDto {
 }
 
 export class UpdateInventoryItemDto {
+  @ApiPropertyOptional({ example: 'STK-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Portland Cement' })
   @IsOptional()
   @IsString()

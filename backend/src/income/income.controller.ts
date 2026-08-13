@@ -40,6 +40,14 @@ export class IncomeController {
     return this.incomeService.getSummary();
   }
 
+  @Get('next-code')
+  @HasPermission('Income.View')
+  @ApiOperation({ summary: 'Get the next auto-generated income code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.incomeService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get()
   @HasPermission('Income.View')
   @ApiOperation({ summary: 'Get all income records with pagination and filters' })

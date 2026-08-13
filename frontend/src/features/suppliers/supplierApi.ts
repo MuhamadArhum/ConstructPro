@@ -36,6 +36,9 @@ export const supplierApi = baseApi.injectEndpoints({
       query: ({ supplierId, txId }) => ({ url: `/supplier/${supplierId}/transactions/${txId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { supplierId }) => ['Supplier', { type: 'Supplier' as const, id: `ledger-${supplierId}` }],
     }),
+    getNextSupplierCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/supplier/next-code' }),
+    }),
   }),
 });
 
@@ -48,4 +51,5 @@ export const {
   useGetSupplierLedgerQuery,
   useAddSupplierTransactionMutation,
   useDeleteSupplierTransactionMutation,
+  useGetNextSupplierCodeQuery,
 } = supplierApi;

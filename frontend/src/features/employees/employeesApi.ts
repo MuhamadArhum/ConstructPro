@@ -48,6 +48,9 @@ export const employeesApi = baseApi.injectEndpoints({
       query: ({ month, year }) => ({ url: '/employees/salaries', params: { month, year } }),
       providesTags: ['Employee'],
     }),
+    getNextEmployeeCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/employees/next-code' }),
+    }),
   }),
 });
 
@@ -60,4 +63,5 @@ export const {
   useGetSalaryHistoryQuery,
   useProcessSalaryMutation,
   useGetAllSalariesQuery,
+  useGetNextEmployeeCodeQuery,
 } = employeesApi;

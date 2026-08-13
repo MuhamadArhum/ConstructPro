@@ -76,7 +76,7 @@ export default function ProjectListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search"
+            label="Search by code / name"
             size="small"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -98,6 +98,7 @@ export default function ProjectListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Client</TableCell>
               <TableCell>Site Address</TableCell>
@@ -112,11 +113,12 @@ export default function ProjectListPage() {
           </TableHead>
           <TableBody>
             {isLoading ? (
-              <TableSkeleton cols={10} />
+              <TableSkeleton cols={11} />
             ) : (
               <>
                 {rows.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell
                       sx={{ fontWeight: 600, cursor: 'pointer', color: 'primary.main' }}
                       onClick={() => navigate(`/projects/${row.id}`)}
@@ -157,7 +159,7 @@ export default function ProjectListPage() {
                 ))}
                 {!rows.length && (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">No projects found</TableCell>
+                    <TableCell colSpan={11} align="center">No projects found</TableCell>
                   </TableRow>
                 )}
               </>

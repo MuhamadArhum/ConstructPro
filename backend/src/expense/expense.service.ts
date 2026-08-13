@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto, UpdateExpenseDto, ExpenseQueryDto } from './dto/expense.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class ExpenseService {
@@ -29,8 +30,9 @@ export class ExpenseService {
 
     if (query.search) {
       where.OR = [
-        { description: { contains: query.search, mode: 'insensitive' } },
-        { vendor: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { description: { contains: query.search } },
+        { vendor: { contains: query.search } },
       ];
     }
 
@@ -69,9 +71,22 @@ export class ExpenseService {
     return this.mapExpense(expense);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'expense');
+  }
+
   async create(dto: CreateExpenseDto, userId?: string) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.expense.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'expense');
+    }
     const expense = await this.prisma.expense.create({
       data: {
+        code,
         category: dto.category,
         amount: dto.amount,
         date: new Date(dto.date),
@@ -87,8 +102,14 @@ export class ExpenseService {
   async update(id: string, dto: UpdateExpenseDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.expense.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const data: any = {};
 
+    if (dto.code !== undefined) data.code = dto.code;
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.amount !== undefined) data.amount = dto.amount;
     if (dto.date !== undefined) data.date = new Date(dto.date);

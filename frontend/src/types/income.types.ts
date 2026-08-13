@@ -2,6 +2,7 @@ export type IncomeCategory = 'CustomerPayment' | 'ProjectIncome' | 'OtherIncome'
 
 export interface IncomeDto {
   id: string;
+  code?: string;
   category: IncomeCategory;
   categoryDisplay: string;
   amount: number;

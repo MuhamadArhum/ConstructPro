@@ -45,7 +45,7 @@ export default function PlantListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Search by code / name" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
@@ -61,6 +61,7 @@ export default function PlantListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Type</TableCell>
               <TableCell>Manufacturer</TableCell>
@@ -72,10 +73,11 @@ export default function PlantListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={8} /> : (
+            {isLoading ? <TableSkeleton cols={9} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
                     <TableCell>{row.type ?? '-'}</TableCell>
                     <TableCell>{row.manufacturer ?? '-'}</TableCell>
@@ -89,7 +91,7 @@ export default function PlantListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No records found</TableCell></TableRow>}
+                {!data?.items.length && <TableRow><TableCell colSpan={9} align="center">No records found</TableCell></TableRow>}
               </>
             )}
           </TableBody>

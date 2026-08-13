@@ -13,7 +13,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateEmployeeMutation, useGetEmployeeByIdQuery, useUpdateEmployeeMutation } from './employeesApi';
+import { useCreateEmployeeMutation, useGetEmployeeByIdQuery, useUpdateEmployeeMutation, useGetNextEmployeeCodeQuery } from './employeesApi';
 
 export default function EmployeeFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,9 +22,11 @@ export default function EmployeeFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetEmployeeByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextEmployeeCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateEmployeeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateEmployeeMutation();
 
+  const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [designation, setDesignation] = useState('');
   const [department, setDepartment] = useState('');
@@ -36,7 +38,14 @@ export default function EmployeeFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setFullName(existing.fullName);
       setDesignation(existing.designation ?? '');
       setDepartment(existing.department ?? '');
@@ -51,6 +60,7 @@ export default function EmployeeFormPage() {
     e.preventDefault();
     setError(null);
     const payload = {
+      code: code || undefined,
       fullName,
       designation: designation || undefined,
       department: department || undefined,
@@ -69,8 +79,13 @@ export default function EmployeeFormPage() {
         dispatch(showSnackbar({ message: 'Employee created', severity: 'success' }));
       }
       navigate('/employees');
-    } catch {
-      setError('Failed to save employee record.');
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError('Failed to save employee record.');
+      }
     }
   };
 
@@ -83,6 +98,15 @@ export default function EmployeeFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
 
             <TextField label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required fullWidth />
             <TextField label="Designation" value={designation} onChange={(e) => setDesignation(e.target.value)} fullWidth />

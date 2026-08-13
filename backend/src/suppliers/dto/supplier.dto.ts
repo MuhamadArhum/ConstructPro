@@ -11,6 +11,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
 export class CreateSupplierDto {
+  @ApiPropertyOptional({ example: 'SUPL-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Malik Construction Supplies' })
   @IsString()
   @IsNotEmpty()
@@ -53,6 +58,11 @@ export class CreateSupplierDto {
 }
 
 export class UpdateSupplierDto {
+  @ApiPropertyOptional({ example: 'SUPL-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Malik Construction Supplies' })
   @IsOptional()
   @IsString()

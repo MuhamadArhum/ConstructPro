@@ -13,3 +13,12 @@ backend/src/**/appsettings.Production.json
 # Misc
 .DS_Store
 *.log
+
+# Electron build artifacts
+dist-electron/
+backend-bundle/
+backend/public/
+backend/constructpro.db
+
+# Claude
+.claude/

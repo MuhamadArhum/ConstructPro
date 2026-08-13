@@ -1,5 +1,6 @@
 export interface LabourDto {
   id: string;
+  code?: string;
   name: string;
   phoneNumber?: string;
   cnic?: string;

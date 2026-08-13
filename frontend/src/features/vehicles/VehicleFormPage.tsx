@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateVehicleMutation, useGetVehicleByIdQuery, useUpdateVehicleMutation } from './vehicleApi';
+import { useCreateVehicleMutation, useGetVehicleByIdQuery, useUpdateVehicleMutation, useGetNextVehicleCodeQuery } from './vehicleApi';
 import type { VehicleStatus } from '../../types/vehicle.types';
 
 export default function VehicleFormPage() {
@@ -14,9 +14,11 @@ export default function VehicleFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetVehicleByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextVehicleCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateVehicleMutation();
   const [update, { isLoading: isUpdating }] = useUpdateVehicleMutation();
 
+  const [code, setCode] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -31,7 +33,14 @@ export default function VehicleFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setRegistrationNumber(existing.registrationNumber);
       setMake(existing.make);
       setModel(existing.model ?? '');
@@ -49,12 +58,19 @@ export default function VehicleFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const base = { registrationNumber, make, model: model || undefined, year: year ? parseInt(year) : undefined, driverName: driverName || undefined, driverContact: driverContact || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, purchaseDate: purchaseDate || undefined, status, notes: notes || undefined };
+    const base = { code: code || undefined, registrationNumber, make, model: model || undefined, year: year ? parseInt(year) : undefined, driverName: driverName || undefined, driverContact: driverContact || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, purchaseDate: purchaseDate || undefined, status, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: { ...base, totalMileage: parseFloat(totalMileage) } }).unwrap(); dispatch(showSnackbar({ message: 'Vehicle updated', severity: 'success' })); }
       else { await create(base).unwrap(); dispatch(showSnackbar({ message: 'Vehicle created', severity: 'success' })); }
       navigate('/vehicles');
-    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save vehicle.'); }
+    } catch (err) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save vehicle.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -66,6 +82,14 @@ export default function VehicleFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <TextField label="Registration Number" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField label="Make" value={make} onChange={(e) => setMake(e.target.value)} required fullWidth />

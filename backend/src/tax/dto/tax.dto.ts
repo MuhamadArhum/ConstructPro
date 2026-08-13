@@ -13,6 +13,11 @@ import { Transform, Type } from 'class-transformer';
 import { TaxType } from '@prisma/client';
 
 export class CreateTaxDto {
+  @ApiPropertyOptional({ example: 'TAX-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ enum: TaxType, example: TaxType.VAT })
   @IsEnum(TaxType)
   @IsNotEmpty()
@@ -56,6 +61,11 @@ export class CreateTaxDto {
 }
 
 export class UpdateTaxDto {
+  @ApiPropertyOptional({ example: 'TAX-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ enum: TaxType })
   @IsOptional()
   @IsEnum(TaxType)
@@ -153,4 +163,9 @@ export class TaxQueryDto {
   @IsOptional()
   @IsString()
   endDate?: string;
+
+  @ApiPropertyOptional({ example: 'TAX-0001' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

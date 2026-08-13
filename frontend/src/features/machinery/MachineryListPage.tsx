@@ -117,7 +117,7 @@ export default function MachineryListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search by name, model, serial number"
+            label="Search by code, name, model, serial number"
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
@@ -140,6 +140,7 @@ export default function MachineryListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Model</TableCell>
               <TableCell>Serial No.</TableCell>
@@ -150,10 +151,11 @@ export default function MachineryListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={7} /> : (
+            {isLoading ? <TableSkeleton cols={8} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
                     <TableCell>{row.model ?? '-'}</TableCell>
                     <TableCell>{row.serialNumber ?? '-'}</TableCell>
@@ -196,7 +198,7 @@ export default function MachineryListPage() {
                 ))}
                 {!data?.items.length && (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">No machinery found</TableCell>
+                    <TableCell colSpan={8} align="center">No machinery found</TableCell>
                   </TableRow>
                 )}
               </>

@@ -34,6 +34,9 @@ export const incomeApi = baseApi.injectEndpoints({
       query: () => ({ url: '/income/summary' }),
       providesTags: ['Income'],
     }),
+    getNextIncomeCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/income/next-code' }),
+    }),
   }),
 });
 
@@ -44,4 +47,5 @@ export const {
   useUpdateIncomeMutation,
   useDeleteIncomeMutation,
   useGetIncomeSummaryQuery,
+  useGetNextIncomeCodeQuery,
 } = incomeApi;

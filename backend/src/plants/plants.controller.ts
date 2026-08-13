@@ -43,6 +43,14 @@ export class PlantsController {
     return this.plantsService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Plants.View')
+  @ApiOperation({ summary: 'Get the next auto-generated plant code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.plantsService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get(':id')
   @HasPermission('Plants.View')
   @ApiOperation({ summary: 'Get plant by ID' })

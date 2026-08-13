@@ -45,6 +45,14 @@ export class InventoryController {
     return this.inventoryService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Inventory.View')
+  @ApiOperation({ summary: 'Get the next auto-generated inventory item code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.inventoryService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get(':id')
   @HasPermission('Inventory.View')
   @ApiOperation({ summary: 'Get inventory item by ID with stock transactions' })

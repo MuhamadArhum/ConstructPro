@@ -12,6 +12,11 @@ import { Type } from 'class-transformer';
 import { VehicleStatus } from '@prisma/client';
 
 export class CreateVehicleDto {
+  @ApiPropertyOptional({ example: 'VEH-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'ABC-1234' })
   @IsString()
   @IsNotEmpty()
@@ -75,6 +80,11 @@ export class CreateVehicleDto {
 }
 
 export class UpdateVehicleDto {
+  @ApiPropertyOptional({ example: 'VEH-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Toyota' })
   @IsOptional()
   @IsString()

@@ -2,6 +2,7 @@ export type PlantStatus = 'Active' | 'UnderMaintenance' | 'Disposed';
 
 export interface PlantDto {
   id: string;
+  code?: string;
   name: string;
   type?: string;
   manufacturer?: string;

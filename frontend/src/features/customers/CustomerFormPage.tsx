@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateCustomerMutation, useGetCustomerByIdQuery, useUpdateCustomerMutation } from './customerApi';
+import { useCreateCustomerMutation, useGetCustomerByIdQuery, useUpdateCustomerMutation, useGetNextCustomerCodeQuery } from './customerApi';
 
 export default function CustomerFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +13,11 @@ export default function CustomerFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetCustomerByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextCustomerCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateCustomerMutation();
   const [update, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,7 +33,14 @@ export default function CustomerFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name); setCompanyName(existing.companyName ?? ''); setPhone(existing.phone ?? '');
       setEmail(existing.email ?? ''); setAddress(existing.address ?? ''); setNtn(existing.ntn ?? '');
       setCnic(existing.cnic ?? ''); setProjectName(existing.projectName ?? '');
@@ -42,12 +51,19 @@ export default function CustomerFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
-    const payload = { name, companyName: companyName || undefined, phone: phone || undefined, email: email || undefined, address: address || undefined, ntn: ntn || undefined, cnic: cnic || undefined, projectName: projectName || undefined, totalBilled: parseFloat(totalBilled), totalPaid: parseFloat(totalPaid), isActive, notes: notes || undefined };
+    const payload = { code: code || undefined, name, companyName: companyName || undefined, phone: phone || undefined, email: email || undefined, address: address || undefined, ntn: ntn || undefined, cnic: cnic || undefined, projectName: projectName || undefined, totalBilled: parseFloat(totalBilled), totalPaid: parseFloat(totalPaid), isActive, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Customer updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Customer created', severity: 'success' })); }
       navigate('/customers');
-    } catch { setError('Failed to save customer.'); }
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError('Failed to save customer.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -59,6 +75,14 @@ export default function CustomerFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField label="Company Name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} fullWidth />

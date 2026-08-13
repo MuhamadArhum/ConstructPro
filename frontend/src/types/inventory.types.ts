@@ -2,6 +2,7 @@ export type StockTransactionType = 'StockIn' | 'StockOut' | 'MaterialIssue' | 'A
 
 export interface InventoryItemDto {
   id: string;
+  code?: string;
   name: string;
   category?: string;
   unit?: string;

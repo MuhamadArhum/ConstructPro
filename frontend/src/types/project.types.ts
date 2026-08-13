@@ -2,6 +2,7 @@ export type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed' | 'C
 
 export interface Project {
   id: string;
+  code?: string;
   name: string;
   description?: string | null;
   clientId?: string | null;

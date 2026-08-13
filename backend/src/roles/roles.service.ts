@@ -88,7 +88,6 @@ export class RolesService {
           roleId,
           permissionId,
         })),
-        skipDuplicates: true,
       });
     }
 

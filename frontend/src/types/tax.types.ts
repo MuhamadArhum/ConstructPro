@@ -2,6 +2,7 @@ export type TaxType = 'SalesTax' | 'IncomeTax' | 'PRA' | 'WithholdingTax' | 'Sec
 
 export interface TaxRecordDto {
   id: string;
+  code?: string | null;
   taxType: TaxType;
   taxTypeDisplay: string;
   amount: number;
@@ -24,6 +25,7 @@ export interface TaxSummaryDto {
 }
 
 export interface CreateTaxRecordRequest {
+  code?: string;
   taxType: TaxType;
   amount: number;
   periodStart: string;

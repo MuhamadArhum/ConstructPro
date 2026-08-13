@@ -44,6 +44,14 @@ export class VehiclesController {
     return this.vehiclesService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Vehicles.View')
+  @ApiOperation({ summary: 'Get the next auto-generated vehicle code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.vehiclesService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get(':id')
   @HasPermission('Vehicles.View')
   @ApiOperation({ summary: 'Get vehicle by ID with maintenance records' })

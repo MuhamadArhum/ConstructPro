@@ -32,6 +32,9 @@ export const inventoryApi = baseApi.injectEndpoints({
       query: ({ id, data }) => ({ url: `/inventory/${id}/transactions`, method: 'POST', data }),
       invalidatesTags: ['Inventory'],
     }),
+    getNextInventoryCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/inventory/next-code' }),
+    }),
   }),
 });
 
@@ -39,4 +42,5 @@ export const {
   useGetInventoryItemsQuery, useGetInventoryItemByIdQuery,
   useCreateInventoryItemMutation, useUpdateInventoryItemMutation, useDeleteInventoryItemMutation,
   useGetStockTransactionsQuery, useAddStockTransactionMutation,
+  useGetNextInventoryCodeQuery,
 } = inventoryApi;

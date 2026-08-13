@@ -1,0 +1,62 @@
+{
+  "name": "constructpro",
+  "version": "1.0.0",
+  "description": "ConstructPro - Construction ERP Management System",
+  "main": "electron/main.js",
+  "author": "ConstructPro",
+  "license": "ISC",
+  "scripts": {
+    "electron:dev": "electron .",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:all": "npm run build:frontend && npm run build:backend",
+    "prepare:bundle": "node scripts/prepare-backend.js",
+    "dist": "npm run build:all && npm run prepare:bundle && electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bismarashid098/ConstructPro.git"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^2.1.3",
+    "@electron/rebuild": "^4.2.0",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.constructpro.app",
+    "productName": "ConstructPro",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-bundle",
+        "to": "backend"
+      }
+    ],
+    "afterPack": "scripts/after-pack.js",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ConstructPro"
+    }
+  }
+}

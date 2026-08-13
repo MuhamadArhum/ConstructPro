@@ -1,5 +1,6 @@
 export interface EmployeeDto {
   id: string;
+  code?: string;
   fullName: string;
   designation?: string;
   department?: string;

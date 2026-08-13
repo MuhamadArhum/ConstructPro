@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreatePlantDto,
   UpdatePlantDto,
   PlantQueryDto,
 } from './dto/plant.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class PlantsService {
@@ -19,10 +20,11 @@ export class PlantsService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { type: { contains: query.search, mode: 'insensitive' } },
-        { manufacturer: { contains: query.search, mode: 'insensitive' } },
-        { serialNumber: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
+        { type: { contains: query.search } },
+        { manufacturer: { contains: query.search } },
+        { serialNumber: { contains: query.search } },
       ];
     }
 
@@ -67,9 +69,22 @@ export class PlantsService {
     return this.mapPlant(plant);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'plant');
+  }
+
   async create(dto: CreatePlantDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.plant.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'plant');
+    }
     const plant = await this.prisma.plant.create({
       data: {
+        code,
         name: dto.name,
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.manufacturer !== undefined && { manufacturer: dto.manufacturer }),
@@ -95,9 +110,15 @@ export class PlantsService {
   async update(id: string, dto: UpdatePlantDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.plant.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const plant = await this.prisma.plant.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.manufacturer !== undefined && { manufacturer: dto.manufacturer }),
@@ -130,6 +151,7 @@ export class PlantsService {
 
   private mapPlant(plant: {
     id: string;
+    code?: string | null;
     name: string;
     type: string | null;
     manufacturer: string | null;
@@ -146,6 +168,7 @@ export class PlantsService {
   }) {
     return {
       id: plant.id,
+      code: plant.code ?? null,
       name: plant.name,
       type: plant.type,
       manufacturer: plant.manufacturer,

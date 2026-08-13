@@ -45,6 +45,14 @@ export class MachineryController {
     return this.machineryService.getDueForMaintenance();
   }
 
+  @Get('next-code')
+  @HasPermission('Machinery.View')
+  @ApiOperation({ summary: 'Get the next auto-generated machinery code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.machineryService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get()
   @HasPermission('Machinery.View')
   @ApiOperation({ summary: 'Get all machinery with pagination and search' })

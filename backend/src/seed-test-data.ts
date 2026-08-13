@@ -1,11 +1,16 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import path from 'path';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+const dbUrl = process.env.DATABASE_URL ?? 'file:./constructpro.db';
+const dbPath = dbUrl.replace(/^file:/, '');
+const resolvedPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
+const adapter = new PrismaBetterSqlite3({ url: resolvedPath });
+const prisma = new PrismaClient({ adapter } as any);
 
-const COUNT = 500;
+const COUNT = 10000;
+const CHUNK = 500;
 
 const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -13,6 +18,15 @@ const randDecimal = (min: number, max: number) => parseFloat((Math.random() * (m
 const pastDate = (daysAgo: number) => new Date(Date.now() - rand(0, daysAgo) * 86400000);
 const futureDate = (daysAhead: number) => new Date(Date.now() + rand(1, daysAhead) * 86400000);
 const uuid = () => crypto.randomUUID();
+const code = (prefix: string, offset: number, i: number) => `${prefix}-${String(offset + i + 1).padStart(4, '0')}`;
+
+async function insertChunked<T>(model: any, data: T[]) {
+  for (let i = 0; i < data.length; i += CHUNK) {
+    await model.createMany({ data: data.slice(i, i + CHUNK) });
+    process.stdout.write(`\r  ${Math.min(i + CHUNK, data.length)}/${data.length}`);
+  }
+  process.stdout.write('\n');
+}
 
 const FIRST_NAMES = ['Ali','Ahmed','Muhammad','Hassan','Usman','Bilal','Faisal','Tariq','Zain','Imran','Asad','Kamran','Waqar','Sajid','Nasir','Rizwan','Hamid','Adnan','Shahid','Junaid','Fatima','Ayesha','Zainab','Sana','Hina','Nadia','Rabia','Sobia','Amna','Mehwish','Omar','Saad','Raza','Taha','Daniyal','Hamza','Fahad','Umer','Waleed','Talha'];
 const LAST_NAMES = ['Khan','Ahmed','Ali','Hussain','Malik','Raza','Sheikh','Butt','Chaudhry','Akhtar','Siddiqui','Qureshi','Mirza','Baig','Ansari','Hashmi','Abbasi','Farooqi','Gillani','Zaidi'];
@@ -44,22 +58,32 @@ const STOCK_TYPES = ['In','Out','Adjustment'] as const;
 const NOTIF_TYPES = ['System','Alert','Info','Warning'] as const;
 const NOTIF_TITLES = ['Low Stock Alert','Maintenance Due','Payment Received','New Employee Added','Vehicle Inspection','Salary Processed','Tax Due Soon','System Update','Labour Attendance','Budget Alert'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SUPPLIER_CATEGORIES = ['Cement','Steel','Electrical','Plumbing','Hardware','Aggregates','Timber','Paint','Glass','General'];
+const UNITS = ['Bags','Kg','Nos','Cft','Sqft','Meter','Roll','Litre','Sheet','Ton'];
+const ACTIONS = ['Create Income','Create Expense','Update Labour','Delete Customer','Create Employee','Update Machinery','Create Vehicle','Update Inventory','Create Tax Record','Update Settings'];
+const ENTITIES = ['Employee','Labour','Machinery','Vehicle','Income','Expense','Customer','Supplier','Inventory','TaxRecord'];
 
 const fullName = () => `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
 const phone = () => `03${rand(0,4)}${rand(10000000,99999999)}`;
 const cnicNum = () => `3${rand(1000,9999)}-${rand(1000000,9999999)}-${rand(1,9)}`;
 const addressStr = () => `House ${rand(1,500)}, Street ${rand(1,50)}, ${pick(CITIES)}`;
 
+async function getOffset(model: any): Promise<number> {
+  return await model.count();
+}
+
 async function main() {
-  console.log(`\n🌱 Seeding ${COUNT} records per table...\n`);
+  console.log(`\n Seeding ${COUNT.toLocaleString()} records per table (batch size: ${CHUNK})...\n`);
 
   const adminUser = await prisma.user.findFirst({ where: { email: 'admin@constructpro.com' } });
   const adminId = adminUser?.id ?? null;
 
   // ── 1. EMPLOYEES ─────────────────────────────────────────────────────────────
-  console.log(`[1/14] Creating ${COUNT} employees...`);
-  const employeeData = Array.from({ length: COUNT }, () => ({
+  console.log(`[1/14] Employees...`);
+  const empOffset = await getOffset(prisma.employee);
+  const employeeData = Array.from({ length: COUNT }, (_, i) => ({
     id: uuid(),
+    code: code('EMP', empOffset, i),
     fullName: fullName(),
     designation: pick(DESIGNATIONS),
     department: pick(DEPARTMENTS),
@@ -70,18 +94,20 @@ async function main() {
     joinDate: pastDate(1095),
     isActive: Math.random() > 0.1,
   }));
-  await prisma.employee.createMany({ data: employeeData, skipDuplicates: true });
+  await insertChunked(prisma.employee, employeeData);
   const employeeIds = employeeData.map(e => e.id);
 
   // ── 2. SALARY PAYMENTS ───────────────────────────────────────────────────────
-  console.log(`[2/14] Creating ${COUNT} salary payments...`);
-  const salaryData = Array.from({ length: COUNT }, () => {
+  console.log(`[2/14] Salary Payments...`);
+  const salOffset = await getOffset(prisma.salaryPayment);
+  const salaryData = Array.from({ length: COUNT }, (_, i) => {
     const basic = randDecimal(25000, 150000);
     const bonus = randDecimal(0, 10000);
     const deductions = randDecimal(0, 5000);
     const daysPresent = rand(20, 30);
     const netSalary = parseFloat(((basic / 30) * daysPresent + bonus - deductions).toFixed(2));
     return {
+      code: code('SAL', salOffset, i),
       employeeId: pick(employeeIds),
       month: rand(1, 12),
       year: rand(2023, 2025),
@@ -95,12 +121,14 @@ async function main() {
       remarks: Math.random() > 0.5 ? `Payment for ${pick(MONTHS)}` : null,
     };
   });
-  await prisma.salaryPayment.createMany({ data: salaryData, skipDuplicates: true });
+  await insertChunked(prisma.salaryPayment, salaryData);
 
   // ── 3. LABOURS ───────────────────────────────────────────────────────────────
-  console.log(`[3/14] Creating ${COUNT} labours + attendances + advances...`);
-  const labourData = Array.from({ length: COUNT }, () => ({
+  console.log(`[3/14] Labours...`);
+  const labOffset = await getOffset(prisma.labour);
+  const labourData = Array.from({ length: COUNT }, (_, i) => ({
     id: uuid(),
+    code: code('LAB', labOffset, i),
     name: fullName(),
     phoneNumber: phone(),
     cnic: cnicNum(),
@@ -111,10 +139,10 @@ async function main() {
     joinDate: pastDate(730),
     isActive: Math.random() > 0.1,
   }));
-  await prisma.labour.createMany({ data: labourData, skipDuplicates: true });
+  await insertChunked(prisma.labour, labourData);
   const labourIds = labourData.map(l => l.id);
 
-  // Attendances — unique labourId+date pairs
+  console.log(`  Labour Attendances...`);
   const attendancePairs = new Set<string>();
   const attendanceData: any[] = [];
   while (attendanceData.length < COUNT) {
@@ -128,26 +156,29 @@ async function main() {
     attendancePairs.add(key);
     attendanceData.push({ labourId, date, isPresent: Math.random() > 0.15, overtimeHours: Math.random() > 0.6 ? randDecimal(0, 4) : 0, notes: null });
   }
-  await prisma.labourAttendance.createMany({ data: attendanceData, skipDuplicates: true });
+  await insertChunked(prisma.labourAttendance, attendanceData);
 
+  console.log(`  Labour Advances...`);
   const advanceData = Array.from({ length: COUNT }, () => ({
     labourId: pick(labourIds),
     amount: randDecimal(1000, 15000),
     date: pastDate(180),
     reason: Math.random() > 0.3 ? pick(['Medical emergency','Eid advance','Family function','Travel expense','Personal need']) : null,
   }));
-  await prisma.labourAdvance.createMany({ data: advanceData, skipDuplicates: true });
+  await insertChunked(prisma.labourAdvance, advanceData);
 
   // ── 4. CUSTOMERS ─────────────────────────────────────────────────────────────
-  console.log(`[4/14] Creating ${COUNT} customers...`);
+  console.log(`[4/14] Customers...`);
+  const custOffset = await getOffset(prisma.customer);
   const customerData = Array.from({ length: COUNT }, (_, i) => {
     const totalBilled = randDecimal(500000, 10000000);
     return {
       id: uuid(),
+      code: code('CUST', custOffset, i),
       name: fullName(),
       companyName: Math.random() > 0.4 ? pick(COMPANY_NAMES) : null,
       phone: phone(),
-      email: `customer${i + 1}_${rand(1000,9999)}@email.com`,
+      email: `customer_${Date.now()}_${i}@email.com`,
       address: addressStr(),
       ntn: Math.random() > 0.5 ? `${rand(1000000,9999999)}-${rand(0,9)}` : null,
       cnic: Math.random() > 0.5 ? cnicNum() : null,
@@ -158,20 +189,21 @@ async function main() {
       notes: Math.random() > 0.6 ? 'Good client, prompt payments' : null,
     };
   });
-  await prisma.customer.createMany({ data: customerData, skipDuplicates: true });
+  await insertChunked(prisma.customer, customerData);
   const customerIds = customerData.map(c => c.id);
 
   // ── 5. SUPPLIERS ─────────────────────────────────────────────────────────────
-  console.log(`[5/14] Creating ${COUNT} suppliers...`);
-  const SUPPLIER_CATEGORIES = ['Cement','Steel','Electrical','Plumbing','Hardware','Aggregates','Timber','Paint','Glass','General'];
+  console.log(`[5/14] Suppliers...`);
+  const supOffset = await getOffset(prisma.supplier);
   const supplierData = Array.from({ length: COUNT }, (_, i) => {
     const totalPurchased = randDecimal(100000, 5000000);
     return {
       id: uuid(),
+      code: code('SUPL', supOffset, i),
       name: fullName(),
       companyName: pick(SUPPLIERS_NAMES),
       phone: phone(),
-      email: `supplier${i + 1}_${rand(1000,9999)}@email.com`,
+      email: `supplier_${Date.now()}_${i}@email.com`,
       address: addressStr(),
       ntn: Math.random() > 0.5 ? `${rand(1000000,9999999)}-${rand(0,9)}` : null,
       category: pick(SUPPLIER_CATEGORIES),
@@ -181,16 +213,18 @@ async function main() {
       notes: Math.random() > 0.6 ? 'Reliable supplier' : null,
     };
   });
-  await prisma.supplier.createMany({ data: supplierData, skipDuplicates: true });
+  await insertChunked(prisma.supplier, supplierData);
   const supplierIds = supplierData.map(s => s.id);
 
   // ── 6. MACHINERY ─────────────────────────────────────────────────────────────
-  console.log(`[6/14] Creating ${COUNT} machinery + maintenance...`);
-  const machineryData = Array.from({ length: COUNT }, () => ({
+  console.log(`[6/14] Machinery...`);
+  const mchOffset = await getOffset(prisma.machinery);
+  const machineryData = Array.from({ length: COUNT }, (_, i) => ({
     id: uuid(),
+    code: code('MCH', mchOffset, i),
     name: pick(MACHINERY_NAMES),
     model: pick(MACHINERY_MODELS),
-    serialNumber: `SN-${rand(10000,99999)}-${rand(100,999)}`,
+    serialNumber: `SN-${rand(10000,99999)}-${uuid().slice(0,6)}`,
     purchaseDate: pastDate(1825),
     purchasePrice: randDecimal(500000, 10000000),
     status: pick(MACHINERY_STATUSES),
@@ -198,9 +232,10 @@ async function main() {
     nextMaintenanceDate: Math.random() > 0.3 ? futureDate(90) : null,
     notes: Math.random() > 0.6 ? 'Regular maintenance required' : null,
   }));
-  await prisma.machinery.createMany({ data: machineryData, skipDuplicates: true });
+  await insertChunked(prisma.machinery, machineryData);
   const machineryIds = machineryData.map(m => m.id);
 
+  console.log(`  Machinery Maintenance...`);
   const machMaintenanceData = Array.from({ length: COUNT }, () => ({
     machineryId: pick(machineryIds),
     maintenanceDate: pastDate(365),
@@ -211,18 +246,20 @@ async function main() {
     nextMaintenanceDate: futureDate(180),
     serviceProvider: `${pick(FIRST_NAMES)} Auto Workshop`,
   }));
-  await prisma.machineryMaintenance.createMany({ data: machMaintenanceData, skipDuplicates: true });
+  await insertChunked(prisma.machineryMaintenance, machMaintenanceData);
 
   // ── 7. VEHICLES ──────────────────────────────────────────────────────────────
-  console.log(`[7/14] Creating ${COUNT} vehicles + maintenance...`);
+  console.log(`[7/14] Vehicles...`);
+  const vehOffset = await getOffset(prisma.vehicle);
   const usedPlates = new Set<string>();
-  const vehicleData = Array.from({ length: COUNT }, () => {
+  const vehicleData = Array.from({ length: COUNT }, (_, i) => {
     let plate: string;
-    do { plate = `${pick(['LHR','KHI','ISB','RWP','FSD','MUL','PES','QTA'])}-${rand(100,9999)}-${rand(10,99)}`; }
+    do { plate = `${pick(['LHR','KHI','ISB','RWP','FSD','MUL','PES','QTA'])}-${rand(1000,9999)}-${uuid().slice(0,4)}`; }
     while (usedPlates.has(plate));
     usedPlates.add(plate);
     return {
       id: uuid(),
+      code: code('VEH', vehOffset, i),
       registrationNumber: plate,
       make: pick(VEHICLE_MAKES),
       model: pick(VEHICLE_MODELS_LIST),
@@ -237,9 +274,10 @@ async function main() {
       notes: Math.random() > 0.6 ? 'Good condition' : null,
     };
   });
-  await prisma.vehicle.createMany({ data: vehicleData, skipDuplicates: true });
+  await insertChunked(prisma.vehicle, vehicleData);
   const vehicleIds = vehicleData.map(v => v.id);
 
+  console.log(`  Vehicle Maintenance...`);
   const vehMaintenanceData = Array.from({ length: COUNT }, () => ({
     vehicleId: pick(vehicleIds),
     maintenanceDate: pastDate(365),
@@ -250,15 +288,17 @@ async function main() {
     mileageAtService: randDecimal(5000, 150000),
     notes: Math.random() > 0.6 ? 'Completed on time' : null,
   }));
-  await prisma.vehicleMaintenance.createMany({ data: vehMaintenanceData, skipDuplicates: true });
+  await insertChunked(prisma.vehicleMaintenance, vehMaintenanceData);
 
   // ── 8. PLANTS ────────────────────────────────────────────────────────────────
-  console.log(`[8/14] Creating ${COUNT} plants...`);
-  const plantData = Array.from({ length: COUNT }, () => ({
+  console.log(`[8/14] Plants...`);
+  const pltOffset = await getOffset(prisma.plant);
+  const plantData = Array.from({ length: COUNT }, (_, i) => ({
+    code: code('PLT', pltOffset, i),
     name: pick(PLANT_NAMES),
     type: pick(PLANT_TYPES),
     manufacturer: pick(['Siemens','ABB','Atlas Copco','Ingersoll Rand','Cummins','Perkins','Kirloskar','Caterpillar']),
-    serialNumber: `PL-${rand(10000,99999)}-${rand(100,999)}`,
+    serialNumber: `PL-${rand(10000,99999)}-${uuid().slice(0,6)}`,
     purchaseDate: pastDate(1825),
     purchasePrice: randDecimal(100000, 3000000),
     currentValue: randDecimal(50000, 2500000),
@@ -268,14 +308,15 @@ async function main() {
     nextMaintenanceDate: futureDate(90),
     notes: Math.random() > 0.6 ? 'Operational' : null,
   }));
-  await prisma.plant.createMany({ data: plantData, skipDuplicates: true });
+  await insertChunked(prisma.plant, plantData);
 
   // ── 9. INVENTORY ─────────────────────────────────────────────────────────────
-  console.log(`[9/14] Creating ${COUNT} inventory items + stock transactions...`);
-  const UNITS = ['Bags','Kg','Nos','Cft','Sqft','Meter','Roll','Litre','Sheet','Ton'];
-  const inventoryData = Array.from({ length: COUNT }, () => ({
+  console.log(`[9/14] Inventory Items...`);
+  const stkOffset = await getOffset(prisma.inventoryItem);
+  const inventoryData = Array.from({ length: COUNT }, (_, i) => ({
     id: uuid(),
-    name: `${pick(INVENTORY_NAMES)} ${rand(1,99)}`,
+    code: code('STK', stkOffset, i),
+    name: `${pick(INVENTORY_NAMES)} ${uuid().slice(0,4)}`,
     category: pick(INVENTORY_CATEGORIES),
     unit: pick(UNITS),
     currentStock: randDecimal(0, 500),
@@ -285,9 +326,10 @@ async function main() {
     location: `Warehouse ${pick(['A','B','C','D'])}`,
     notes: Math.random() > 0.6 ? 'Check expiry dates' : null,
   }));
-  await prisma.inventoryItem.createMany({ data: inventoryData, skipDuplicates: true });
+  await insertChunked(prisma.inventoryItem, inventoryData);
   const inventoryIds = inventoryData.map(i => i.id);
 
+  console.log(`  Stock Transactions...`);
   const stockData = Array.from({ length: COUNT }, () => ({
     inventoryItemId: pick(inventoryIds),
     type: pick(STOCK_TYPES),
@@ -299,11 +341,13 @@ async function main() {
     notes: Math.random() > 0.6 ? 'Verified by supervisor' : null,
     createdById: adminId,
   }));
-  await prisma.stockTransaction.createMany({ data: stockData, skipDuplicates: true });
+  await insertChunked(prisma.stockTransaction, stockData);
 
   // ── 10. INCOME ───────────────────────────────────────────────────────────────
-  console.log(`[10/14] Creating ${COUNT} income records...`);
-  const incomeData = Array.from({ length: COUNT }, () => ({
+  console.log(`[10/14] Income...`);
+  const incOffset = await getOffset(prisma.income);
+  const incomeData = Array.from({ length: COUNT }, (_, i) => ({
+    code: code('INC', incOffset, i),
     category: pick(INCOME_CATEGORIES),
     amount: randDecimal(50000, 2000000),
     date: pastDate(365),
@@ -313,11 +357,13 @@ async function main() {
     isPaid: Math.random() > 0.2,
     createdById: adminId,
   }));
-  await prisma.income.createMany({ data: incomeData, skipDuplicates: true });
+  await insertChunked(prisma.income, incomeData);
 
   // ── 11. EXPENSE ──────────────────────────────────────────────────────────────
-  console.log(`[11/14] Creating ${COUNT} expense records...`);
-  const expenseData = Array.from({ length: COUNT }, () => ({
+  console.log(`[11/14] Expenses...`);
+  const expOffset = await getOffset(prisma.expense);
+  const expenseData = Array.from({ length: COUNT }, (_, i) => ({
+    code: code('EXP', expOffset, i),
     category: pick(EXPENSE_CATEGORIES),
     amount: randDecimal(5000, 500000),
     date: pastDate(365),
@@ -325,16 +371,18 @@ async function main() {
     vendor: pick(SUPPLIERS_NAMES),
     createdById: adminId,
   }));
-  await prisma.expense.createMany({ data: expenseData, skipDuplicates: true });
+  await insertChunked(prisma.expense, expenseData);
 
   // ── 12. TAX RECORDS ──────────────────────────────────────────────────────────
-  console.log(`[12/14] Creating ${COUNT} tax records...`);
-  const taxData = Array.from({ length: COUNT }, () => {
+  console.log(`[12/14] Tax Records...`);
+  const taxOffset = await getOffset(prisma.taxRecord);
+  const taxData = Array.from({ length: COUNT }, (_, i) => {
     const periodStart = pastDate(730);
     const periodEnd = new Date(periodStart.getTime() + 90 * 86400000);
     const dueDate = new Date(periodEnd.getTime() + 30 * 86400000);
     const isPaid = Math.random() > 0.35;
     return {
+      code: code('TAX', taxOffset, i),
       taxType: pick(TAX_TYPES),
       amount: randDecimal(10000, 500000),
       periodStart,
@@ -348,10 +396,10 @@ async function main() {
       createdById: adminId,
     };
   });
-  await prisma.taxRecord.createMany({ data: taxData, skipDuplicates: true });
+  await insertChunked(prisma.taxRecord, taxData);
 
   // ── 13. NOTIFICATIONS ────────────────────────────────────────────────────────
-  console.log(`[13/14] Creating ${COUNT} notifications...`);
+  console.log(`[13/14] Notifications...`);
   const notifData = Array.from({ length: COUNT }, () => {
     const isRead = Math.random() > 0.4;
     const createdAt = pastDate(60);
@@ -365,12 +413,10 @@ async function main() {
       readAt: isRead ? new Date(createdAt.getTime() + rand(1,24) * 3600000) : null,
     };
   });
-  await prisma.notification.createMany({ data: notifData, skipDuplicates: true });
+  await insertChunked(prisma.notification, notifData);
 
   // ── 14. AUDIT LOGS ───────────────────────────────────────────────────────────
-  console.log(`[14/14] Creating ${COUNT} audit logs...`);
-  const ACTIONS = ['Create Income','Create Expense','Update Labour','Delete Customer','Create Employee','Update Machinery','Create Vehicle','Update Inventory','Create Tax Record','Update Settings'];
-  const ENTITIES = ['Employee','Labour','Machinery','Vehicle','Income','Expense','Customer','Supplier','Inventory','TaxRecord'];
+  console.log(`[14/14] Audit Logs...`);
   const auditData = Array.from({ length: COUNT }, () => ({
     userId: adminId,
     userEmail: 'admin@constructpro.com',
@@ -381,17 +427,17 @@ async function main() {
     succeeded: Math.random() > 0.05,
     createdAt: pastDate(90),
   }));
-  await prisma.auditLog.createMany({ data: auditData, skipDuplicates: true });
+  await insertChunked(prisma.auditLog, auditData);
 
-  console.log(`\n✅ Done! ${COUNT} records inserted per table:`);
-  console.log(`   Employees, Salary Payments, Labours, Attendances, Advances`);
+  const total = COUNT * 14;
+  console.log(`\n Done! ${COUNT.toLocaleString()} records per table`);
+  console.log(`   Total ~${total.toLocaleString()} records inserted`);
+  console.log(`\n   Employees, Salary Payments, Labours, Attendances, Advances`);
   console.log(`   Customers, Suppliers, Machinery, Vehicles, Plants`);
   console.log(`   Inventory Items, Stock Transactions`);
-  console.log(`   Income, Expense, Tax Records`);
-  console.log(`   Notifications, Audit Logs`);
-  console.log(`\n   Total ~${COUNT * 17} records inserted`);
+  console.log(`   Income, Expense, Tax Records, Notifications, Audit Logs`);
 }
 
 main()
-  .catch((e) => { console.error('❌ Seed failed:', e); process.exit(1); })
+  .catch((e) => { console.error('Seed failed:', e); process.exit(1); })
   .finally(async () => { await prisma.$disconnect(); });

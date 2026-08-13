@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateProjectMutation, useGetProjectQuery, useUpdateProjectMutation } from './projectApi';
+import { useCreateProjectMutation, useGetProjectQuery, useUpdateProjectMutation, useGetNextProjectCodeQuery } from './projectApi';
 import { useGetCustomersQuery } from '../customers/customerApi';
 import type { ProjectStatus } from '../../types/project.types';
 
@@ -24,10 +24,12 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: loadingProject } = useGetProjectQuery(projectId ?? '', { skip: !projectId });
+  const { data: nextCodeData } = useGetNextProjectCodeQuery(undefined, { skip: isEdit });
   const { data: customersData } = useGetCustomersQuery({ pageSize: 500 } as Parameters<typeof useGetCustomersQuery>[0]);
   const [create, { isLoading: isCreating }] = useCreateProjectMutation();
   const [update, { isLoading: isUpdating }] = useUpdateProjectMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('Planning');
   const [clientId, setClientId] = useState('');
@@ -41,7 +43,14 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing && isEdit) {
+      setCode(existing.code ?? '');
       setName(existing.name);
       setStatus(existing.status);
       setClientId(existing.clientId ?? '');
@@ -54,6 +63,7 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
       setDescription(existing.description ?? '');
       setNotes(existing.notes ?? '');
     } else if (!isEdit) {
+      setCode('');
       setName('');
       setStatus('Planning');
       setClientId('');
@@ -71,6 +81,7 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const payload = {
+      code: code || undefined,
       name,
       status,
       clientId: clientId || undefined,
@@ -92,8 +103,13 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
         dispatch(showSnackbar({ message: 'Project created', severity: 'success' }));
       }
       onClose();
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to save project', severity: 'error' }));
+    } catch (err) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
+      } else {
+        dispatch(showSnackbar({ message: 'Failed to save project', severity: 'error' }));
+      }
     }
   };
 
@@ -111,6 +127,14 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
             </Box>
           ) : (
             <Stack spacing={2} sx={{ pt: 1 }}>
+              <TextField
+                label="Code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                fullWidth
+                slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+                helperText="Auto-generated. You may override it."
+              />
               <TextField
                 label="Name"
                 value={name}

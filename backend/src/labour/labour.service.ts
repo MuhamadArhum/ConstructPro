@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateLabourDto,
@@ -7,6 +7,7 @@ import {
   AddAdvanceDto,
   LabourQueryDto,
 } from './dto/labour.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class LabourService {
@@ -21,9 +22,10 @@ export class LabourService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { trade: { contains: query.search, mode: 'insensitive' } },
-        { phoneNumber: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
+        { trade: { contains: query.search } },
+        { phoneNumber: { contains: query.search } },
       ];
     }
 
@@ -32,7 +34,7 @@ export class LabourService {
     }
 
     if (query.trade) {
-      where.trade = { contains: query.trade, mode: 'insensitive' };
+      where.trade = { contains: query.trade };
     }
 
     const [labours, total] = await Promise.all([
@@ -76,9 +78,22 @@ export class LabourService {
     return this.mapLabour(labour);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'labour');
+  }
+
   async create(dto: CreateLabourDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.labour.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'labour');
+    }
     const labour = await this.prisma.labour.create({
       data: {
+        code,
         name: dto.name,
         phoneNumber: dto.phoneNumber,
         cnic: dto.cnic,
@@ -96,9 +111,15 @@ export class LabourService {
   async update(id: string, dto: UpdateLabourDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.labour.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const labour = await this.prisma.labour.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.phoneNumber !== undefined && { phoneNumber: dto.phoneNumber }),
         ...(dto.cnic !== undefined && { cnic: dto.cnic }),
@@ -282,6 +303,7 @@ export class LabourService {
 
   private mapLabour(labour: {
     id: string;
+    code?: string | null;
     name: string;
     phoneNumber: string | null;
     cnic: string | null;
@@ -295,6 +317,7 @@ export class LabourService {
   }) {
     return {
       id: labour.id,
+      code: labour.code ?? null,
       name: labour.name,
       phoneNumber: labour.phoneNumber,
       cnic: labour.cnic,

@@ -46,6 +46,14 @@ export class LabourController {
     return this.labourService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get the next auto-generated labour code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.labourService.getNextCode().then((code) => ({ code }));
+  }
+
   // NOTE: POST /attendance and PUT /attendance MUST be before /:id routes
   @Post('attendance')
   @HasPermission('Labour.Edit')

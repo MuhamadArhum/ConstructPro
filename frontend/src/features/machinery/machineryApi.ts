@@ -48,6 +48,9 @@ export const machineryApi = baseApi.injectEndpoints({
       query: () => ({ url: '/machinery/maintenance-due' }),
       providesTags: ['Machinery'],
     }),
+    getNextMachineryCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/machinery/next-code' }),
+    }),
   }),
 });
 
@@ -60,4 +63,5 @@ export const {
   useGetMaintenanceHistoryQuery,
   useAddMaintenanceMutation,
   useGetMaintenanceDueQuery,
+  useGetNextMachineryCodeQuery,
 } = machineryApi;

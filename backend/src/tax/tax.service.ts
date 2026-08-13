@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaxDto, UpdateTaxDto, TaxQueryDto } from './dto/tax.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class TaxService {
@@ -12,6 +13,14 @@ export class TaxService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
+
+    if (query.search) {
+      where.OR = [
+        { code: { contains: query.search } },
+        { reference: { contains: query.search } },
+        { description: { contains: query.search } },
+      ];
+    }
 
     if (query.taxType) {
       where.taxType = query.taxType;
@@ -66,9 +75,22 @@ export class TaxService {
     return this.mapTaxRecord(record);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'taxRecord');
+  }
+
   async create(dto: CreateTaxDto, userId?: string) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.taxRecord.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'taxRecord');
+    }
     const record = await this.prisma.taxRecord.create({
       data: {
+        code,
         taxType: dto.taxType,
         amount: dto.amount,
         periodStart: new Date(dto.periodStart),
@@ -87,8 +109,14 @@ export class TaxService {
   async update(id: string, dto: UpdateTaxDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.taxRecord.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const data: any = {};
 
+    if (dto.code !== undefined) data.code = dto.code;
     if (dto.taxType !== undefined) data.taxType = dto.taxType;
     if (dto.amount !== undefined) data.amount = dto.amount;
     if (dto.periodStart !== undefined) data.periodStart = new Date(dto.periodStart);

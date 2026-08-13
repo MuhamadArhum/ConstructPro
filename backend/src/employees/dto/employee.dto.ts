@@ -12,6 +12,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
 export class CreateEmployeeDto {
+  @ApiPropertyOptional({ example: 'EMP-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Muhammad Ali' })
   @IsString()
   @IsNotEmpty()
@@ -54,6 +59,11 @@ export class CreateEmployeeDto {
 }
 
 export class UpdateEmployeeDto {
+  @ApiPropertyOptional({ example: 'EMP-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Muhammad Ali' })
   @IsOptional()
   @IsString()

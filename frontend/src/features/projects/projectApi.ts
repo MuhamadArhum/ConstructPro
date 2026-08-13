@@ -62,6 +62,9 @@ export const projectApi = baseApi.injectEndpoints({
       query: ({ id, machineryId }) => ({ url: `/projects/${id}/machinery/${machineryId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
     }),
+    getNextProjectCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/projects/next-code' }),
+    }),
   }),
 });
 
@@ -81,4 +84,5 @@ export const {
   useRemoveLabourMutation,
   useAssignMachineryMutation,
   useRemoveMachineryMutation,
+  useGetNextProjectCodeQuery,
 } = projectApi;

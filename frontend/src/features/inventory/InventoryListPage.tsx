@@ -45,7 +45,7 @@ export default function InventoryListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }} />
+          <TextField label="Search by code / name" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }} />
           <TextField label="Category" size="small" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
             <InputLabel>Stock</InputLabel>
@@ -60,6 +60,7 @@ export default function InventoryListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Unit</TableCell>
@@ -71,10 +72,11 @@ export default function InventoryListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={8} /> : (
+            {isLoading ? <TableSkeleton cols={9} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
                     <TableCell>{row.category ?? '-'}</TableCell>
                     <TableCell>{row.unit ?? '-'}</TableCell>
@@ -89,7 +91,7 @@ export default function InventoryListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No items found</TableCell></TableRow>}
+                {!data?.items.length && <TableRow><TableCell colSpan={9} align="center">No items found</TableCell></TableRow>}
               </>
             )}
           </TableBody>

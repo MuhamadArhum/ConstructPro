@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreatePlantMutation, useGetPlantByIdQuery, useUpdatePlantMutation } from './plantApi';
+import { useCreatePlantMutation, useGetPlantByIdQuery, useUpdatePlantMutation, useGetNextPlantCodeQuery } from './plantApi';
 import type { PlantStatus } from '../../types/plant.types';
 
 export default function PlantFormPage() {
@@ -14,9 +14,11 @@ export default function PlantFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetPlantByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextPlantCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreatePlantMutation();
   const [update, { isLoading: isUpdating }] = useUpdatePlantMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState('');
   const [manufacturer, setManufacturer] = useState('');
@@ -31,7 +33,14 @@ export default function PlantFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name); setType(existing.type ?? ''); setManufacturer(existing.manufacturer ?? '');
       setSerialNumber(existing.serialNumber ?? ''); setPurchaseDate(existing.purchaseDate?.split('T')[0] ?? '');
       setPurchasePrice(existing.purchasePrice?.toString() ?? ''); setCurrentValue(existing.currentValue?.toString() ?? '');
@@ -42,12 +51,19 @@ export default function PlantFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
-    const payload = { name, type: type || undefined, manufacturer: manufacturer || undefined, serialNumber: serialNumber || undefined, purchaseDate: purchaseDate || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, currentValue: currentValue ? parseFloat(currentValue) : undefined, status, location: location || undefined, nextMaintenanceDate: nextMaintenanceDate || undefined, notes: notes || undefined };
+    const payload = { code: code || undefined, name, type: type || undefined, manufacturer: manufacturer || undefined, serialNumber: serialNumber || undefined, purchaseDate: purchaseDate || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, currentValue: currentValue ? parseFloat(currentValue) : undefined, status, location: location || undefined, nextMaintenanceDate: nextMaintenanceDate || undefined, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Plant updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Plant created', severity: 'success' })); }
       navigate('/plants');
-    } catch { setError('Failed to save plant.'); }
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError('Failed to save plant.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -59,6 +75,14 @@ export default function PlantFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField label="Type" value={type} onChange={(e) => setType(e.target.value)} fullWidth />

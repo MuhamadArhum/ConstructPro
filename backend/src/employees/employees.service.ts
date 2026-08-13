@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateEmployeeDto,
@@ -6,6 +6,7 @@ import {
   ProcessSalaryDto,
   EmployeeQueryDto,
 } from './dto/employee.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class EmployeesService {
@@ -20,9 +21,10 @@ export class EmployeesService {
 
     if (query.search) {
       where.OR = [
-        { fullName: { contains: query.search, mode: 'insensitive' } },
-        { designation: { contains: query.search, mode: 'insensitive' } },
-        { department: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { fullName: { contains: query.search } },
+        { designation: { contains: query.search } },
+        { department: { contains: query.search } },
       ];
     }
 
@@ -31,7 +33,7 @@ export class EmployeesService {
     }
 
     if (query.department) {
-      where.department = { contains: query.department, mode: 'insensitive' };
+      where.department = { contains: query.department };
     }
 
     const [employees, total] = await Promise.all([
@@ -80,9 +82,22 @@ export class EmployeesService {
     };
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'employee');
+  }
+
   async create(dto: CreateEmployeeDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.employee.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'employee');
+    }
     const employee = await this.prisma.employee.create({
       data: {
+        code,
         fullName: dto.fullName,
         designation: dto.designation,
         department: dto.department,
@@ -100,9 +115,15 @@ export class EmployeesService {
   async update(id: string, dto: UpdateEmployeeDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.employee.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const employee = await this.prisma.employee.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.fullName !== undefined && { fullName: dto.fullName }),
         ...(dto.designation !== undefined && { designation: dto.designation }),
         ...(dto.department !== undefined && { department: dto.department }),
@@ -155,8 +176,10 @@ export class EmployeesService {
     const deductions = Number(dto.deductions ?? 0);
     const netSalary = basicSalary + bonus - deductions;
 
+    const code = await generateCode(this.prisma, 'salaryPayment');
     const payment = await this.prisma.salaryPayment.create({
       data: {
+        code,
         employeeId: id,
         month: dto.month,
         year: dto.year,
@@ -192,6 +215,7 @@ export class EmployeesService {
 
   private mapEmployee(employee: {
     id: string;
+    code?: string | null;
     fullName: string;
     designation: string | null;
     department: string | null;
@@ -205,6 +229,7 @@ export class EmployeesService {
   }) {
     return {
       id: employee.id,
+      code: employee.code ?? null,
       fullName: employee.fullName,
       designation: employee.designation,
       department: employee.department,
@@ -220,6 +245,7 @@ export class EmployeesService {
 
   private mapSalaryPayment(sp: {
     id: string;
+    code?: string | null;
     employeeId: string;
     month: number;
     year: number;
@@ -235,6 +261,7 @@ export class EmployeesService {
   }) {
     return {
       id: sp.id,
+      code: sp.code ?? null,
       employeeId: sp.employeeId,
       month: sp.month,
       year: sp.year,

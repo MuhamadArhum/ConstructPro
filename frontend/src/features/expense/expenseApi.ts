@@ -34,6 +34,9 @@ export const expenseApi = baseApi.injectEndpoints({
       query: () => ({ url: '/expense/summary' }),
       providesTags: ['Expense'],
     }),
+    getNextExpenseCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/expense/next-code' }),
+    }),
   }),
 });
 
@@ -44,4 +47,5 @@ export const {
   useUpdateExpenseMutation,
   useDeleteExpenseMutation,
   useGetExpenseSummaryQuery,
+  useGetNextExpenseCodeQuery,
 } = expenseApi;

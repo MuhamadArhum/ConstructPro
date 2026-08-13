@@ -11,6 +11,11 @@ import { Type } from 'class-transformer';
 import { PlantStatus } from '@prisma/client';
 
 export class CreatePlantDto {
+  @ApiPropertyOptional({ example: 'PLT-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Concrete Batching Plant' })
   @IsString()
   @IsNotEmpty()
@@ -77,6 +82,11 @@ export class CreatePlantDto {
 }
 
 export class UpdatePlantDto {
+  @ApiPropertyOptional({ example: 'PLT-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Concrete Batching Plant' })
   @IsOptional()
   @IsString()

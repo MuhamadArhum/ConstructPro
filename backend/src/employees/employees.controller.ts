@@ -45,6 +45,14 @@ export class EmployeesController {
     return this.employeesService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Employees.View')
+  @ApiOperation({ summary: 'Get the next auto-generated employee code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.employeesService.getNextCode().then((code) => ({ code }));
+  }
+
   // NOTE: GET /salaries MUST be before GET /:id to avoid route conflict
   @Get('salaries')
   @HasPermission('Employees.View')

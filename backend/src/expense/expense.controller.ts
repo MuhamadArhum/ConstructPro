@@ -40,6 +40,14 @@ export class ExpenseController {
     return this.expenseService.getSummary();
   }
 
+  @Get('next-code')
+  @HasPermission('Expense.View')
+  @ApiOperation({ summary: 'Get the next auto-generated expense code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.expenseService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get()
   @HasPermission('Expense.View')
   @ApiOperation({ summary: 'Get all expense records with pagination and filters' })

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateInventoryItemMutation, useGetInventoryItemByIdQuery, useUpdateInventoryItemMutation } from './inventoryApi';
+import { useCreateInventoryItemMutation, useGetInventoryItemByIdQuery, useUpdateInventoryItemMutation, useGetNextInventoryCodeQuery } from './inventoryApi';
 
 export default function InventoryFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +13,11 @@ export default function InventoryFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetInventoryItemByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextInventoryCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateInventoryItemMutation();
   const [update, { isLoading: isUpdating }] = useUpdateInventoryItemMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [unit, setUnit] = useState('');
@@ -28,7 +30,14 @@ export default function InventoryFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name); setCategory(existing.category ?? ''); setUnit(existing.unit ?? '');
       setCurrentStock(existing.currentStock.toString()); setLowStockThreshold(existing.lowStockThreshold.toString());
       setUnitPrice(existing.unitPrice?.toString() ?? ''); setSupplierName(existing.supplierName ?? '');
@@ -38,12 +47,19 @@ export default function InventoryFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
-    const payload = { name, category: category || undefined, unit: unit || undefined, currentStock: parseFloat(currentStock), lowStockThreshold: parseFloat(lowStockThreshold), unitPrice: unitPrice ? parseFloat(unitPrice) : undefined, supplierName: supplierName || undefined, location: location || undefined, notes: notes || undefined };
+    const payload = { code: code || undefined, name, category: category || undefined, unit: unit || undefined, currentStock: parseFloat(currentStock), lowStockThreshold: parseFloat(lowStockThreshold), unitPrice: unitPrice ? parseFloat(unitPrice) : undefined, supplierName: supplierName || undefined, location: location || undefined, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Item updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Item created', severity: 'success' })); }
       navigate('/inventory');
-    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save item.'); }
+    } catch (err) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save item.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -55,6 +71,14 @@ export default function InventoryFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <TextField label="Item Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField label="Category" value={category} onChange={(e) => setCategory(e.target.value)} fullWidth placeholder="e.g. Cement, Steel" />

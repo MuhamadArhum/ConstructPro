@@ -32,6 +32,9 @@ export const vehicleApi = baseApi.injectEndpoints({
       query: ({ id, data }) => ({ url: `/vehicle/${id}/maintenance`, method: 'POST', data }),
       invalidatesTags: ['Vehicle'],
     }),
+    getNextVehicleCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/vehicle/next-code' }),
+    }),
   }),
 });
 
@@ -43,4 +46,5 @@ export const {
   useDeleteVehicleMutation,
   useGetVehicleMaintenanceQuery,
   useAddVehicleMaintenanceMutation,
+  useGetNextVehicleCodeQuery,
 } = vehicleApi;

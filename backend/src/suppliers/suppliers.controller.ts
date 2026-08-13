@@ -39,6 +39,14 @@ export class SuppliersController {
     return this.suppliersService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Suppliers.View')
+  @ApiOperation({ summary: 'Get the next auto-generated supplier code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.suppliersService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get(':id')
   @HasPermission('Suppliers.View')
   @ApiOperation({ summary: 'Get supplier by ID' })

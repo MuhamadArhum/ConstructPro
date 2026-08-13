@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateTaxRecordMutation, useGetTaxRecordByIdQuery, useUpdateTaxRecordMutation } from './taxApi';
+import { useCreateTaxRecordMutation, useGetTaxRecordByIdQuery, useUpdateTaxRecordMutation, useGetNextTaxCodeQuery } from './taxApi';
 import type { TaxType } from '../../types/tax.types';
 
 const taxTypes: { value: TaxType; label: string }[] = [
@@ -22,9 +22,11 @@ export default function TaxFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetTaxRecordByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextTaxCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateTaxRecordMutation();
   const [update, { isLoading: isUpdating }] = useUpdateTaxRecordMutation();
 
+  const [code, setCode] = useState('');
   const [taxType, setTaxType] = useState<TaxType>('SalesTax');
   const [amount, setAmount] = useState('');
   const [periodStart, setPeriodStart] = useState('');
@@ -37,7 +39,14 @@ export default function TaxFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setTaxType(existing.taxType); setAmount(existing.amount.toString());
       setPeriodStart(existing.periodStart.split('T')[0]); setPeriodEnd(existing.periodEnd.split('T')[0]);
       setDueDate(existing.dueDate?.split('T')[0] ?? ''); setPaidDate(existing.paidDate?.split('T')[0] ?? '');
@@ -47,12 +56,19 @@ export default function TaxFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
-    const payload = { taxType, amount: parseFloat(amount), periodStart, periodEnd, dueDate: dueDate || undefined, paidDate: paidDate || undefined, isPaid, reference: reference || undefined, description: description || undefined };
+    const payload = { code: code || undefined, taxType, amount: parseFloat(amount), periodStart, periodEnd, dueDate: dueDate || undefined, paidDate: paidDate || undefined, isPaid, reference: reference || undefined, description: description || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Tax record updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Tax record created', severity: 'success' })); }
       navigate('/tax');
-    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save tax record.'); }
+    } catch (err) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save tax record.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -64,6 +80,14 @@ export default function TaxFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <FormControl fullWidth required>
               <InputLabel>Tax Type</InputLabel>
               <Select label="Tax Type" value={taxType} onChange={(e) => setTaxType(e.target.value as TaxType)}>

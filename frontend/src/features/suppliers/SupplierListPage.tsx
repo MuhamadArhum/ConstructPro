@@ -44,7 +44,7 @@ export default function SupplierListPage() {
       </Stack>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 250 } }} />
+          <TextField label="Search by code / name" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }} sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 260 } }} />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={isActive} onChange={(e) => { setIsActive(e.target.value); setPage(0); }}>
@@ -59,6 +59,7 @@ export default function SupplierListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Company</TableCell>
               <TableCell>Category</TableCell>
@@ -70,10 +71,11 @@ export default function SupplierListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={8} /> : (
+            {isLoading ? <TableSkeleton cols={9} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
                     <TableCell>{row.companyName ?? '-'}</TableCell>
                     <TableCell>{row.category ?? '-'}</TableCell>
@@ -88,7 +90,7 @@ export default function SupplierListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No suppliers found</TableCell></TableRow>}
+                {!data?.items.length && <TableRow><TableCell colSpan={9} align="center">No suppliers found</TableCell></TableRow>}
               </>
             )}
           </TableBody>

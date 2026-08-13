@@ -20,8 +20,8 @@ export class UsersService {
     const where = query.search
       ? {
           OR: [
-            { fullName: { contains: query.search, mode: 'insensitive' as const } },
-            { email: { contains: query.search, mode: 'insensitive' as const } },
+            { fullName: { contains: query.search } },
+            { email: { contains: query.search } },
           ],
         }
       : {};
@@ -96,7 +96,6 @@ export class UsersService {
               roles: {
                 createMany: {
                   data: roleIds.map((roleId) => ({ roleId })),
-                  skipDuplicates: true,
                 },
               },
             }
@@ -132,7 +131,6 @@ export class UsersService {
       if (roleIds.length > 0) {
         await this.prisma.userRole.createMany({
           data: roleIds.map((roleId) => ({ userId: id, roleId })),
-          skipDuplicates: true,
         });
       }
     }

@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto, UpdateCustomerDto, CustomerQueryDto, CreateCustomerTransactionDto } from './dto/customer.dto';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class CustomersService {
@@ -15,10 +16,11 @@ export class CustomersService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { companyName: { contains: query.search, mode: 'insensitive' } },
-        { phone: { contains: query.search, mode: 'insensitive' } },
-        { email: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
+        { companyName: { contains: query.search } },
+        { phone: { contains: query.search } },
+        { email: { contains: query.search } },
       ];
     }
 
@@ -61,9 +63,22 @@ export class CustomersService {
     return this.mapCustomer(customer);
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'customer');
+  }
+
   async create(dto: CreateCustomerDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.customer.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'customer');
+    }
     const customer = await this.prisma.customer.create({
       data: {
+        code,
         name: dto.name,
         companyName: dto.companyName,
         phone: dto.phone,
@@ -82,9 +97,15 @@ export class CustomersService {
   async update(id: string, dto: UpdateCustomerDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.customer.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const customer = await this.prisma.customer.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.companyName !== undefined && { companyName: dto.companyName }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
@@ -202,6 +223,7 @@ export class CustomersService {
 
   private mapCustomer(customer: {
     id: string;
+    code?: string | null;
     name: string;
     companyName: string | null;
     phone: string | null;
@@ -221,6 +243,7 @@ export class CustomersService {
 
     return {
       id: customer.id,
+      code: customer.code ?? null,
       name: customer.name,
       companyName: customer.companyName,
       phone: customer.phone,

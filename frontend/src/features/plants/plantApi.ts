@@ -24,7 +24,10 @@ export const plantApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/plant/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Plant'],
     }),
+    getNextPlantCode: builder.query<{ code: string }, void>({
+      query: () => ({ url: '/plant/next-code' }),
+    }),
   }),
 });
 
-export const { useGetPlantsQuery, useGetPlantByIdQuery, useCreatePlantMutation, useUpdatePlantMutation, useDeletePlantMutation } = plantApi;
+export const { useGetPlantsQuery, useGetPlantByIdQuery, useCreatePlantMutation, useUpdatePlantMutation, useDeletePlantMutation, useGetNextPlantCodeQuery } = plantApi;

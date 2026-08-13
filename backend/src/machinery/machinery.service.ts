@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMachineryDto,
@@ -7,6 +7,7 @@ import {
   MachineryQueryDto,
 } from './dto/machinery.dto';
 import { MachineryStatus } from '@prisma/client';
+import { generateCode } from '../common/utils/generate-code';
 
 @Injectable()
 export class MachineryService {
@@ -21,9 +22,10 @@ export class MachineryService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { model: { contains: query.search, mode: 'insensitive' } },
-        { serialNumber: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
+        { model: { contains: query.search } },
+        { serialNumber: { contains: query.search } },
       ];
     }
 
@@ -78,9 +80,22 @@ export class MachineryService {
     };
   }
 
+  async getNextCode(): Promise<string> {
+    return generateCode(this.prisma, 'machinery');
+  }
+
   async create(dto: CreateMachineryDto) {
+    let code: string;
+    if (dto.code) {
+      const existing = await this.prisma.machinery.findUnique({ where: { code: dto.code } });
+      if (existing) throw new ConflictException('Code already in use');
+      code = dto.code;
+    } else {
+      code = await generateCode(this.prisma, 'machinery');
+    }
     const machinery = await this.prisma.machinery.create({
       data: {
+        code,
         name: dto.name,
         ...(dto.model !== undefined && { model: dto.model }),
         ...(dto.serialNumber !== undefined && { serialNumber: dto.serialNumber }),
@@ -101,9 +116,15 @@ export class MachineryService {
   async update(id: string, dto: UpdateMachineryDto) {
     await this.findById(id);
 
+    if (dto.code !== undefined) {
+      const conflict = await this.prisma.machinery.findFirst({ where: { code: dto.code, NOT: { id } } });
+      if (conflict) throw new ConflictException('Code already in use');
+    }
+
     const machinery = await this.prisma.machinery.update({
       where: { id },
       data: {
+        ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.model !== undefined && { model: dto.model }),
         ...(dto.serialNumber !== undefined && { serialNumber: dto.serialNumber }),
@@ -192,6 +213,7 @@ export class MachineryService {
 
   private mapMachinery(machinery: {
     id: string;
+    code?: string | null;
     name: string;
     model: string | null;
     serialNumber: string | null;
@@ -207,6 +229,7 @@ export class MachineryService {
 
     return {
       id: machinery.id,
+      code: machinery.code ?? null,
       name: machinery.name,
       model: machinery.model,
       serialNumber: machinery.serialNumber,

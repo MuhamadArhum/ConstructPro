@@ -23,6 +23,7 @@ import {
   useCreateIncomeMutation,
   useGetIncomeByIdQuery,
   useUpdateIncomeMutation,
+  useGetNextIncomeCodeQuery,
 } from './incomeApi';
 import type { IncomeCategory } from '../../types/income.types';
 
@@ -41,9 +42,11 @@ export default function IncomeFormPage() {
   const { data: existing, isLoading: isLoadingExisting } = useGetIncomeByIdQuery(id ?? '', {
     skip: !isEdit,
   });
+  const { data: nextCodeData } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateIncomeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateIncomeMutation();
 
+  const [code, setCode] = useState('');
   const [category, setCategory] = useState<IncomeCategory>('CustomerPayment');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -54,7 +57,14 @@ export default function IncomeFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setCategory(existing.category);
       setAmount(String(existing.amount));
       setDate(existing.date.split('T')[0]);
@@ -69,6 +79,7 @@ export default function IncomeFormPage() {
     e.preventDefault();
     setError(null);
     const payload = {
+      code: code || undefined,
       category,
       amount: parseFloat(amount),
       date,
@@ -87,7 +98,12 @@ export default function IncomeFormPage() {
       }
       navigate('/income');
     } catch (err) {
-      setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to save income record.');
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError(msg ?? 'Failed to save income record.');
+      }
     }
   };
 
@@ -102,6 +118,14 @@ export default function IncomeFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
 
             <FormControl fullWidth required>
               <InputLabel>Category</InputLabel>

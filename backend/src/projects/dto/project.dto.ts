@@ -11,6 +11,10 @@ import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateProjectDto {
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @IsString()
   @IsNotEmpty()
   name: string;

@@ -11,6 +11,11 @@ import { Type, Transform } from 'class-transformer';
 import { MachineryStatus, MaintenanceType } from '@prisma/client';
 
 export class CreateMachineryDto {
+  @ApiPropertyOptional({ example: 'MCH-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiProperty({ example: 'Excavator XL-200' })
   @IsString()
   @IsNotEmpty()
@@ -62,6 +67,11 @@ export class CreateMachineryDto {
 }
 
 export class UpdateMachineryDto {
+  @ApiPropertyOptional({ example: 'MCH-0001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Excavator XL-200' })
   @IsOptional()
   @IsString()

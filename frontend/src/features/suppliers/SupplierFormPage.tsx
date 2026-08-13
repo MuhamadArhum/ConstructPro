@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateSupplierMutation, useGetSupplierByIdQuery, useUpdateSupplierMutation } from './supplierApi';
+import { useCreateSupplierMutation, useGetSupplierByIdQuery, useUpdateSupplierMutation, useGetNextSupplierCodeQuery } from './supplierApi';
 
 export default function SupplierFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +13,11 @@ export default function SupplierFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetSupplierByIdQuery(id ?? '', { skip: !isEdit });
+  const { data: nextCodeData } = useGetNextSupplierCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [update, { isLoading: isUpdating }] = useUpdateSupplierMutation();
 
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,7 +32,14 @@ export default function SupplierFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isEdit && nextCodeData?.code) {
+      setCode(nextCodeData.code);
+    }
+  }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
     if (existing) {
+      setCode(existing.code ?? '');
       setName(existing.name); setCompanyName(existing.companyName ?? ''); setPhone(existing.phone ?? '');
       setEmail(existing.email ?? ''); setAddress(existing.address ?? ''); setNtn(existing.ntn ?? '');
       setCategory(existing.category ?? ''); setTotalPurchased(existing.totalPurchased.toString());
@@ -40,12 +49,19 @@ export default function SupplierFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
-    const payload = { name, companyName: companyName || undefined, phone: phone || undefined, email: email || undefined, address: address || undefined, ntn: ntn || undefined, category: category || undefined, totalPurchased: parseFloat(totalPurchased), totalPaid: parseFloat(totalPaid), isActive, notes: notes || undefined };
+    const payload = { code: code || undefined, name, companyName: companyName || undefined, phone: phone || undefined, email: email || undefined, address: address || undefined, ntn: ntn || undefined, category: category || undefined, totalPurchased: parseFloat(totalPurchased), totalPaid: parseFloat(totalPaid), isActive, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Supplier updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Supplier created', severity: 'success' })); }
       navigate('/suppliers');
-    } catch { setError('Failed to save supplier.'); }
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message;
+      if (msg?.includes('Code already in use')) {
+        setError('Code already in use. Please choose a different code.');
+      } else {
+        setError('Failed to save supplier.');
+      }
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -57,6 +73,14 @@ export default function SupplierFormPage() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              fullWidth
+              slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
+              helperText="Auto-generated. You may override it."
+            />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField label="Company Name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} fullWidth />

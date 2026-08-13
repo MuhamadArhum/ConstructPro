@@ -83,7 +83,7 @@ export default function EmployeeListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search by name, designation, department"
+            label="Search by code, name, designation, department"
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
@@ -113,6 +113,7 @@ export default function EmployeeListPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Code</TableCell>
               <TableCell>Full Name</TableCell>
               <TableCell>Designation</TableCell>
               <TableCell>Department</TableCell>
@@ -125,10 +126,11 @@ export default function EmployeeListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={9} /> : (
+            {isLoading ? <TableSkeleton cols={10} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{row.fullName}</TableCell>
                     <TableCell>{row.designation ?? '-'}</TableCell>
                     <TableCell>{row.department ?? '-'}</TableCell>
@@ -173,7 +175,7 @@ export default function EmployeeListPage() {
                 ))}
                 {!data?.items.length && (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">No records found</TableCell>
+                    <TableCell colSpan={10} align="center">No records found</TableCell>
                   </TableRow>
                 )}
               </>

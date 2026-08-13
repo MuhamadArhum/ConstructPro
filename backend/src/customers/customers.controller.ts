@@ -40,6 +40,14 @@ export class CustomersController {
     return this.customersService.findAll(query);
   }
 
+  @Get('next-code')
+  @HasPermission('Customers.View')
+  @ApiOperation({ summary: 'Get the next auto-generated customer code' })
+  @ApiResponse({ status: 200, description: 'Returns next code' })
+  getNextCode() {
+    return this.customersService.getNextCode().then((code) => ({ code }));
+  }
+
   @Get(':id')
   @HasPermission('Customers.View')
   @ApiOperation({ summary: 'Get customer by ID' })

@@ -1,10 +1,14 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import * as bcrypt from 'bcrypt';
+import path from 'path';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+const dbUrl = process.env.DATABASE_URL ?? 'file:./constructpro.db';
+const dbPath = dbUrl.replace(/^file:/, '');
+const resolvedPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
+const adapter = new PrismaBetterSqlite3({ url: resolvedPath });
+const prisma = new PrismaClient({ adapter } as any);
 
 // ─── Permission definitions ────────────────────────────────────────
 const PERMISSIONS: { module: string; action: string; code: string }[] = [

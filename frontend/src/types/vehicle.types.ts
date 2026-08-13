@@ -2,6 +2,7 @@ export type VehicleStatus = 'Active' | 'UnderMaintenance' | 'Retired';
 
 export interface VehicleDto {
   id: string;
+  code?: string;
   registrationNumber: string;
   make: string;
   model?: string;
