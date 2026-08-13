@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsEnum,
   Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
@@ -124,7 +125,7 @@ export class UpdateMachineryDto {
 
 export class AddMachineryMaintenanceDto {
   @ApiProperty({ example: '2024-05-01' })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   maintenanceDate: string;
 

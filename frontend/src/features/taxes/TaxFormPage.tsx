@@ -56,6 +56,14 @@ export default function TaxFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Amount must be greater than zero.');
+      return;
+    }
+    if (periodStart && periodEnd && periodEnd < periodStart) {
+      setError('Period end date cannot be before the period start date.');
+      return;
+    }
     const payload = { code: code || undefined, taxType, amount: parseFloat(amount), periodStart, periodEnd, dueDate: dueDate || undefined, paidDate: paidDate || undefined, isPaid, reference: reference || undefined, description: description || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Tax record updated', severity: 'success' })); }

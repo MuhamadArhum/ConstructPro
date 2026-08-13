@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsBoolean,
   Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -126,10 +127,11 @@ export class CreateCustomerTransactionDto {
 
   @Type(() => Number)
   @IsNumber()
+  @IsNotEmpty()
   @Min(0)
   amount: number;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   date: string;
 

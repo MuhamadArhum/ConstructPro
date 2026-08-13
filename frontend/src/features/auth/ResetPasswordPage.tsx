@@ -28,6 +28,7 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
     if (newPassword !== confirm) { setError('Passwords do not match.'); return; }
+    if (newPassword.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!hasValidParams) { setError('Invalid or expired reset link.'); return; }
     try {
       await resetPassword({ email, token, newPassword }).unwrap();

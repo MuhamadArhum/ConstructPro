@@ -146,6 +146,7 @@ export class AddAdvanceDto {
   @ApiProperty({ example: 5000 })
   @Type(() => Number)
   @IsNumber()
+  @IsNotEmpty()
   @Min(0)
   amount: number;
 

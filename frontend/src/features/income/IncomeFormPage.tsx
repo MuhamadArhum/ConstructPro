@@ -78,6 +78,10 @@ export default function IncomeFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Amount must be greater than zero.');
+      return;
+    }
     const payload = {
       code: code || undefined,
       category,

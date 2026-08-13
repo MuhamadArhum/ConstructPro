@@ -73,6 +73,10 @@ export default function ExpenseFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Amount must be greater than zero.');
+      return;
+    }
     const payload = { code: code || undefined, category, amount: parseFloat(amount), date, description, vendor: vendor || undefined };
     try {
       if (isEdit && id) {

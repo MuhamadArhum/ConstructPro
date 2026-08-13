@@ -59,6 +59,10 @@ export default function EmployeeFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!basicSalary || parseFloat(basicSalary) <= 0) {
+      setError('Basic salary must be greater than zero.');
+      return;
+    }
     const payload = {
       code: code || undefined,
       fullName,

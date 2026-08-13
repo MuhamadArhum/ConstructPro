@@ -29,6 +29,10 @@ export default function StockTransactionPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(null);
+    if (!quantity || parseFloat(quantity) <= 0) {
+      setError('Quantity must be greater than zero.');
+      return;
+    }
     try {
       await addTransaction({ id: id!, data: { type, quantity: parseFloat(quantity), unitPrice: unitPrice ? parseFloat(unitPrice) : undefined, date, reference: reference || undefined, projectName: projectName || undefined, notes: notes || undefined } }).unwrap();
       dispatch(showSnackbar({ message: 'Transaction added', severity: 'success' }));

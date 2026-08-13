@@ -7,6 +7,7 @@ import {
   IsPositive,
   IsEnum,
   Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -30,12 +31,12 @@ export class CreateTaxDto {
   amount: number;
 
   @ApiProperty({ example: '2026-07-01' })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   periodStart: string;
 
   @ApiProperty({ example: '2026-07-31' })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   periodEnd: string;
 
@@ -80,12 +81,12 @@ export class UpdateTaxDto {
 
   @ApiPropertyOptional({ example: '2026-07-01' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   periodStart?: string;
 
   @ApiPropertyOptional({ example: '2026-07-31' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   periodEnd?: string;
 
   @ApiPropertyOptional({ example: '2026-08-15' })
@@ -120,7 +121,7 @@ export class UpdateTaxDto {
 
   @ApiPropertyOptional({ example: '2026-08-10' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   paidDate?: string;
 }
 

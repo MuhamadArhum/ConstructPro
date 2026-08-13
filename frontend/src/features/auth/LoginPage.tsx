@@ -32,6 +32,10 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
+      return;
+    }
     try {
       const response = await login({ email, password, rememberMe: false }).unwrap();
       dispatch(setCredentials(response));

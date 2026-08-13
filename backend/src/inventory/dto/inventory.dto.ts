@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsBoolean,
   Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
@@ -146,7 +147,7 @@ export class AddStockTransactionDto {
   unitPrice?: number;
 
   @ApiProperty({ example: '2024-05-01' })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   date: string;
 

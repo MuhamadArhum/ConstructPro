@@ -6,9 +6,18 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  IsDateString,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
+
+export enum POStatus {
+  Draft = 'Draft',
+  Sent = 'Sent',
+  Received = 'Received',
+  Cancelled = 'Cancelled',
+}
 
 export class CreatePurchaseOrderItemDto {
   @IsString()
@@ -35,7 +44,7 @@ export class CreatePurchaseOrderDto {
   @IsString()
   projectId?: string;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   issueDate: string;
 
@@ -68,7 +77,7 @@ export class UpdatePurchaseOrderDto extends PartialType(
 ) {}
 
 export class UpdatePOStatusDto {
-  @IsString()
+  @IsEnum(POStatus)
   @IsNotEmpty()
-  status: string;
+  status: POStatus;
 }

@@ -79,8 +79,20 @@ export default function InvoiceFormPage() {
       dispatch(showSnackbar({ message: 'Please select a customer', severity: 'warning' }));
       return;
     }
+    if (dueDate && issueDate && dueDate < issueDate) {
+      dispatch(showSnackbar({ message: 'Due date cannot be before the issue date', severity: 'warning' }));
+      return;
+    }
     if (items.some((it) => !it.description)) {
       dispatch(showSnackbar({ message: 'All line items must have a description', severity: 'warning' }));
+      return;
+    }
+    if (items.some((it) => it.quantity <= 0)) {
+      dispatch(showSnackbar({ message: 'All line items must have a quantity greater than zero', severity: 'warning' }));
+      return;
+    }
+    if (items.some((it) => it.unitPrice <= 0)) {
+      dispatch(showSnackbar({ message: 'All line items must have a unit price greater than zero', severity: 'warning' }));
       return;
     }
     const payload = {

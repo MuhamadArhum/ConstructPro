@@ -6,9 +6,19 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  IsDateString,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
+
+export enum InvoiceStatus {
+  Draft = 'Draft',
+  Sent = 'Sent',
+  Paid = 'Paid',
+  Overdue = 'Overdue',
+  Cancelled = 'Cancelled',
+}
 
 export class CreateInvoiceItemDto {
   @IsString()
@@ -35,11 +45,11 @@ export class CreateInvoiceDto {
   @IsString()
   projectId?: string;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   issueDate: string;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   dueDate: string;
 
@@ -66,7 +76,7 @@ export class CreateInvoiceDto {
 export class UpdateInvoiceDto extends PartialType(CreateInvoiceDto) {}
 
 export class UpdateInvoiceStatusDto {
-  @IsString()
+  @IsEnum(InvoiceStatus)
   @IsNotEmpty()
-  status: string;
+  status: InvoiceStatus;
 }

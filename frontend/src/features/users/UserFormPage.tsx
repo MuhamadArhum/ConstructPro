@@ -57,6 +57,10 @@ export default function UserFormPage() {
     event.preventDefault();
     setError(null);
 
+    if (!isEditMode && password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
     try {
       if (isEditMode && id) {
         await updateUser({ id, body: { fullName, role, isActive } }).unwrap();

@@ -6,6 +6,7 @@ import {
   IsBoolean,
   Min,
   Max,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
@@ -31,7 +32,7 @@ export class CreateProjectDto {
   @IsString()
   siteAddress?: string;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   startDate: string;
 
@@ -42,6 +43,7 @@ export class CreateProjectDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   budget?: number;
 
   @IsOptional()
@@ -96,7 +98,7 @@ export class CreateProjectExpenseDto {
   @Min(0)
   amount: number;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   date: string;
 

@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsEnum,
   Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -38,7 +39,7 @@ export class CreatePlantDto {
 
   @ApiPropertyOptional({ example: '2020-01-15' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   purchaseDate?: string;
 
   @ApiPropertyOptional({ example: 12000000 })
@@ -109,7 +110,7 @@ export class UpdatePlantDto {
 
   @ApiPropertyOptional({ example: '2020-01-15' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   purchaseDate?: string;
 
   @ApiPropertyOptional({ example: 12000000 })

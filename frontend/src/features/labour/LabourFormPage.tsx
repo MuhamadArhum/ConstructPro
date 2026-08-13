@@ -58,6 +58,10 @@ export default function LabourFormPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!dailyWage || parseFloat(dailyWage) <= 0) {
+      setError('Daily wage must be greater than zero.');
+      return;
+    }
     const payload = {
       code: code || undefined,
       name,
