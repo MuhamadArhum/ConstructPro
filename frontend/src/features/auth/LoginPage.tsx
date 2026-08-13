@@ -37,8 +37,14 @@ export default function LoginPage() {
       dispatch(setCredentials(response));
       navigate('/', { replace: true });
     } catch (err) {
-      const apiError = err as { data?: ApiError };
-      setError(apiError.data?.detail ?? apiError.data?.title ?? 'Invalid credentials. Please try again.');
+      const apiError = err as { status?: number; data?: ApiError };
+      if (!apiError.status) {
+        setError('Server is not responding. Please wait a moment and try again.');
+      } else if (apiError.status === 401 || apiError.status === 400) {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError(apiError.data?.detail ?? apiError.data?.title ?? 'Login failed. Please try again.');
+      }
     }
   };
 

@@ -198,6 +198,7 @@ function createWindow() {
       contextIsolation: true,
     },
     show: false,
+    backgroundColor: '#1565c0',
   });
 
   mainWindow.once('ready-to-show', () => {
@@ -206,7 +207,7 @@ function createWindow() {
     if (app.isPackaged) setupAutoUpdater();
   });
 
-  mainWindow.loadURL(`http://localhost:${PORT}`);
+  mainWindow.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><meta charset="utf-8"><title>ConstructPro</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#1565c0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white}.logo{font-size:2rem;font-weight:700;letter-spacing:2px;margin-bottom:16px}.msg{font-size:1rem;opacity:0.8;margin-bottom:32px}.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="logo">ConstructPro</div><div class="msg">Starting up, please wait…</div><div class="spinner"></div></body></html>`);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -240,13 +241,15 @@ app.whenReady().then(async () => {
   runMigrations(dbPath);
   startBackend(dbPath);
 
+  createWindow();
+
   try {
     await waitForBackend(`http://localhost:${PORT}/api`);
+    mainWindow.loadURL(`http://localhost:${PORT}`);
   } catch (err) {
     console.error('Backend failed to start:', err.message);
+    mainWindow.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>body{background:#c62828;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center}</style></head><body><div><h2>ConstructPro could not start</h2><p style="margin-top:12px;opacity:0.85">Backend failed to start. Please restart the app.</p></div></body></html>`);
   }
-
-  createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
