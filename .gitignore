@@ -22,3 +22,9 @@ backend/constructpro.db
 
 # Claude
 .claude/
+
+# Generated/sensitive files
+backend/prisma/constructpro.db
+errors/
+updates.txt
+*.docx

@@ -1,8 +1,0 @@
-
-
-
-
-1:Roles Save Ni Ho rahy or na Hi unko Di gye Permisssions Save ho Rahi hain (Failed to save role.) Ye error aaa raha hai 
-2: Jo Bhi Error aye usko Right Bottom ya Bottom mid main Show Krwana hai 
-3: Har Error ya Fail Ko Aik popup main Dikhao ta K user ko Pata Chal jaye k Koi Issue hua hai 
-4: har Kaam K Error alag HOna chaye jis chiz main bhi issue hoga wohi error display hoga 
