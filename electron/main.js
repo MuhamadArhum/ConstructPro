@@ -9,6 +9,28 @@ let mainWindow = null;
 let backendProcess = null;
 const PORT = 3000;
 
+// ─── File-based logging ───────────────────────────────────────────────────────
+let logStream = null;
+function initLog() {
+  try {
+    const logDir = app.getPath('logs');
+    fs.mkdirSync(logDir, { recursive: true });
+    const logFile = path.join(logDir, 'main.log');
+    logStream = fs.createWriteStream(logFile, { flags: 'a' });
+    logStream.write(`\n\n--- ConstructPro started ${new Date().toISOString()} ---\n`);
+  } catch {}
+}
+function log(...args) {
+  const msg = args.join(' ');
+  console.log(msg);
+  try { logStream?.write(msg + '\n'); } catch {}
+}
+function logErr(...args) {
+  const msg = args.join(' ');
+  console.error(msg);
+  try { logStream?.write('[ERR] ' + msg + '\n'); } catch {}
+}
+
 function getBackendPath() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'backend');
@@ -26,12 +48,12 @@ function ensureDatabase() {
     if (fs.existsSync(dbSrc)) {
       fs.mkdirSync(userDataPath, { recursive: true });
       fs.copyFileSync(dbSrc, dbDest);
-      console.log('[startup] Fresh database copied to', dbDest);
+      log('[startup] Fresh database copied to', dbDest);
     } else {
-      console.log('[startup] No template DB found, backend will create fresh database');
+      log('[startup] No template DB found, backend will create fresh database');
     }
   } else {
-    console.log('[startup] Using existing database at', dbDest);
+    log('[startup] Using existing database at', dbDest);
   }
 
   return dbDest;
@@ -45,17 +67,17 @@ function runMigrations(dbPath) {
   // For the bundled production build, schema is already applied at build time — skip migrations.
   const bundlePath = path.join(backendPath, 'bundle.js');
   if (fs.existsSync(bundlePath)) {
-    console.log('[migrations] esbuild bundle detected — schema applied at build time, skipping');
+    log('[migrations] esbuild bundle detected — schema applied at build time, skipping');
     return;
   }
 
   const prismaEntry = path.join(backendPath, 'node_modules', 'prisma', 'build', 'index.js');
   if (!fs.existsSync(prismaEntry)) {
-    console.warn('[migrations] Prisma CLI not found, skipping migrations');
+    log('[migrations] Prisma CLI not found, skipping migrations');
     return;
   }
 
-  console.log('[migrations] Syncing database schema...');
+  log('[migrations] Syncing database schema...');
   const result = spawnSync(process.execPath, [prismaEntry, 'db', 'push'], {
     cwd: backendPath,
     env: {
@@ -68,9 +90,9 @@ function runMigrations(dbPath) {
   });
 
   if (result.status === 0) {
-    console.log('[migrations] Completed successfully');
+    log('[migrations] Completed successfully');
   } else {
-    console.error('[migrations] Failed:', result.stderr?.toString()?.trim());
+    logErr('[migrations] Failed:', result.stderr?.toString()?.trim());
   }
 }
 
@@ -80,6 +102,7 @@ function waitForBackend(url, retries = 40, delay = 1000) {
 
     function attempt() {
       http.get(url, (res) => {
+        log('[startup] Backend responded on attempt', attempts + 1);
         resolve();
       }).on('error', () => {
         attempts++;
@@ -98,6 +121,12 @@ function waitForBackend(url, retries = 40, delay = 1000) {
 function startBackend(dbPath) {
   const backendPath = getBackendPath();
 
+  const staticPath = path.join(backendPath, 'public');
+  log('[startup] backendPath:', backendPath);
+  log('[startup] STATIC_PATH:', staticPath);
+  log('[startup] STATIC_PATH exists:', fs.existsSync(staticPath));
+  log('[startup] index.html exists:', fs.existsSync(path.join(staticPath, 'index.html')));
+
   const env = {
     ...process.env,
     ELECTRON_RUN_AS_NODE: '1',
@@ -108,7 +137,7 @@ function startBackend(dbPath) {
     JWT_EXPIRES_IN: '8h',
     JWT_REFRESH_DAYS: '7',
     CORS_ORIGINS: `http://localhost:${PORT}`,
-    STATIC_PATH: path.join(backendPath, 'public'),
+    STATIC_PATH: staticPath,
     ADMIN_EMAIL: 'admin@constructpro.com',
     ADMIN_PASSWORD: 'Admin@123456',
   };
@@ -121,6 +150,9 @@ function startBackend(dbPath) {
     ? bundlePath
     : path.join(backendPath, 'dist', 'main.js');
 
+  log('[startup] scriptPath:', scriptPath);
+  log('[startup] scriptPath exists:', fs.existsSync(scriptPath));
+
   backendProcess = spawn(nodeExe, [scriptPath], {
     cwd: backendPath,
     env,
@@ -128,15 +160,15 @@ function startBackend(dbPath) {
   });
 
   backendProcess.stdout?.on('data', (data) => {
-    console.log('[backend]', data.toString().trim());
+    log('[backend]', data.toString().trim());
   });
 
   backendProcess.stderr?.on('data', (data) => {
-    console.error('[backend err]', data.toString().trim());
+    logErr('[backend err]', data.toString().trim());
   });
 
   backendProcess.on('exit', (code) => {
-    console.log('[backend] exited with code', code);
+    log('[backend] exited with code', code);
   });
 }
 
@@ -145,23 +177,23 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
-    console.log('[updater] Checking for updates...');
+    log('[updater] Checking for updates...');
   });
 
   autoUpdater.on('update-available', (info) => {
-    console.log('[updater] Update available:', info.version);
+    log('[updater] Update available:', info.version);
   });
 
   autoUpdater.on('update-not-available', () => {
-    console.log('[updater] App is up to date');
+    log('[updater] App is up to date');
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    console.log(`[updater] Downloading: ${Math.round(progress.percent)}%`);
+    log(`[updater] Downloading: ${Math.round(progress.percent)}%`);
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('[updater] Update downloaded:', info.version);
+    log('[updater] Update downloaded:', info.version);
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Update Ready',
@@ -178,13 +210,13 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     // Silently log update errors — don't interrupt user with dialog
-    console.error('[updater] Error:', err.message);
+    logErr('[updater] Error:', err.message);
   });
 
   // Check for updates 10 seconds after window shows
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch((err) => {
-      console.error('[updater] Check failed:', err.message);
+      logErr('[updater] Check failed:', err.message);
     });
   }, 10000);
 }
@@ -231,7 +263,9 @@ function createWindow() {
     const ctrl = input.control || input.meta;
     if (input.type !== 'keyDown') return;
 
-    if (input.key === 'F5') {
+    if (input.key === 'F12') {
+      mainWindow.webContents.toggleDevTools();
+    } else if (input.key === 'F5') {
       event.preventDefault();
       mainWindow.webContents.reload();
     } else if (ctrl && input.key === 'r' && !input.shift) {
@@ -245,6 +279,10 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  initLog();
+  log('[startup] app.isPackaged:', app.isPackaged);
+  log('[startup] resourcesPath:', process.resourcesPath);
+
   const dbPath = ensureDatabase();
   runMigrations(dbPath);
   startBackend(dbPath);
@@ -253,10 +291,12 @@ app.whenReady().then(async () => {
 
   try {
     await waitForBackend(`http://localhost:${PORT}/api`);
+    log('[startup] Backend ready, loading frontend...');
     mainWindow.loadURL(`http://localhost:${PORT}`);
   } catch (err) {
-    console.error('Backend failed to start:', err.message);
-    mainWindow.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>body{background:#c62828;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center}</style></head><body><div><h2>ConstructPro could not start</h2><p style="margin-top:12px;opacity:0.85">Backend failed to start. Please restart the app.</p></div></body></html>`);
+    logErr('Backend failed to start:', err.message);
+    const logPath = path.join(app.getPath('logs'), 'main.log');
+    mainWindow.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>body{background:#c62828;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center;padding:20px}</style></head><body><div><h2>ConstructPro could not start</h2><p style="margin-top:12px;opacity:0.85">Backend failed to start. Please restart the app.</p><p style="margin-top:12px;font-size:0.8em;opacity:0.7">Log file: ${logPath}</p></div></body></html>`);
   }
 
   app.on('activate', () => {
