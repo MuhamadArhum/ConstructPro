@@ -18,39 +18,6 @@ exports.default = async function afterPack(context) {
     console.log('[afterPack] RunAsNode fuse enabled');
   }
 
-  const resourcesDir = context.appOutDir;
-  const src = path.join(__dirname, '..', 'backend-bundle', 'node_modules');
-  const dest = path.join(resourcesDir, 'resources', 'backend', 'node_modules');
-
-  if (!fs.existsSync(src)) {
-    console.warn('[afterPack] backend-bundle/node_modules not found, skipping');
-    return;
-  }
-
-  console.log('[afterPack] Copying backend node_modules...');
-  fs.mkdirSync(dest, { recursive: true });
-  copyDirSync(src, dest);
-  console.log('[afterPack] backend node_modules copied successfully');
+  // node_modules are now handled by extraResources in electron-builder config
+  // (backend-bundle/node_modules is included via extraResources)
 };
-
-function copyDirSync(src, dest) {
-  fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src)) {
-    const srcPath = path.join(src, entry);
-    const destPath = path.join(dest, entry);
-    try {
-      const stat = fs.lstatSync(srcPath);
-      if (stat.isSymbolicLink()) {
-        const target = fs.readlinkSync(srcPath);
-        try { fs.unlinkSync(destPath); } catch {}
-        fs.symlinkSync(target, destPath);
-      } else if (stat.isDirectory()) {
-        copyDirSync(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-      }
-    } catch (e) {
-      // skip locked files
-    }
-  }
-}

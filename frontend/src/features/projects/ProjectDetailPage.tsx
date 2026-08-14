@@ -34,7 +34,6 @@ import {
 import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
 import ProjectFormDialog from './ProjectFormDialog';
-import type { ProjectStatus } from '../../types/project.types';
 import { PROJECT_STATUS_COLORS } from '../../utils/statusColors';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;

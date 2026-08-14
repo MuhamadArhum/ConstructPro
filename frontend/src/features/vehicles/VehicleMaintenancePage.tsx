@@ -39,7 +39,7 @@ export default function VehicleMaintenancePage() {
 
   return (
     <Box>
-      <AppBreadcrumbs crumbs={[{ label: 'Vehicles', to: '/vehicles' }, { label: vehicle?.name ?? '…' }, { label: 'Maintenance' }]} />
+      <AppBreadcrumbs crumbs={[{ label: 'Vehicles', to: '/vehicles' }, { label: vehicle?.registrationNumber ?? '…' }, { label: 'Maintenance' }]} />
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h1">Vehicle Maintenance</Typography>

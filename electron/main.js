@@ -41,8 +41,15 @@ function runMigrations(dbPath) {
   if (!app.isPackaged) return; // dev mein skip karo
 
   const backendPath = getBackendPath();
-  const prismaEntry = path.join(backendPath, 'node_modules', 'prisma', 'build', 'index.js');
+  // Prisma CLI is no longer bundled (pruned for size). Use @prisma/client db push instead.
+  // For the bundled production build, schema is already applied at build time — skip migrations.
+  const bundlePath = path.join(backendPath, 'bundle.js');
+  if (fs.existsSync(bundlePath)) {
+    console.log('[migrations] esbuild bundle detected — schema applied at build time, skipping');
+    return;
+  }
 
+  const prismaEntry = path.join(backendPath, 'node_modules', 'prisma', 'build', 'index.js');
   if (!fs.existsSync(prismaEntry)) {
     console.warn('[migrations] Prisma CLI not found, skipping migrations');
     return;
@@ -106,7 +113,12 @@ function startBackend(dbPath) {
   };
 
   const nodeExe = process.execPath;
-  const scriptPath = path.join(backendPath, 'dist', 'main.js');
+  // Use esbuild bundle in production (single file, no node_modules traversal)
+  // Fall back to dist/main.js in development
+  const bundlePath = path.join(backendPath, 'bundle.js');
+  const scriptPath = (app.isPackaged && fs.existsSync(bundlePath))
+    ? bundlePath
+    : path.join(backendPath, 'dist', 'main.js');
 
   backendProcess = spawn(nodeExe, [scriptPath], {
     cwd: backendPath,
