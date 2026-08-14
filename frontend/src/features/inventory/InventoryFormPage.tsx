@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -27,7 +27,6 @@ export default function InventoryFormPage() {
   const [supplierName, setSupplierName] = useState('');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -46,18 +45,19 @@ export default function InventoryFormPage() {
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     const payload = { code: code || undefined, name, category: category || undefined, unit: unit || undefined, currentStock: parseFloat(currentStock), lowStockThreshold: parseFloat(lowStockThreshold), unitPrice: unitPrice ? parseFloat(unitPrice) : undefined, supplierName: supplierName || undefined, location: location || undefined, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Item updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Item created', severity: 'success' })); }
       navigate('/inventory');
     } catch (err) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError(msg ?? 'Failed to save item.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update inventory item.' : 'Failed to create inventory item.'), severity: 'error' }));
       }
     }
   };
@@ -70,7 +70,6 @@ export default function InventoryFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

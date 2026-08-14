@@ -11,10 +11,10 @@ export class CreateRoleDto {
 export class AssignPermissionsDto {
   @ApiProperty({
     type: [String],
-    example: ['permission-uuid-1', 'permission-uuid-2'],
-    description: 'Array of permission IDs to assign to the role',
+    example: ['Roles.View', 'Roles.Create'],
+    description: 'Array of permission codes to assign to the role',
   })
   @IsArray()
   @IsString({ each: true })
-  permissionIds: string[];
+  permissionCodes: string[];
 }

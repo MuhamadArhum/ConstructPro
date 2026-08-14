@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -30,7 +30,6 @@ export default function PlantFormPage() {
   const [location, setLocation] = useState('');
   const [nextMaintenanceDate, setNextMaintenanceDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -50,18 +49,19 @@ export default function PlantFormPage() {
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     const payload = { code: code || undefined, name, type: type || undefined, manufacturer: manufacturer || undefined, serialNumber: serialNumber || undefined, purchaseDate: purchaseDate || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, currentValue: currentValue ? parseFloat(currentValue) : undefined, status, location: location || undefined, nextMaintenanceDate: nextMaintenanceDate || undefined, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Plant updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Plant created', severity: 'success' })); }
       navigate('/plants');
     } catch (err: unknown) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError('Failed to save plant.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update plant.' : 'Failed to create plant.'), severity: 'error' }));
       }
     }
   };
@@ -74,7 +74,6 @@ export default function PlantFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

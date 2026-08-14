@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -24,7 +24,6 @@ export default function AccountFormPage() {
   const [parentId, setParentId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [description, setDescription] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (existing) {
@@ -34,13 +33,16 @@ export default function AccountFormPage() {
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     const payload = { code, name, accountType, parentId: parentId || undefined, isActive, description: description || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Account updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Account created', severity: 'success' })); }
       navigate('/accounts');
-    } catch { setError('Failed to save account.'); }
+    } catch (err) {
+      const apiError = err as { data?: { message?: string } };
+      dispatch(showSnackbar({ message: apiError.data?.message ?? (isEdit ? 'Failed to update account.' : 'Failed to create account.'), severity: 'error' }));
+    }
   };
 
   if (isEdit && isLoading) return <Loader />;
@@ -51,7 +53,6 @@ export default function AccountFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <Stack direction="row" spacing={2}>
               <TextField label="Account Code" value={code} onChange={(e) => setCode(e.target.value)} required fullWidth placeholder="e.g. 1001" />
               <FormControl fullWidth required>

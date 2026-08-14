@@ -23,7 +23,6 @@ export default function JournalEntryFormPage() {
     { accountId: '', debit: 0, credit: 0 },
     { accountId: '', debit: 0, credit: 0 },
   ]);
-  const [error, setError] = useState<string | null>(null);
 
   const totalDebit = lines.reduce((s, l) => s + (l.debit || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (l.credit || 0), 0);
@@ -34,15 +33,18 @@ export default function JournalEntryFormPage() {
   };
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
-    if (!isBalanced) { setError('Debit and Credit must be equal.'); return; }
-    if (totalDebit === 0) { setError('Entry cannot be all zeros — at least one line must have a debit or credit amount.'); return; }
-    if (lines.some(l => !l.accountId)) { setError('All lines must have an account selected.'); return; }
+    e.preventDefault();
+    if (!isBalanced) { dispatch(showSnackbar({ message: 'Debit and Credit must be equal.', severity: 'error' })); return; }
+    if (totalDebit === 0) { dispatch(showSnackbar({ message: 'Entry cannot be all zeros — at least one line must have a debit or credit amount.', severity: 'error' })); return; }
+    if (lines.some(l => !l.accountId)) { dispatch(showSnackbar({ message: 'All lines must have an account selected.', severity: 'error' })); return; }
     try {
       await createEntry({ date, description, reference: reference || undefined, notes: notes || undefined, lines }).unwrap();
       dispatch(showSnackbar({ message: 'Journal entry created', severity: 'success' }));
       navigate('/accounts/journal');
-    } catch (err) { setError((err as { data?: { message?: string } }).data?.message ?? 'Failed to create journal entry.'); }
+    } catch (err) {
+      const apiError = err as { data?: { message?: string } };
+      dispatch(showSnackbar({ message: apiError.data?.message ?? 'Failed to create journal entry.', severity: 'error' }));
+    }
   };
 
   return (
@@ -51,7 +53,6 @@ export default function JournalEntryFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="Reference" value={reference} onChange={(e) => setReference(e.target.value)} fullWidth />

@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Alert,
   Box,
   Button,
   FormControl,
@@ -41,7 +40,6 @@ export default function MachineryFormPage() {
   const [nextMaintenanceDate, setNextMaintenanceDate] = useState('');
   const [status, setStatus] = useState<MachineryStatus>('Active');
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -66,7 +64,6 @@ export default function MachineryFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     const payload = {
       code: code || undefined,
       name,
@@ -88,11 +85,12 @@ export default function MachineryFormPage() {
       }
       navigate('/machinery');
     } catch (err) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError(msg ?? 'Failed to save machinery record.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update machinery.' : 'Failed to create machinery.'), severity: 'error' }));
       }
     }
   };
@@ -105,7 +103,6 @@ export default function MachineryFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

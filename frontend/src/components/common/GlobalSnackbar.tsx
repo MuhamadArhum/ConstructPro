@@ -9,9 +9,9 @@ export default function GlobalSnackbar() {
   return (
     <Snackbar
       open={open}
-      autoHideDuration={4000}
+      autoHideDuration={severity === 'error' ? 6000 : 4000}
       onClose={() => dispatch(hideSnackbar())}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
       <Alert
         onClose={() => dispatch(hideSnackbar())}

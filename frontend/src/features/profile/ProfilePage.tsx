@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
-  Alert, Avatar, Box, Button, Chip, CircularProgress, Divider,
+  Avatar, Box, Button, Chip, CircularProgress, Divider,
   IconButton, Paper, Stack, TextField, Typography,
 } from '@mui/material';
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined';
@@ -23,12 +23,10 @@ export default function ProfilePage() {
 
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [profileError, setProfileError] = useState<string | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwError, setPwError] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -39,14 +37,13 @@ export default function ProfilePage() {
 
   const handleProfileSave = async (e: FormEvent) => {
     e.preventDefault();
-    setProfileError(null);
     try {
       const updated = await updateProfile({ fullName, phoneNumber: phoneNumber || undefined }).unwrap();
       dispatch(updateUser({ fullName: updated.fullName }));
       dispatch(showSnackbar({ message: 'Profile updated successfully.' }));
     } catch (err) {
       const apiError = err as { data?: ApiError };
-      setProfileError(apiError.data?.title ?? 'Failed to update profile.');
+      dispatch(showSnackbar({ message: apiError.data?.title ?? 'Failed to update profile.', severity: 'error' }));
     }
   };
 
@@ -68,8 +65,10 @@ export default function ProfilePage() {
 
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
-    setPwError(null);
-    if (newPassword !== confirmPassword) { setPwError('Passwords do not match.'); return; }
+    if (newPassword !== confirmPassword) {
+      dispatch(showSnackbar({ message: 'Passwords do not match.', severity: 'error' }));
+      return;
+    }
     try {
       await changePassword({ currentPassword, newPassword }).unwrap();
       dispatch(showSnackbar({ message: 'Password changed successfully.' }));
@@ -78,7 +77,7 @@ export default function ProfilePage() {
       setConfirmPassword('');
     } catch (err) {
       const apiError = err as { data?: ApiError };
-      setPwError(apiError.data?.detail ?? apiError.data?.title ?? 'Failed to change password.');
+      dispatch(showSnackbar({ message: apiError.data?.detail ?? apiError.data?.title ?? 'Failed to change password.', severity: 'error' }));
     }
   };
 
@@ -140,7 +139,6 @@ export default function ProfilePage() {
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Personal Information</Typography>
         <form onSubmit={handleProfileSave}>
           <Stack spacing={2.5}>
-            {profileError && <Alert severity="error" sx={{ borderRadius: 2 }}>{profileError}</Alert>}
             <TextField
               label="Full Name" value={fullName}
               onChange={e => setFullName(e.target.value)}
@@ -166,7 +164,6 @@ export default function ProfilePage() {
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Change Password</Typography>
         <form onSubmit={handlePasswordChange}>
           <Stack spacing={2.5}>
-            {pwError && <Alert severity="error" sx={{ borderRadius: 2 }}>{pwError}</Alert>}
             <TextField
               label="Current Password" type="password"
               value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}

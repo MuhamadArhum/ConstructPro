@@ -82,12 +82,13 @@ export class RolesService {
 
     await this.prisma.rolePermission.deleteMany({ where: { roleId } });
 
-    if (dto.permissionIds.length > 0) {
+    if (dto.permissionCodes.length > 0) {
+      const permissions = await this.prisma.permission.findMany({
+        where: { code: { in: dto.permissionCodes } },
+        select: { id: true },
+      });
       await this.prisma.rolePermission.createMany({
-        data: dto.permissionIds.map((permissionId) => ({
-          roleId,
-          permissionId,
-        })),
+        data: permissions.map(({ id: permissionId }) => ({ roleId, permissionId })),
       });
     }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Alert,
   Box,
   Button,
   InputAdornment,
@@ -35,7 +34,6 @@ export default function EmployeeFormPage() {
   const [address, setAddress] = useState('');
   const [basicSalary, setBasicSalary] = useState('');
   const [joinDate, setJoinDate] = useState(new Date().toISOString().split('T')[0]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -58,9 +56,8 @@ export default function EmployeeFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     if (!basicSalary || parseFloat(basicSalary) <= 0) {
-      setError('Basic salary must be greater than zero.');
+      dispatch(showSnackbar({ message: 'Basic salary must be greater than zero.', severity: 'error' }));
       return;
     }
     const payload = {
@@ -84,11 +81,12 @@ export default function EmployeeFormPage() {
       }
       navigate('/employees');
     } catch (err: unknown) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError('Failed to save employee record.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update employee.' : 'Failed to create employee.'), severity: 'error' }));
       }
     }
   };
@@ -101,8 +99,6 @@ export default function EmployeeFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
-
             <TextField
               label="Code"
               value={code}

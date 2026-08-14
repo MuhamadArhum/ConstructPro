@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, FormControl, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, FormControl, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -26,19 +26,21 @@ export default function StockTransactionPage() {
   const [reference, setReference] = useState('');
   const [projectName, setProjectName] = useState('');
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     if (!quantity || parseFloat(quantity) <= 0) {
-      setError('Quantity must be greater than zero.');
+      dispatch(showSnackbar({ message: 'Quantity must be greater than zero.', severity: 'error' }));
       return;
     }
     try {
       await addTransaction({ id: id!, data: { type, quantity: parseFloat(quantity), unitPrice: unitPrice ? parseFloat(unitPrice) : undefined, date, reference: reference || undefined, projectName: projectName || undefined, notes: notes || undefined } }).unwrap();
       dispatch(showSnackbar({ message: 'Transaction added', severity: 'success' }));
       setQuantity(''); setUnitPrice(''); setReference(''); setProjectName(''); setNotes('');
-    } catch { setError('Failed to add transaction.'); }
+    } catch (err) {
+      const apiError = err as { data?: { message?: string } };
+      dispatch(showSnackbar({ message: apiError.data?.message ?? 'Failed to add stock transaction.', severity: 'error' }));
+    }
   };
 
   if (loadingItem) return <Loader />;
@@ -58,7 +60,6 @@ export default function StockTransactionPage() {
         <Typography variant="h6" sx={{ mb: 2 }}>Add Transaction</Typography>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl fullWidth required>
                 <InputLabel>Type</InputLabel>

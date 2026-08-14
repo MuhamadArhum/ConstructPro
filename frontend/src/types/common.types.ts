@@ -9,8 +9,10 @@ export interface PaginatedList<T> {
 }
 
 export interface ApiError {
-  title: string;
-  status: number;
+  title?: string;
+  message?: string;
+  status?: number;
+  statusCode?: number;
   detail?: string;
   errors?: Record<string, string[]>;
 }

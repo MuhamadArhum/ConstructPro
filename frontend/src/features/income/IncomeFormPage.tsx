@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Alert,
   Box,
   Button,
   FormControl,
@@ -54,7 +53,6 @@ export default function IncomeFormPage() {
   const [customerName, setCustomerName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [isPaid, setIsPaid] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -77,9 +75,8 @@ export default function IncomeFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Amount must be greater than zero.');
+      dispatch(showSnackbar({ message: 'Amount must be greater than zero.', severity: 'error' }));
       return;
     }
     const payload = {
@@ -102,11 +99,12 @@ export default function IncomeFormPage() {
       }
       navigate('/income');
     } catch (err) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError(msg ?? 'Failed to save income record.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update income record.' : 'Failed to create income record.'), severity: 'error' }));
       }
     }
   };
@@ -121,7 +119,6 @@ export default function IncomeFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from './settingsApi';
@@ -19,7 +19,6 @@ export default function SettingsPage() {
   const [strn, setStrn] = useState('');
   const [currency, setCurrency] = useState('PKR');
   const [financialYearStart, setFinancialYearStart] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -30,11 +29,14 @@ export default function SettingsPage() {
   }, [settings]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     try {
       await updateSettings({ companyName, address: address || undefined, phone: phone || undefined, email: email || undefined, website: website || undefined, ntn: ntn || undefined, strn: strn || undefined, currency: currency || undefined, financialYearStart: financialYearStart || undefined }).unwrap();
       dispatch(showSnackbar({ message: 'Settings saved successfully', severity: 'success' }));
-    } catch { setError('Failed to save settings.'); }
+    } catch (err) {
+      const apiError = err as { data?: { message?: string } };
+      dispatch(showSnackbar({ message: apiError.data?.message ?? 'Failed to save settings.', severity: 'error' }));
+    }
   };
 
   if (isLoading) return <Loader />;
@@ -45,8 +47,6 @@ export default function SettingsPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
-            {error && <Alert severity="error">{error}</Alert>}
-
             <Typography variant="h6">Company Information</Typography>
             <TextField label="Company Name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required fullWidth />
             <TextField label="Address" value={address} onChange={(e) => setAddress(e.target.value)} fullWidth multiline rows={2} />

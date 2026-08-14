@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Alert,
   Box,
   Button,
   FormControl,
@@ -51,7 +50,6 @@ export default function ExpenseFormPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [vendor, setVendor] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -72,9 +70,8 @@ export default function ExpenseFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Amount must be greater than zero.');
+      dispatch(showSnackbar({ message: 'Amount must be greater than zero.', severity: 'error' }));
       return;
     }
     const payload = { code: code || undefined, category, amount: parseFloat(amount), date, description, vendor: vendor || undefined };
@@ -88,11 +85,12 @@ export default function ExpenseFormPage() {
       }
       navigate('/expense');
     } catch (err) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError(msg ?? 'Failed to save expense record.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update expense.' : 'Failed to create expense.'), severity: 'error' }));
       }
     }
   };
@@ -105,7 +103,6 @@ export default function ExpenseFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

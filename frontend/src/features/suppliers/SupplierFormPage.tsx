@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, FormControlLabel, InputAdornment, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, FormControlLabel, InputAdornment, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -29,7 +29,6 @@ export default function SupplierFormPage() {
   const [totalPaid, setTotalPaid] = useState('0');
   const [isActive, setIsActive] = useState(true);
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -48,18 +47,19 @@ export default function SupplierFormPage() {
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     const payload = { code: code || undefined, name, companyName: companyName || undefined, phone: phone || undefined, email: email || undefined, address: address || undefined, ntn: ntn || undefined, category: category || undefined, totalPurchased: parseFloat(totalPurchased), totalPaid: parseFloat(totalPaid), isActive, notes: notes || undefined };
     try {
       if (isEdit && id) { await update({ id, data: payload }).unwrap(); dispatch(showSnackbar({ message: 'Supplier updated', severity: 'success' })); }
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Supplier created', severity: 'success' })); }
       navigate('/suppliers');
     } catch (err: unknown) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError('Failed to save supplier.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update supplier.' : 'Failed to create supplier.'), severity: 'error' }));
       }
     }
   };
@@ -72,7 +72,6 @@ export default function SupplierFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

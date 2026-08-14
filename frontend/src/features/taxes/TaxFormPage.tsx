@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Alert, Box, Button, FormControl, FormControlLabel, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, FormControl, FormControlLabel, InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -36,7 +36,6 @@ export default function TaxFormPage() {
   const [isPaid, setIsPaid] = useState(false);
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) {
@@ -55,13 +54,13 @@ export default function TaxFormPage() {
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); setError(null);
+    e.preventDefault();
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Amount must be greater than zero.');
+      dispatch(showSnackbar({ message: 'Amount must be greater than zero.', severity: 'error' }));
       return;
     }
     if (periodStart && periodEnd && periodEnd < periodStart) {
-      setError('Period end date cannot be before the period start date.');
+      dispatch(showSnackbar({ message: 'Period end date cannot be before the period start date.', severity: 'error' }));
       return;
     }
     const payload = { code: code || undefined, taxType, amount: parseFloat(amount), periodStart, periodEnd, dueDate: dueDate || undefined, paidDate: paidDate || undefined, isPaid, reference: reference || undefined, description: description || undefined };
@@ -70,11 +69,12 @@ export default function TaxFormPage() {
       else { await create(payload).unwrap(); dispatch(showSnackbar({ message: 'Tax record created', severity: 'success' })); }
       navigate('/tax');
     } catch (err) {
-      const msg = (err as { data?: { message?: string } })?.data?.message;
+      const apiError = err as { data?: { message?: string } };
+      const msg = apiError.data?.message;
       if (msg?.includes('Code already in use')) {
-        setError('Code already in use. Please choose a different code.');
+        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
       } else {
-        setError(msg ?? 'Failed to save tax record.');
+        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update tax record.' : 'Failed to create tax record.'), severity: 'error' }));
       }
     }
   };
@@ -87,7 +87,6 @@ export default function TaxFormPage() {
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
             <TextField
               label="Code"
               value={code}

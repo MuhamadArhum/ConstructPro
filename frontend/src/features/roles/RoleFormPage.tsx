@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
-  Alert, Box, Button, Checkbox, CircularProgress, Divider,
+  Box, Button, Checkbox, CircularProgress, Divider,
   FormControlLabel, Paper, Stack, TextField, Typography,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -27,7 +27,6 @@ export default function RoleFormPage() {
 
   const [name, setName] = useState('');
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (existingRole) {
@@ -74,7 +73,6 @@ export default function RoleFormPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     try {
       let roleId = id!;
       if (!isEdit) {
@@ -92,7 +90,8 @@ export default function RoleFormPage() {
       navigate('/roles');
     } catch (err) {
       const apiError = err as { data?: ApiError };
-      setError(apiError.data?.title ?? 'Failed to save role.');
+      const msg = apiError.data?.message ?? (isEdit ? 'Failed to update role.' : 'Failed to create role.');
+      dispatch(showSnackbar({ message: msg, severity: 'error' }));
     }
   };
 
@@ -114,8 +113,6 @@ export default function RoleFormPage() {
 
       <form onSubmit={handleSubmit}>
         <Stack spacing={3}>
-          {error && <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>}
-
           <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Role Details</Typography>
             <TextField
