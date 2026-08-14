@@ -181,7 +181,7 @@ export default function RoleFormPage() {
               Cancel
             </Button>
             <Button type="submit" variant="contained" disabled={isSaving} sx={{ minWidth: 140 }}>
-              {isSaving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Role'}
+              {isSaving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Role'}
             </Button>
           </Box>
         </Stack>

@@ -46,7 +46,7 @@ export default function AccountFormPage() {
   if (isEdit && isLoading) return <Loader />;
 
   return (
-    <Box sx={{ maxWidth: 560 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Account' : 'Add Account'}</Typography>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>

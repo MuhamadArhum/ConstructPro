@@ -96,7 +96,7 @@ export default function EmployeeFormPage() {
   if (isEdit && isLoadingExisting) return <Loader />;
 
   return (
-    <Box sx={{ maxWidth: 560 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Employee' : 'Add Employee'}</Typography>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>

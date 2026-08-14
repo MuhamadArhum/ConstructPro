@@ -100,7 +100,7 @@ export default function ExpenseFormPage() {
   if (isEdit && isLoadingExisting) return <Loader />;
 
   return (
-    <Box sx={{ maxWidth: 560 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Expense' : 'Add Expense'}</Typography>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
@@ -164,7 +164,7 @@ export default function ExpenseFormPage() {
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/expense')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>
-                {isEdit ? 'Save Changes' : 'Create Expense'}
+                {isEdit ? 'Save Changes' : 'Add Expense'}
               </Button>
             </Stack>
           </Stack>

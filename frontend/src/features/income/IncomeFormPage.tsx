@@ -114,7 +114,7 @@ export default function IncomeFormPage() {
   if (isEdit && isLoadingExisting) return <Loader />;
 
   return (
-    <Box sx={{ maxWidth: 560 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>
         {isEdit ? 'Edit Income' : 'Add Income'}
       </Typography>
@@ -199,7 +199,7 @@ export default function IncomeFormPage() {
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/income')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>
-                {isEdit ? 'Save Changes' : 'Create Income'}
+                {isEdit ? 'Save Changes' : 'Add Income'}
               </Button>
             </Stack>
           </Stack>

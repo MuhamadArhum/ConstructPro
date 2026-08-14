@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Box, Button, Chip, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import TableSkeleton from '../../components/common/TableSkeleton';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -58,28 +59,30 @@ export default function ChartOfAccountsPage() {
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">
-        {isLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box> : (
-          <Table size="small">
-            <TableHead><TableRow><TableCell>Code</TableCell><TableCell>Name</TableCell><TableCell>Type</TableCell><TableCell>Parent</TableCell><TableCell align="right">Balance</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-            <TableBody>
-              {data?.items.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.code}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell><Chip label={row.accountTypeDisplay} color={typeColors[row.accountType]} size="small" /></TableCell>
-                  <TableCell>{row.parentName ?? '-'}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.balance)}</TableCell>
-                  <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
-                  <TableCell align="right">
-                    <PermissionGate permission={Perms.Accounts.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/accounts/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                    <PermissionGate permission={Perms.Accounts.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No accounts found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        )}
+        <Table size="small">
+          <TableHead><TableRow><TableCell>Code</TableCell><TableCell>Name</TableCell><TableCell>Type</TableCell><TableCell>Parent</TableCell><TableCell align="right">Balance</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
+          <TableBody>
+            {isLoading ? <TableSkeleton cols={7} /> : (
+              <>
+                {data?.items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.code}</TableCell>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell><Chip label={row.accountTypeDisplay} color={typeColors[row.accountType]} size="small" /></TableCell>
+                    <TableCell>{row.parentName ?? '-'}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.balance)}</TableCell>
+                    <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
+                    <TableCell align="right">
+                      <PermissionGate permission={Perms.Accounts.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/accounts/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                      <PermissionGate permission={Perms.Accounts.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No accounts found</TableCell></TableRow>}
+              </>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination component="div" count={data?.totalCount ?? 0} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }} rowsPerPageOptions={[20, 50, 100]} />
       </TableContainer>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete Account" message="Are you sure?" confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />

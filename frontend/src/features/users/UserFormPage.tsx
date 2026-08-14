@@ -79,7 +79,7 @@ export default function UserFormPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 480 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>
         {isEditMode ? 'Edit User' : 'Add User'}
       </Typography>
@@ -145,7 +145,7 @@ export default function UserFormPage() {
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/users')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>
-                {isEditMode ? 'Save Changes' : 'Create User'}
+                {isEditMode ? 'Save Changes' : 'Add User'}
               </Button>
             </Stack>
           </Stack>

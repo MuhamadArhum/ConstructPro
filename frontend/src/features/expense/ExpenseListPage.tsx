@@ -221,6 +221,11 @@ export default function ExpenseListPage() {
             )}
           </TableBody>
         </Table>
+        {(data?.totalCount ?? 0) > 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1, display: 'block', borderTop: '1px solid', borderColor: 'divider' }}>
+            Showing {Math.min(page * rowsPerPage + 1, data?.totalCount ?? 0)}–{Math.min((page + 1) * rowsPerPage, data?.totalCount ?? 0)} of {data?.totalCount ?? 0} records
+          </Typography>
+        )}
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}

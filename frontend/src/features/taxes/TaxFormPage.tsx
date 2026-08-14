@@ -82,7 +82,7 @@ export default function TaxFormPage() {
   if (isEdit && isLoading) return <Loader />;
 
   return (
-    <Box sx={{ maxWidth: 560 }}>
+    <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Tax Record' : 'Add Tax Record'}</Typography>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
@@ -116,7 +116,7 @@ export default function TaxFormPage() {
             <FormControlLabel control={<Switch checked={isPaid} onChange={(e) => { setIsPaid(e.target.checked); if (!e.target.checked) setPaidDate(''); }} />} label="Payment Completed" />
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/tax')}>Cancel</Button>
-              <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>{isEdit ? 'Save Changes' : 'Add Record'}</Button>
+              <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>{isEdit ? 'Save Changes' : 'Add Tax Record'}</Button>
             </Stack>
           </Stack>
         </form>
