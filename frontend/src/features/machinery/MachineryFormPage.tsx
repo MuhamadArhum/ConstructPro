@@ -26,7 +26,7 @@ export default function MachineryFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetMachineryByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextMachineryCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextMachineryCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateMachineryMutation();
   const [update, { isLoading: isUpdating }] = useUpdateMachineryMutation();
 
@@ -109,7 +109,9 @@ export default function MachineryFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />

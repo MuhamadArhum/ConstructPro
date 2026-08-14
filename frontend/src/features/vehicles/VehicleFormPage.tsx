@@ -14,7 +14,7 @@ export default function VehicleFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetVehicleByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextVehicleCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextVehicleCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateVehicleMutation();
   const [update, { isLoading: isUpdating }] = useUpdateVehicleMutation();
 
@@ -88,7 +88,9 @@ export default function VehicleFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
             <TextField label="Registration Number" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>

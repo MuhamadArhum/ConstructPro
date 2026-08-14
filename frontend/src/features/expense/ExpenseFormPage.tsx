@@ -40,7 +40,7 @@ export default function ExpenseFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetExpenseByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextExpenseCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextExpenseCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateExpenseMutation();
   const [update, { isLoading: isUpdating }] = useUpdateExpenseMutation();
 
@@ -109,7 +109,9 @@ export default function ExpenseFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <FormControl fullWidth required>

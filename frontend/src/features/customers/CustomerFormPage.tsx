@@ -13,7 +13,7 @@ export default function CustomerFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetCustomerByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextCustomerCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextCustomerCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateCustomerMutation();
   const [update, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
@@ -80,7 +80,9 @@ export default function CustomerFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>

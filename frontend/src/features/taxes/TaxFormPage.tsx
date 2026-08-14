@@ -22,7 +22,7 @@ export default function TaxFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetTaxRecordByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextTaxCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextTaxCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateTaxRecordMutation();
   const [update, { isLoading: isUpdating }] = useUpdateTaxRecordMutation();
 
@@ -93,7 +93,9 @@ export default function TaxFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
             <FormControl fullWidth required>
               <InputLabel>Tax Type</InputLabel>

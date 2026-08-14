@@ -21,7 +21,7 @@ export default function LabourFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetLabourByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextLabourCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextLabourCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateLabourMutation();
   const [update, { isLoading: isUpdating }] = useUpdateLabourMutation();
 
@@ -102,8 +102,10 @@ export default function LabourFormPage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               fullWidth
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <TextField label="Full Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />

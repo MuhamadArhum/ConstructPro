@@ -41,7 +41,7 @@ export default function IncomeFormPage() {
   const { data: existing, isLoading: isLoadingExisting } = useGetIncomeByIdQuery(id ?? '', {
     skip: !isEdit,
   });
-  const { data: nextCodeData } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateIncomeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateIncomeMutation();
 
@@ -125,7 +125,9 @@ export default function IncomeFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <FormControl fullWidth required>

@@ -13,7 +13,7 @@ export default function SupplierFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetSupplierByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextSupplierCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextSupplierCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [update, { isLoading: isUpdating }] = useUpdateSupplierMutation();
 
@@ -78,7 +78,9 @@ export default function SupplierFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>

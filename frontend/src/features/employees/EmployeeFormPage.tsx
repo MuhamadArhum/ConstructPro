@@ -21,7 +21,7 @@ export default function EmployeeFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetEmployeeByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextEmployeeCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextEmployeeCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreateEmployeeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateEmployeeMutation();
 
@@ -105,7 +105,9 @@ export default function EmployeeFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <TextField label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required fullWidth />

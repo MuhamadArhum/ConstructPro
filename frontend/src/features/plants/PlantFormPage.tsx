@@ -14,7 +14,7 @@ export default function PlantFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetPlantByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData } = useGetNextPlantCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextPlantCodeQuery(undefined, { skip: isEdit });
   const [create, { isLoading: isCreating }] = useCreatePlantMutation();
   const [update, { isLoading: isUpdating }] = useUpdatePlantMutation();
 
@@ -80,7 +80,9 @@ export default function PlantFormPage() {
               onChange={(e) => setCode(e.target.value)}
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
-              helperText="Auto-generated. You may override it."
+              disabled={isLoadingCode}
+              placeholder={isLoadingCode ? 'Generating...' : ''}
+              helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
             <Stack direction="row" spacing={2}>
