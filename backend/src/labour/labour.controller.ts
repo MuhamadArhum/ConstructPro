@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -102,6 +103,17 @@ export class LabourController {
   @ApiResponse({ status: 404, description: 'Labour not found' })
   deactivate(@Param('id') id: string) {
     return this.labourService.deactivate(id);
+  }
+
+  @Patch(':id/activate')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Re-activate a deactivated labour worker' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 200, description: 'Labour worker activated successfully' })
+  @ApiResponse({ status: 404, description: 'Labour not found' })
+  activate(@Param('id') id: string) {
+    return this.labourService.activate(id);
   }
 
   @Get(':id/attendance')

@@ -139,12 +139,19 @@ export class LabourService {
 
   async deactivate(id: string) {
     await this.findById(id);
-
     const labour = await this.prisma.labour.update({
       where: { id },
       data: { isActive: false },
     });
+    return this.mapLabour(labour);
+  }
 
+  async activate(id: string) {
+    await this.findById(id);
+    const labour = await this.prisma.labour.update({
+      where: { id },
+      data: { isActive: true },
+    });
     return this.mapLabour(labour);
   }
 

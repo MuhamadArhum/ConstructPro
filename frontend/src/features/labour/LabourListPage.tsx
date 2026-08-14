@@ -25,13 +25,14 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
-import { useGetLaboursQuery, useDeactivateLabourMutation } from './labourApi';
+import { useGetLaboursQuery, useDeactivateLabourMutation, useActivateLabourMutation } from './labourApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -56,6 +57,16 @@ export default function LabourListPage() {
   });
 
   const [deactivateLabour] = useDeactivateLabourMutation();
+  const [activateLabour] = useActivateLabourMutation();
+
+  const handleActivate = async (id: string) => {
+    try {
+      await activateLabour(id).unwrap();
+      dispatch(showSnackbar({ message: 'Labour activated', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to activate labour', severity: 'error' }));
+    }
+  };
 
   const handleDeactivate = async () => {
     if (!deactivateId) return;
@@ -162,16 +173,27 @@ export default function LabourListPage() {
                           </IconButton>
                         </Tooltip>
                       </PermissionGate>
+                      <PermissionGate permission={Perms.Labour.Edit}>
+                        {!row.isActive && (
+                          <Tooltip title="Activate">
+                            <IconButton size="small" color="success" onClick={() => handleActivate(row.id)}>
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </PermissionGate>
                       <PermissionGate permission={Perms.Labour.Delete}>
                         <Tooltip title="Deactivate">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            disabled={!row.isActive}
-                            onClick={() => setDeactivateId(row.id)}
-                          >
-                            <BlockIcon fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              disabled={!row.isActive}
+                              onClick={() => setDeactivateId(row.id)}
+                            >
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </PermissionGate>
                     </TableCell>

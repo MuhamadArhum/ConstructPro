@@ -36,6 +36,10 @@ export const labourApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/labour/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Labour'],
     }),
+    activateLabour: builder.mutation<void, string>({
+      query: (id) => ({ url: `/labour/${id}/activate`, method: 'PATCH' }),
+      invalidatesTags: ['Labour'],
+    }),
     getLabourAttendance: builder.query<
       LabourAttendanceDto[],
       { id: string; month: number; year: number }
@@ -77,6 +81,7 @@ export const {
   useCreateLabourMutation,
   useUpdateLabourMutation,
   useDeactivateLabourMutation,
+  useActivateLabourMutation,
   useGetLabourAttendanceQuery,
   useUpsertAttendanceMutation,
   useGetLabourAdvancesQuery,
