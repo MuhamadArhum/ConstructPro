@@ -13,6 +13,7 @@ model User {
   passwordHash             String
   isActive                 Boolean   @default(true)
   createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
   lastLoginAt              DateTime?
   profilePicturePath       String?
   passwordResetToken       String?
@@ -101,6 +102,7 @@ model Employee {
   joinDate       DateTime
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   salaryPayments SalaryPayment[]
 
   @@index([isActive])
@@ -142,6 +144,7 @@ model Labour {
   joinDate            DateTime
   isActive            Boolean            @default(true)
   createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   attendances         LabourAttendance[]
   advances            LabourAdvance[]
   projectAssignments  ProjectLabour[]
@@ -193,6 +196,7 @@ model Customer {
   isActive     Boolean              @default(true)
   notes        String?
   createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
   transactions CustomerTransaction[]
   projects     Project[]
   invoices     Invoice[]
@@ -233,6 +237,7 @@ model Supplier {
   isActive       Boolean               @default(true)
   notes          String?
   createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   transactions   SupplierTransaction[]
   purchaseOrders PurchaseOrder[]
 
@@ -270,6 +275,7 @@ model Machinery {
   nextMaintenanceDate DateTime?
   notes               String?
   createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
   maintenanceRecords  MachineryMaintenance[]
   projectAssignments  ProjectMachinery[]
 
@@ -324,6 +330,7 @@ model Vehicle {
   nextMaintenanceDate DateTime?
   notes               String?
   createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   maintenanceRecords  VehicleMaintenance[]
 
   @@index([status])
@@ -370,6 +377,7 @@ model Plant {
   nextMaintenanceDate DateTime?
   notes               String?
   createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@index([status])
   @@map("plants")
@@ -395,8 +403,11 @@ model InventoryItem {
   location          String?
   notes             String?
   createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   stockTransactions StockTransaction[]
 
+  @@index([name])
+  @@index([category])
   @@map("inventory_items")
 }
 
@@ -413,7 +424,7 @@ model StockTransaction {
   createdAt       DateTime             @default(now())
   createdById     String?
   inventoryItem   InventoryItem        @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  createdBy       User?                @relation(fields: [createdById], references: [id])
+  createdBy       User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([inventoryItemId])
   @@index([date])
@@ -438,8 +449,9 @@ model Income {
   receiptPath  String?
   isPaid       Boolean        @default(true)
   createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   createdById  String?
-  createdBy    User?          @relation(fields: [createdById], references: [id])
+  createdBy    User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([category])
@@ -462,8 +474,9 @@ model Expense {
   vendor      String?
   billPath    String?
   createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   createdById String?
-  createdBy   User?           @relation(fields: [createdById], references: [id])
+  createdBy   User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([category])
@@ -493,7 +506,8 @@ model ChartOfAccount {
   isActive    Boolean            @default(true)
   description String?
   createdAt   DateTime           @default(now())
-  parent      ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  updatedAt   DateTime           @updatedAt
+  parent      ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children    ChartOfAccount[]   @relation("AccountHierarchy")
   journalLines JournalEntryLine[]
 
@@ -520,7 +534,7 @@ model JournalEntry {
   notes       String?
   createdAt   DateTime           @default(now())
   createdById String?
-  createdBy   User?              @relation(fields: [createdById], references: [id])
+  createdBy   User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
   lines       JournalEntryLine[]
 
   @@map("journal_entries")
@@ -534,7 +548,7 @@ model JournalEntryLine {
   credit         Decimal        @default(0)
   description    String?
   journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+  account        ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
 
   @@index([journalEntryId])
   @@index([accountId])
@@ -555,8 +569,9 @@ model TaxRecord {
   description String?
   notes       String?
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   createdById String?
-  createdBy   User?     @relation(fields: [createdById], references: [id])
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([isPaid])
   @@index([periodStart])
@@ -663,6 +678,8 @@ model Project {
   @@index([status])
   @@index([clientId])
   @@index([createdAt])
+  @@index([startDate])
+  @@index([endDate])
   @@map("projects")
 }
 
@@ -738,13 +755,15 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  customer      Customer      @relation(fields: [customerId], references: [id])
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
   project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items         InvoiceItem[]
 
   @@index([customerId])
   @@index([status])
   @@index([createdAt])
+  @@index([dueDate])
+  @@index([issueDate])
   @@map("invoices")
 }
 
@@ -777,13 +796,15 @@ model PurchaseOrder {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  supplier         Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   project          Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items            PurchaseOrderItem[]
 
   @@index([supplierId])
   @@index([status])
   @@index([createdAt])
+  @@index([expectedDelivery])
+  @@index([issueDate])
   @@map("purchase_orders")
 }
 

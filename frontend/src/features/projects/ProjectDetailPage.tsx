@@ -579,16 +579,18 @@ export default function ProjectDetailPage() {
         <form onSubmit={handleAssignLabour}>
           <DialogTitle>Assign Labour</DialogTitle>
           <DialogContent dividers>
-            <FormControl fullWidth sx={{ mt: 1 }}>
-              <InputLabel>Labour</InputLabel>
-              <Select label="Labour" value={selectedLabourId} onChange={(e) => setSelectedLabourId(e.target.value)} required>
-                {laboursList.map((l) => (
-                  <MenuItem key={l.id} value={l.id}>
-                    {l.name}{l.trade ? ` — ${l.trade}` : ''}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Labour</InputLabel>
+                <Select label="Labour" value={selectedLabourId} onChange={(e) => setSelectedLabourId(e.target.value)} required>
+                  {laboursList.map((l) => (
+                    <MenuItem key={l.id} value={l.id}>
+                      {l.name}{l.trade ? ` — ${l.trade}` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setLabourOpen(false)}>Cancel</Button>
@@ -603,16 +605,18 @@ export default function ProjectDetailPage() {
         <form onSubmit={handleAssignMachinery}>
           <DialogTitle>Assign Machinery</DialogTitle>
           <DialogContent dividers>
-            <FormControl fullWidth sx={{ mt: 1 }}>
-              <InputLabel>Machinery</InputLabel>
-              <Select label="Machinery" value={selectedMachineryId} onChange={(e) => setSelectedMachineryId(e.target.value)} required>
-                {machineriesList.map((m) => (
-                  <MenuItem key={m.id} value={m.id}>
-                    {m.name}{(m as any).model ? ` — ${(m as any).model}` : ''}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Machinery</InputLabel>
+                <Select label="Machinery" value={selectedMachineryId} onChange={(e) => setSelectedMachineryId(e.target.value)} required>
+                  {machineriesList.map((m) => (
+                    <MenuItem key={m.id} value={m.id}>
+                      {m.name}{(m as any).model ? ` — ${(m as any).model}` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setMachineryOpen(false)}>Cancel</Button>

@@ -24,6 +24,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto);
@@ -37,6 +38,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: any) {
     const frontendUrl = this.config.get('FRONTEND_URL', 'http://localhost:5173');

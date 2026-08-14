@@ -11,6 +11,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Skeleton,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -319,8 +320,44 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
+      <Box sx={{ pb: 4 }}>
+        <Box sx={{ mb: 3 }}>
+          <Skeleton variant="text" width={180} height={40} />
+          <Skeleton variant="text" width={140} height={24} />
+        </Box>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Grid key={i} size={{ xs: 6, sm: 6, md: 3 }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={18} />
+                  <Skeleton variant="text" width="80%" height={32} sx={{ mt: 0.5 }} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        <Paper variant="outlined" sx={{ mb: 3, p: 2.5 }}>
+          <Skeleton variant="text" width={220} height={22} sx={{ mb: 2 }} />
+          <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 1 }} />
+        </Paper>
+        <Grid container spacing={2}>
+          {[5, 4, 3].map((md, i) => (
+            <Grid key={i} size={{ xs: 12, md }}>
+              <Paper variant="outlined" sx={{ height: 280 }}>
+                <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Skeleton variant="text" width="50%" height={20} />
+                </Box>
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <Box key={j} sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Skeleton variant="text" width="80%" height={18} />
+                    <Skeleton variant="text" width="50%" height={14} />
+                  </Box>
+                ))}
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }

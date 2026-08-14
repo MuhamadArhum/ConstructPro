@@ -161,15 +161,15 @@ export class DashboardService {
     const [
       incomeThisMonthResult,
       expenseThisMonthResult,
-      customers,
-      suppliers,
+      customerAgg,
+      supplierAgg,
       recentIncomes,
       recentExpenses,
     ] = await Promise.all([
       this.prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
       this.prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
-      this.prisma.customer.findMany({ select: { totalBilled: true, totalPaid: true } }),
-      this.prisma.supplier.findMany({ select: { totalPurchased: true, totalPaid: true } }),
+      this.prisma.customer.aggregate({ _sum: { totalBilled: true, totalPaid: true } }),
+      this.prisma.supplier.aggregate({ _sum: { totalPurchased: true, totalPaid: true } }),
       this.prisma.income.findMany({ take: 10, orderBy: { date: 'desc' }, select: { id: true, category: true, amount: true, date: true, description: true } }),
       this.prisma.expense.findMany({ take: 10, orderBy: { date: 'desc' }, select: { id: true, category: true, amount: true, date: true, description: true } }),
     ]);
@@ -193,8 +193,8 @@ export class DashboardService {
 
     const totalIncomeThisMonth = Number(incomeThisMonthResult._sum.amount ?? 0);
     const totalExpenseThisMonth = Number(expenseThisMonthResult._sum.amount ?? 0);
-    const customerOutstanding = customers.reduce((sum, c) => sum + Number(c.totalBilled) - Number(c.totalPaid), 0);
-    const supplierOutstanding = suppliers.reduce((sum, s) => sum + Number(s.totalPurchased) - Number(s.totalPaid), 0);
+    const customerOutstanding = Number(customerAgg._sum.totalBilled ?? 0) - Number(customerAgg._sum.totalPaid ?? 0);
+    const supplierOutstanding = Number(supplierAgg._sum.totalPurchased ?? 0) - Number(supplierAgg._sum.totalPaid ?? 0);
 
     const chart = await this.buildChartData(now);
 

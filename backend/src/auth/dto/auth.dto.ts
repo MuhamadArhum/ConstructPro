@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty() @IsEmail() email: string;
-  @ApiProperty() @IsString() @IsNotEmpty() @MinLength(6) password: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MinLength(8) password: string;
   @ApiPropertyOptional() @IsBoolean() @IsOptional() rememberMe?: boolean;
 }
 

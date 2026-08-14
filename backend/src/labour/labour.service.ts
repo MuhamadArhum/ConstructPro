@@ -258,7 +258,7 @@ export class LabourService {
     const firstDay = new Date(year, month - 1, 1);
     const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
 
-    const [attendances, advances] = await Promise.all([
+    const [attendances, advances, advanceSum] = await Promise.all([
       this.prisma.labourAttendance.findMany({
         where: {
           labourId: id,
@@ -273,6 +273,10 @@ export class LabourService {
         },
         orderBy: { date: 'desc' },
       }),
+      this.prisma.labourAdvance.aggregate({
+        _sum: { amount: true },
+        where: { labourId: id, date: { gte: firstDay, lte: lastDay } },
+      }),
     ]);
 
     const presentDays = attendances.filter((a) => a.isPresent).length;
@@ -282,7 +286,7 @@ export class LabourService {
     );
     const wagesEarned = presentDays * dailyWage;
     const overtimePay = totalOvertimeHours * overtimeRatePerHour;
-    const totalAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
+    const totalAdvances = Number(advanceSum._sum.amount ?? 0);
     const netPayable = wagesEarned + overtimePay - totalAdvances;
 
     return {

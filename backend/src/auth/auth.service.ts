@@ -123,8 +123,9 @@ export class AuthService {
       data: { passwordResetToken: token, passwordResetTokenExpiry: expiry },
     });
 
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(dto.email)}`;
-    console.log(`[Password Reset] ${user.fullName} → ${resetUrl}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Password Reset] Token generated for ${user.email}`);
+    }
 
     return { message: 'If that email exists, a reset link has been sent.' };
   }
