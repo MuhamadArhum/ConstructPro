@@ -146,10 +146,12 @@ export default function EmployeeListPage() {
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Salary">
-                        <IconButton size="small" color="primary" onClick={() => navigate(`/employees/${row.id}/salary`)}>
-                          <PaymentsIcon fontSize="small" />
-                        </IconButton>
+                      <Tooltip title={row.isActive ? 'Salary' : 'Employee is inactive'}>
+                        <span>
+                          <IconButton size="small" color="primary" disabled={!row.isActive} onClick={() => navigate(`/employees/${row.id}/salary`)}>
+                            <PaymentsIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <PermissionGate permission={Perms.Employees.Edit}>
                         <Tooltip title="Edit">
