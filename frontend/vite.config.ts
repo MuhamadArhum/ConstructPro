@@ -67,6 +67,8 @@ export default defineConfig({
   ],
 
   build: {
+    outDir: '../backend/public',
+    emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
