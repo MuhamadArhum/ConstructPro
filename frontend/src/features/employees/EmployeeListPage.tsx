@@ -25,13 +25,14 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
-import { useGetEmployeesQuery, useDeactivateEmployeeMutation } from './employeesApi';
+import { useGetEmployeesQuery, useDeactivateEmployeeMutation, useActivateEmployeeMutation } from './employeesApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -56,6 +57,7 @@ export default function EmployeeListPage() {
   });
 
   const [deactivateEmployee] = useDeactivateEmployeeMutation();
+  const [activateEmployee] = useActivateEmployeeMutation();
 
   const handleDeactivate = async () => {
     if (!deactivateId) return;
@@ -66,6 +68,15 @@ export default function EmployeeListPage() {
       dispatch(showSnackbar({ message: 'Failed to deactivate employee', severity: 'error' }));
     } finally {
       setDeactivateId(null);
+    }
+  };
+
+  const handleActivate = async (id: string) => {
+    try {
+      await activateEmployee(id).unwrap();
+      dispatch(showSnackbar({ message: 'Employee activated', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to activate employee', severity: 'error' }));
     }
   };
 
@@ -160,16 +171,27 @@ export default function EmployeeListPage() {
                           </IconButton>
                         </Tooltip>
                       </PermissionGate>
+                      <PermissionGate permission={Perms.Employees.Edit}>
+                        {!row.isActive && (
+                          <Tooltip title="Activate">
+                            <IconButton size="small" color="success" onClick={() => handleActivate(row.id)}>
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </PermissionGate>
                       <PermissionGate permission={Perms.Employees.Delete}>
                         <Tooltip title="Deactivate">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            disabled={!row.isActive}
-                            onClick={() => setDeactivateId(row.id)}
-                          >
-                            <BlockIcon fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              disabled={!row.isActive}
+                              onClick={() => setDeactivateId(row.id)}
+                            >
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </PermissionGate>
                     </TableCell>

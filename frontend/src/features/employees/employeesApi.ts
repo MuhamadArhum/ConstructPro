@@ -33,6 +33,10 @@ export const employeesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/employees/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Employee'],
     }),
+    activateEmployee: builder.mutation<void, string>({
+      query: (id) => ({ url: `/employees/${id}/activate`, method: 'PATCH' }),
+      invalidatesTags: ['Employee'],
+    }),
     getSalaryHistory: builder.query<SalaryPaymentDto[], string>({
       query: (id) => ({ url: `/employees/${id}/salary-history` }),
       providesTags: ['Employee'],
@@ -60,6 +64,7 @@ export const {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeactivateEmployeeMutation,
+  useActivateEmployeeMutation,
   useGetSalaryHistoryQuery,
   useProcessSalaryMutation,
   useGetAllSalariesQuery,

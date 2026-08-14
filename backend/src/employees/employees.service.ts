@@ -141,12 +141,19 @@ export class EmployeesService {
 
   async deactivate(id: string) {
     await this.findById(id);
-
     const employee = await this.prisma.employee.update({
       where: { id },
       data: { isActive: false },
     });
+    return this.mapEmployee(employee);
+  }
 
+  async activate(id: string) {
+    await this.findById(id);
+    const employee = await this.prisma.employee.update({
+      where: { id },
+      data: { isActive: true },
+    });
     return this.mapEmployee(employee);
   }
 

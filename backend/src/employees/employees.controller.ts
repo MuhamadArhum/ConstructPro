@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -105,6 +106,17 @@ export class EmployeesController {
   @ApiResponse({ status: 404, description: 'Employee not found' })
   deactivate(@Param('id') id: string) {
     return this.employeesService.deactivate(id);
+  }
+
+  @Patch(':id/activate')
+  @HasPermission('Employees.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Re-activate a deactivated employee' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiResponse({ status: 200, description: 'Employee activated successfully' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  activate(@Param('id') id: string) {
+    return this.employeesService.activate(id);
   }
 
   @Get(':id/salary-history')
