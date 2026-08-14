@@ -28,3 +28,4 @@ backend/prisma/constructpro.db
 errors/
 updates.txt
 *.docx
+.claude/settings.local.json
