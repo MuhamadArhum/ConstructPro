@@ -108,6 +108,7 @@ function startBackend(dbPath) {
     JWT_EXPIRES_IN: '8h',
     JWT_REFRESH_DAYS: '7',
     CORS_ORIGINS: `http://localhost:${PORT}`,
+    STATIC_PATH: path.join(backendPath, 'public'),
     ADMIN_EMAIL: 'admin@constructpro.com',
     ADMIN_PASSWORD: 'Admin@123456',
   };

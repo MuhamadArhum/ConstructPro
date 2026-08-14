@@ -40,7 +40,9 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
+      // In esbuild bundle, __dirname is backend/ not backend/dist/
+      // STATIC_PATH env var is set by Electron to the correct public folder path
+      rootPath: process.env.STATIC_PATH || join(__dirname, '..', 'public'),
       exclude: ['/api/{*path}'],
     }),
     PrismaModule,
