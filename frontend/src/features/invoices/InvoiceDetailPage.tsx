@@ -11,7 +11,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetInvoiceQuery, useDeleteInvoiceMutation, useUpdateInvoiceStatusMutation } from './invoiceApi';
+import { INVOICE_STATUS_COLORS } from '../../utils/statusColors';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -20,13 +22,6 @@ const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : 'â€
 
 const BLUEPRINT: [number, number, number] = [14, 42, 71];
 const ORANGE: [number, number, number] = [232, 93, 31];
-
-const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
-  if (s === 'Sent') return 'info';
-  if (s === 'Paid') return 'success';
-  if (s === 'Overdue') return 'error';
-  return 'default';
-};
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -180,6 +175,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Invoices', to: '/invoices' }, { label: invoice.invoiceNumber }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Tooltip title="Back to Invoices">
           <IconButton onClick={() => navigate('/invoices')} aria-label="Back to Invoices"><ArrowBackIcon /></IconButton>
@@ -187,7 +183,7 @@ export default function InvoiceDetailPage() {
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{invoice.invoiceNumber}</Typography>
         </Box>
-        <Chip label={invoice.status} color={statusColor(invoice.status)} />
+        <Chip label={invoice.status} color={INVOICE_STATUS_COLORS[invoice.status] ?? 'default'} />
         <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={handleExportPdf} size="small">
           Export PDF
         </Button>

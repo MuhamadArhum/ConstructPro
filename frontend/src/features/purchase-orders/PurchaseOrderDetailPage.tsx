@@ -11,7 +11,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetPurchaseOrderQuery, useDeletePurchaseOrderMutation, useUpdatePurchaseOrderStatusMutation } from './purchaseOrderApi';
+import { PO_STATUS_COLORS } from '../../utils/statusColors';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -20,13 +22,6 @@ const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : 'â€
 
 const BLUEPRINT: [number, number, number] = [14, 42, 71];
 const ORANGE: [number, number, number] = [232, 93, 31];
-
-const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
-  if (s === 'Sent') return 'info';
-  if (s === 'Received') return 'success';
-  if (s === 'Cancelled') return 'error';
-  return 'default';
-};
 
 export default function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -180,12 +175,13 @@ export default function PurchaseOrderDetailPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Purchase Orders', to: '/purchase-orders' }, { label: po.poNumber }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <IconButton onClick={() => navigate('/purchase-orders')}><ArrowBackIcon /></IconButton>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{po.poNumber}</Typography>
         </Box>
-        <Chip label={po.status} color={statusColor(po.status)} />
+        <Chip label={po.status} color={PO_STATUS_COLORS[po.status] ?? 'default'} />
         <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={handleExportPdf} size="small">
           Export PDF
         </Button>

@@ -16,6 +16,8 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
+import EmptyState from '../../components/common/EmptyState';
 import {
   useGetProjectQuery,
   useDeleteProjectMutation,
@@ -33,18 +35,11 @@ import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
 import ProjectFormDialog from './ProjectFormDialog';
 import type { ProjectStatus } from '../../types/project.types';
+import { PROJECT_STATUS_COLORS } from '../../utils/statusColors';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 const today = () => new Date().toISOString().split('T')[0];
-
-const STATUS_COLORS: Record<ProjectStatus, 'info' | 'success' | 'warning' | 'primary' | 'error'> = {
-  Planning: 'info',
-  Active: 'success',
-  'On Hold': 'warning',
-  Completed: 'primary',
-  Cancelled: 'error',
-};
 
 const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
 
@@ -209,12 +204,13 @@ export default function ProjectDetailPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Projects', to: '/projects' }, { label: project.name }]} />
       <Stack direction="row" sx={{ alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
         <Tooltip title="Back to Projects">
           <IconButton onClick={() => navigate('/projects')} aria-label="Back to Projects"><ArrowBackIcon /></IconButton>
         </Tooltip>
         <Typography variant="h1" sx={{ flex: 1 }}>{project.name}</Typography>
-        <Chip label={project.status} color={STATUS_COLORS[project.status] ?? 'default'} />
+        <Chip label={project.status} color={PROJECT_STATUS_COLORS[project.status] ?? 'default'} />
         <Button startIcon={<EditIcon />} variant="outlined" onClick={() => setEditOpen(true)}>Edit</Button>
         <Button startIcon={<DeleteIcon />} variant="outlined" color="error" onClick={() => setDeleteOpen(true)}>Delete</Button>
       </Stack>
@@ -359,7 +355,7 @@ export default function ProjectDetailPage() {
                       </TableRow>
                     ))}
                     {!project.milestones?.length && (
-                      <TableRow><TableCell colSpan={5} align="center">No milestones</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No milestones yet" actionLabel="Add Milestone" onAction={() => setMilestoneOpen(true)} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -403,7 +399,7 @@ export default function ProjectDetailPage() {
                       </TableRow>
                     ))}
                     {!project.expenses?.length && (
-                      <TableRow><TableCell colSpan={5} align="center">No expenses</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No expenses yet" actionLabel="Add Expense" onAction={() => setExpenseOpen(true)} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -446,7 +442,7 @@ export default function ProjectDetailPage() {
                       </TableRow>
                     ))}
                     {!project.labours?.length && (
-                      <TableRow><TableCell colSpan={5} align="center">No labour assigned</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No labour assigned yet" actionLabel="Assign Labour" onAction={() => setLabourOpen(true)} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -489,7 +485,7 @@ export default function ProjectDetailPage() {
                       </TableRow>
                     ))}
                     {!project.machinery?.length && (
-                      <TableRow><TableCell colSpan={5} align="center">No machinery assigned</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No machinery assigned yet" actionLabel="Assign Machinery" onAction={() => setMachineryOpen(true)} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
