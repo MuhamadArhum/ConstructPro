@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetVehicleByIdQuery, useGetVehicleMaintenanceQuery, useAddVehicleMaintenanceMutation } from './vehicleApi';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -38,6 +39,7 @@ export default function VehicleMaintenancePage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Vehicles', to: '/vehicles' }, { label: vehicle?.name ?? '…' }, { label: 'Maintenance' }]} />
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h1">Vehicle Maintenance</Typography>

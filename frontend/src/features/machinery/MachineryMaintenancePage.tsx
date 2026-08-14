@@ -32,6 +32,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetMachineryByIdQuery, useGetMaintenanceHistoryQuery, useAddMaintenanceMutation } from './machineryApi';
 import type { MaintenanceType } from '../../types/machinery.types';
 
@@ -86,6 +87,7 @@ export default function MachineryMaintenancePage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Machinery', to: '/machinery' }, { label: machinery?.name ?? '…' }, { label: 'Maintenance' }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <Tooltip title="Back to Machinery">
           <IconButton onClick={() => navigate('/machinery')} aria-label="Back to Machinery">

@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetInventoryItemByIdQuery, useGetStockTransactionsQuery, useAddStockTransactionMutation } from './inventoryApi';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import type { StockTransactionType } from '../../types/inventory.types';
 
 const typeColors: Record<StockTransactionType, 'success' | 'error' | 'warning' | 'info'> = { StockIn: 'success', StockOut: 'error', MaterialIssue: 'warning', Adjustment: 'info' };
@@ -44,6 +45,7 @@ export default function StockTransactionPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Inventory', to: '/inventory' }, { label: item?.name ?? '…' }, { label: 'Transactions' }]} />
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h1">Stock Transactions</Typography>

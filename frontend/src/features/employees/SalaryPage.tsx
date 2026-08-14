@@ -30,6 +30,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetEmployeeByIdQuery, useGetSalaryHistoryQuery, useProcessSalaryMutation } from './employeesApi';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -91,6 +92,7 @@ export default function SalaryPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Employees', to: '/employees' }, { label: employee?.fullName ?? '…' }, { label: 'Salary' }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <IconButton onClick={() => navigate('/employees')}>
           <ArrowBackIcon />

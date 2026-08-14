@@ -33,6 +33,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import {
   useGetLabourByIdQuery,
   useGetLabourAttendanceQuery,
@@ -138,6 +139,7 @@ export default function LabourAttendancePage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Labour', to: '/labour' }, { label: labour?.name ?? '…' }, { label: 'Attendance' }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <Tooltip title="Back to Labour">
           <IconButton onClick={() => navigate('/labour')} aria-label="Back to Labour">

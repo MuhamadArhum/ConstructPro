@@ -39,6 +39,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Loader from '../../components/common/Loader';
+import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import {
   useGetSupplierLedgerQuery,
   useAddSupplierTransactionMutation,
@@ -124,6 +125,7 @@ export default function SupplierLedgerPage() {
 
   return (
     <Box>
+      <AppBreadcrumbs crumbs={[{ label: 'Suppliers', to: '/suppliers' }, { label: data?.supplier?.name ?? '…' }, { label: 'Ledger' }]} />
       {/* Page Header */}
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <IconButton onClick={() => navigate('/suppliers')}>
