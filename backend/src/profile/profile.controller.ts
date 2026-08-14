@@ -21,16 +21,19 @@ import {
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto } from './dto/profile.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { HasPermission } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Profile')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get()
+  @HasPermission('Profile.View')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Returns current user profile' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -39,6 +42,7 @@ export class ProfileController {
   }
 
   @Put()
+  @HasPermission('Profile.Edit')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
@@ -51,6 +55,7 @@ export class ProfileController {
   }
 
   @Put('picture')
+  @HasPermission('Profile.Edit')
   @ApiOperation({ summary: 'Upload profile picture' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
