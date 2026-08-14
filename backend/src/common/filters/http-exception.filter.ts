@@ -38,6 +38,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (exception.code === 'P2025') {
         status = HttpStatus.NOT_FOUND;
         message = 'Record not found.';
+      } else if (exception.code === 'P2003') {
+        status = HttpStatus.CONFLICT;
+        message = 'Cannot delete: this record is referenced by other records.';
+      } else if (exception.code === 'P2014') {
+        status = HttpStatus.CONFLICT;
+        message = 'Cannot delete: this record is required by a related record.';
       } else {
         this.logger.error(`Prisma ${exception.code}: ${exception.message}`, exception.stack);
       }

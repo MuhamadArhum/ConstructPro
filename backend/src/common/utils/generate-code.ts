@@ -25,18 +25,29 @@ export async function generateCode(
   const prefix = PREFIXES[entity];
   const model = prisma[entity] as any;
 
-  const last = await model.findFirst({
+  // Load all codes with this prefix and find the max numeric value
+  // (lexicographic desc sort fails for padded numbers like INC-0009 > INC-0010)
+  const existing = await model.findMany({
     where: { code: { startsWith: prefix + '-' } },
-    orderBy: { code: 'desc' },
     select: { code: true },
   });
 
-  let next = 1;
-  if (last?.code) {
-    const parts = last.code.split('-');
+  let maxNum = 0;
+  for (const record of existing) {
+    const parts = (record.code as string).split('-');
     const num = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(num)) next = num + 1;
+    if (!isNaN(num) && num > maxNum) maxNum = num;
   }
 
-  return `${prefix}-${String(next).padStart(4, '0')}`;
+  let next = maxNum + 1;
+  let candidate = `${prefix}-${String(next).padStart(4, '0')}`;
+
+  // Safety: verify uniqueness in case of race condition
+  const conflict = await model.findUnique({ where: { code: candidate } });
+  if (conflict) {
+    next++;
+    candidate = `${prefix}-${String(next).padStart(4, '0')}`;
+  }
+
+  return candidate;
 }
