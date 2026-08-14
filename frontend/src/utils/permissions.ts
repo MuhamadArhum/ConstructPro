@@ -31,13 +31,5 @@ export const Perms = {
   PurchaseOrders: { View: 'PurchaseOrder.View', Manage: 'PurchaseOrder.Manage' },
   Reports: { View: 'Reports.View' },
   Notifications: { View: 'Notifications.View' },
-  Settings: { View: 'Settings.View', Edit: 'Settings.Edit' },
+  Settings: { View: 'Settings.View' },
 } as const;
-
-export function hasPermission(permissions: string[], permission: string): boolean {
-  return permissions.includes(permission);
-}
-
-export function hasAnyPermission(permissions: string[], ...perms: string[]): boolean {
-  return perms.some((p) => permissions.includes(p));
-}
