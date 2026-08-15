@@ -61,7 +61,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "bismarashid098",
+      "owner": "MuhamadArhum",
       "repo": "ConstructPro",
       "releaseType": "release"
     }
