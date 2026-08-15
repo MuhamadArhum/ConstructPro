@@ -165,6 +165,160 @@ function startBackend(dbPath) {
   });
 }
 
+function showUpdatePopup(version) {
+  const popup = new BrowserWindow({
+    width: 420,
+    height: 260,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    parent: mainWindow,
+    modal: true,
+    frame: false,
+    transparent: false,
+    backgroundColor: '#ffffff',
+    icon: path.join(__dirname, 'icon.png'),
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #fff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+  }
+  .header {
+    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    -webkit-app-region: drag;
+  }
+  .icon-wrap {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-wrap svg { width: 24px; height: 24px; }
+  .header-text { color: white; }
+  .header-text h2 { font-size: 16px; font-weight: 700; letter-spacing: 0.3px; }
+  .header-text p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .body {
+    padding: 20px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .body p {
+    color: #424242;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .body p span {
+    color: #1565c0;
+    font-weight: 600;
+  }
+  .note {
+    margin-top: 10px;
+    font-size: 12px !important;
+    color: #9e9e9e !important;
+  }
+  .footer {
+    padding: 0 24px 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  button {
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn-later {
+    background: #f5f5f5;
+    color: #616161;
+  }
+  .btn-later:hover { background: #eeeeee; }
+  .btn-restart {
+    background: #1565c0;
+    color: white;
+    box-shadow: 0 2px 8px rgba(21,101,192,0.35);
+  }
+  .btn-restart:hover { background: #1976d2; box-shadow: 0 4px 12px rgba(21,101,192,0.45); }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h2>ConstructPro</h2>
+      <p>Update Available</p>
+    </div>
+    <div class="badge">v${version}</div>
+  </div>
+  <div class="body">
+    <p>A new version <span>v${version}</span> has been downloaded and is ready to install.</p>
+    <p class="note">The app will restart automatically to apply the update.</p>
+  </div>
+  <div class="footer">
+    <button class="btn-later" onclick="later()">Later</button>
+    <button class="btn-restart" onclick="restart()">Restart Now</button>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+    function restart() { ipcRenderer.send('update-action', 'restart'); }
+    function later() { ipcRenderer.send('update-action', 'later'); }
+  </script>
+</body>
+</html>`;
+
+  popup.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  popup.setMenu(null);
+
+  const { ipcMain } = require('electron');
+  ipcMain.once('update-action', (_, action) => {
+    popup.close();
+    if (action === 'restart') autoUpdater.quitAndInstall();
+  });
+}
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -187,18 +341,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', (info) => {
     log('[updater] Update downloaded:', info.version);
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Update Ready',
-      message: `ConstructPro v${info.version} is ready to install.`,
-      detail: 'The update will be applied the next time you restart the application.',
-      buttons: ['Restart Now', 'Later'],
-      defaultId: 0,
-    }).then(({ response }) => {
-      if (response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    });
+    showUpdatePopup(info.version);
   });
 
   autoUpdater.on('error', (err) => {
