@@ -18,6 +18,32 @@ exports.default = async function afterPack(context) {
     console.log('[afterPack] RunAsNode fuse enabled');
   }
 
-  // node_modules are now handled by extraResources in electron-builder config
-  // (backend-bundle/node_modules is included via extraResources)
+  // Manually copy backend-bundle/node_modules into packaged resources/backend
+  // electron-builder ignores node_modules in extraResources by default
+  const srcNm = path.join(__dirname, '..', 'backend-bundle', 'node_modules');
+  const destNm = path.join(context.appOutDir, 'resources', 'backend', 'node_modules');
+  if (fs.existsSync(srcNm)) {
+    console.log('[afterPack] Copying backend node_modules...');
+    copyDir(srcNm, destNm);
+    console.log('[afterPack] backend node_modules copied');
+  } else {
+    console.warn('[afterPack] WARNING: backend-bundle/node_modules not found!');
+  }
 };
+
+function copyDir(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src)) {
+    const s = path.join(src, entry);
+    const d = path.join(dest, entry);
+    const stat = fs.lstatSync(s);
+    if (stat.isSymbolicLink()) {
+      try { fs.unlinkSync(d); } catch {}
+      fs.symlinkSync(fs.readlinkSync(s), d);
+    } else if (stat.isDirectory()) {
+      copyDir(s, d);
+    } else {
+      fs.copyFileSync(s, d);
+    }
+  }
+}
