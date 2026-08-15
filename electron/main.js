@@ -289,14 +289,43 @@ app.whenReady().then(async () => {
 
   createWindow();
 
+  // Collect backend stderr for error display
+  let backendStderr = '';
+  backendProcess?.stderr?.on('data', (d) => { backendStderr += d.toString(); });
+
+  // Catch page load failures (e.g. backend crashed after waitForBackend resolved)
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    if (!url.startsWith('http://localhost')) return;
+    logErr('[renderer] did-fail-load:', code, desc, url);
+    const logPath = path.join(app.getPath('logs'), 'main.log');
+    const errHtml = `data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>
+      body{background:#b71c1c;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center;padding:20px;flex-direction:column}
+      h2{margin-bottom:12px}pre{background:rgba(0,0,0,.3);padding:12px;border-radius:8px;font-size:.75em;text-align:left;max-width:600px;white-space:pre-wrap;margin-top:12px;word-break:break-all}
+    </style></head><body>
+      <h2>ConstructPro could not load</h2>
+      <p>Error ${code}: ${desc}</p>
+      <pre>Log: ${logPath}\n\nBackend output:\n${backendStderr.slice(-800) || '(none)'}</pre>
+    </body></html>`;
+    mainWindow.loadURL(errHtml);
+  });
+
   try {
     await waitForBackend(`http://localhost:${PORT}/api`);
     log('[startup] Backend ready, loading frontend...');
     mainWindow.loadURL(`http://localhost:${PORT}`);
   } catch (err) {
     logErr('Backend failed to start:', err.message);
+    logErr('Backend stderr:', backendStderr.slice(-1000));
     const logPath = path.join(app.getPath('logs'), 'main.log');
-    mainWindow.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>body{background:#c62828;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center;padding:20px}</style></head><body><div><h2>ConstructPro could not start</h2><p style="margin-top:12px;opacity:0.85">Backend failed to start. Please restart the app.</p><p style="margin-top:12px;font-size:0.8em;opacity:0.7">Log file: ${logPath}</p></div></body></html>`);
+    const errHtml = `data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>
+      body{background:#b71c1c;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:white;text-align:center;padding:20px;flex-direction:column}
+      h2{margin-bottom:12px}pre{background:rgba(0,0,0,.3);padding:12px;border-radius:8px;font-size:.75em;text-align:left;max-width:600px;white-space:pre-wrap;margin-top:12px;word-break:break-all}
+    </style></head><body>
+      <h2>ConstructPro could not start</h2>
+      <p>Backend did not respond after 40 seconds.</p>
+      <pre>Log: ${logPath}\n\nBackend output:\n${backendStderr.slice(-800) || '(none — backend may have crashed immediately)'}</pre>
+    </body></html>`;
+    mainWindow.loadURL(errHtml);
   }
 
   app.on('activate', () => {
