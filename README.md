@@ -35,7 +35,7 @@ A full-featured desktop ERP application for construction businesses, built with 
 
 ## Installation (End Users)
 
-1. Download `ConstructPro Setup 1.0.0.exe`
+1. Download `ConstructPro Setup 1.1.0.exe`
 2. Double-click and follow the installer
 3. Launch **ConstructPro** from the desktop shortcut
 4. Login with default credentials:
@@ -109,7 +109,7 @@ PORT=3000
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist
 ```
 
-Output: `dist-electron/ConstructPro Setup 1.0.0.exe`
+Output: `dist-electron/ConstructPro Setup 1.1.0.exe`
 
 > **Note:** Always use `CSC_IDENTITY_AUTO_DISCOVERY=false` to prevent Windows code-signing from hanging the build.
 
