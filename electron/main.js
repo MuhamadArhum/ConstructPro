@@ -60,39 +60,32 @@ function ensureDatabase() {
 }
 
 function runMigrations(dbPath) {
-  if (!app.isPackaged) return; // dev mein skip karo
-
   const backendPath = getBackendPath();
-  // Prisma CLI is no longer bundled (pruned for size). Use @prisma/client db push instead.
-  // For the bundled production build, schema is already applied at build time — skip migrations.
-  const bundlePath = path.join(backendPath, 'bundle.js');
-  if (fs.existsSync(bundlePath)) {
-    log('[migrations] esbuild bundle detected — schema applied at build time, skipping');
+  const templateDbPath = path.join(backendPath, 'constructpro.db');
+  const migrateScript = app.isPackaged
+    ? path.join(backendPath, 'db-migrate.js')
+    : path.join(__dirname, '..', 'scripts', 'db-migrate.js');
+
+  if (!fs.existsSync(migrateScript)) {
+    log('[migrations] Migration script not found, skipping');
     return;
   }
 
-  const prismaEntry = path.join(backendPath, 'node_modules', 'prisma', 'build', 'index.js');
-  if (!fs.existsSync(prismaEntry)) {
-    log('[migrations] Prisma CLI not found, skipping migrations');
-    return;
-  }
-
-  log('[migrations] Syncing database schema...');
-  const result = spawnSync(process.execPath, [prismaEntry, 'db', 'push'], {
-    cwd: backendPath,
-    env: {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: '1',
-      DATABASE_URL: `file:${dbPath}`,
-    },
+  log('[migrations] Running schema migration...');
+  const result = spawnSync(process.execPath, [migrateScript, dbPath, templateDbPath], {
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
     stdio: 'pipe',
     timeout: 30000,
   });
 
+  const out = result.stdout?.toString().trim();
+  const err = result.stderr?.toString().trim();
+  if (out) log(out);
+  if (err) logErr(err);
   if (result.status === 0) {
-    log('[migrations] Completed successfully');
+    log('[migrations] Migration complete');
   } else {
-    logErr('[migrations] Failed:', result.stderr?.toString()?.trim());
+    logErr('[migrations] Migration exited with code', result.status);
   }
 }
 

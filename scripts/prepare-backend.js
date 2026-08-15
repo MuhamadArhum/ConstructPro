@@ -126,6 +126,13 @@ execSync('npx ts-node --transpile-only src/seed.ts', {
   },
 });
 
+// ─── Copy migration script ────────────────────────────────────────────────────
+const migrateScript = path.join(__dirname, 'db-migrate.js');
+if (fs.existsSync(migrateScript)) {
+  fs.copyFileSync(migrateScript, path.join(STAGE, 'db-migrate.js'));
+  console.log('[prepare-backend] Copied db-migrate.js');
+}
+
 // ─── esbuild bundle ───────────────────────────────────────────────────────────
 console.log('[prepare-backend] Bundling backend with esbuild...');
 execSync('node scripts/bundle-backend.js', {
