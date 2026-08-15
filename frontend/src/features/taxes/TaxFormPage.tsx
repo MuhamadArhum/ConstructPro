@@ -22,7 +22,7 @@ export default function TaxFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetTaxRecordByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextTaxCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextTaxCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateTaxRecordMutation();
   const [update, { isLoading: isUpdating }] = useUpdateTaxRecordMutation();
 

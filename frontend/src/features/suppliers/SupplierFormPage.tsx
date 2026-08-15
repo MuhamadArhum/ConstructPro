@@ -13,7 +13,7 @@ export default function SupplierFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetSupplierByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextSupplierCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextSupplierCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [update, { isLoading: isUpdating }] = useUpdateSupplierMutation();
 

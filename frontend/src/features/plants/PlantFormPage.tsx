@@ -14,7 +14,7 @@ export default function PlantFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetPlantByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextPlantCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextPlantCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreatePlantMutation();
   const [update, { isLoading: isUpdating }] = useUpdatePlantMutation();
 

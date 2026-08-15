@@ -14,7 +14,7 @@ export default function VehicleFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetVehicleByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextVehicleCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextVehicleCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateVehicleMutation();
   const [update, { isLoading: isUpdating }] = useUpdateVehicleMutation();
 

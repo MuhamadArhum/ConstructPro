@@ -21,7 +21,7 @@ export default function EmployeeFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetEmployeeByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextEmployeeCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextEmployeeCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateEmployeeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateEmployeeMutation();
 

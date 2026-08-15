@@ -41,7 +41,7 @@ export default function IncomeFormPage() {
   const { data: existing, isLoading: isLoadingExisting } = useGetIncomeByIdQuery(id ?? '', {
     skip: !isEdit,
   });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateIncomeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateIncomeMutation();
 

@@ -13,7 +13,7 @@ export default function CustomerFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetCustomerByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextCustomerCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextCustomerCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateCustomerMutation();
   const [update, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 

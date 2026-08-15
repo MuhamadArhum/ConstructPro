@@ -40,7 +40,7 @@ export default function ExpenseFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetExpenseByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextExpenseCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextExpenseCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateExpenseMutation();
   const [update, { isLoading: isUpdating }] = useUpdateExpenseMutation();
 

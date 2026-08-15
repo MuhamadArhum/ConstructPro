@@ -26,7 +26,7 @@ export default function MachineryFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetMachineryByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextMachineryCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextMachineryCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateMachineryMutation();
   const [update, { isLoading: isUpdating }] = useUpdateMachineryMutation();
 

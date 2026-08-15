@@ -24,7 +24,7 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: loadingProject } = useGetProjectQuery(projectId ?? '', { skip: !projectId });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextProjectCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextProjectCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const { data: customersData } = useGetCustomersQuery({ pageSize: 100 } as Parameters<typeof useGetCustomersQuery>[0]);
   const [create, { isLoading: isCreating }] = useCreateProjectMutation();
   const [update, { isLoading: isUpdating }] = useUpdateProjectMutation();

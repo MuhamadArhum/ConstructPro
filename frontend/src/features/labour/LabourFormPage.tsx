@@ -21,7 +21,7 @@ export default function LabourFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: isLoadingExisting } = useGetLabourByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextLabourCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextLabourCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateLabourMutation();
   const [update, { isLoading: isUpdating }] = useUpdateLabourMutation();
 

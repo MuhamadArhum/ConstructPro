@@ -13,7 +13,7 @@ export default function InventoryFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetInventoryItemByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextInventoryCodeQuery(undefined, { skip: isEdit });
+  const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextInventoryCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateInventoryItemMutation();
   const [update, { isLoading: isUpdating }] = useUpdateInventoryItemMutation();
 
