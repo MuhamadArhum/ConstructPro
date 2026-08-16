@@ -80,7 +80,7 @@ fs.writeFileSync(path.join(STAGE, 'package.json'), JSON.stringify(minimalPkg, nu
 
 // ─── Install only the minimal packages ───────────────────────────────────────
 console.log('[prepare-backend] Installing minimal packages (native + Prisma only)...');
-execSync('npm install --no-audit --no-fund', {
+execSync('npm install --no-audit --no-fund --legacy-peer-deps', {
   cwd: STAGE,
   stdio: 'inherit',
 });
