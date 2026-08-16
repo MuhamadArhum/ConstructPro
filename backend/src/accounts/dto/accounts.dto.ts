@@ -36,6 +36,16 @@ export class CreateAccountDto {
   @IsString()
   parentId?: string;
 
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isActive?: boolean;
+
   @ApiPropertyOptional({ example: 'Includes petty cash and bank balances' })
   @IsOptional()
   @IsString()
@@ -43,6 +53,11 @@ export class CreateAccountDto {
 }
 
 export class UpdateAccountDto {
+  @ApiPropertyOptional({ example: '1001' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
   @ApiPropertyOptional({ example: 'Cash and Cash Equivalents' })
   @IsOptional()
   @IsString()
@@ -180,6 +195,11 @@ export class JournalEntryQueryDto {
   @IsNumber()
   @Min(1)
   pageSize?: number = 10;
+
+  @ApiPropertyOptional({ example: 'JE-001' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({ example: '2026-01-01' })
   @IsOptional()

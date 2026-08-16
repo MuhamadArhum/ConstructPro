@@ -105,6 +105,7 @@ export class AccountsService {
         accountType: dto.accountType,
         parentId: dto.parentId ?? null,
         description: dto.description,
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
       include: { children: true },
     });
@@ -117,6 +118,7 @@ export class AccountsService {
 
     const data: any = {};
 
+    if (dto.code !== undefined) data.code = dto.code;
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.accountType !== undefined) data.accountType = dto.accountType;
     if (dto.parentId !== undefined) data.parentId = dto.parentId;
@@ -158,13 +160,23 @@ export class AccountsService {
 
     const where: any = {};
 
+    if (query.search) {
+      where.OR = [
+        { entryNumber: { contains: query.search } },
+        { description: { contains: query.search } },
+        { reference: { contains: query.search } },
+      ];
+    }
+
     if (query.startDate || query.endDate) {
       where.date = {};
       if (query.startDate) {
         where.date.gte = new Date(query.startDate);
       }
       if (query.endDate) {
-        where.date.lte = new Date(query.endDate);
+        const end = new Date(query.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.date.lte = end;
       }
     }
 
@@ -294,6 +306,8 @@ export class AccountsService {
         ...line,
         debit: Number(line.debit),
         credit: Number(line.credit),
+        accountCode: line.account?.code ?? '',
+        accountName: line.account?.name ?? '',
       })),
     };
   }

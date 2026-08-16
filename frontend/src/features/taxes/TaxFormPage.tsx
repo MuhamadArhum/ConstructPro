@@ -8,11 +8,11 @@ import { useCreateTaxRecordMutation, useGetTaxRecordByIdQuery, useUpdateTaxRecor
 import type { TaxType } from '../../types/tax.types';
 
 const taxTypes: { value: TaxType; label: string }[] = [
-  { value: 'SalesTax', label: 'Sales Tax' },
-  { value: 'IncomeTax', label: 'Income Tax' },
-  { value: 'PRA', label: 'PRA' },
-  { value: 'WithholdingTax', label: 'Withholding Tax (WHT)' },
-  { value: 'SecurityDeposit', label: 'Security Deposit' },
+  { value: 'VAT', label: 'VAT' },
+  { value: 'GST', label: 'GST' },
+  { value: 'Income', label: 'Income Tax' },
+  { value: 'Withholding', label: 'Withholding Tax (WHT)' },
+  { value: 'Other', label: 'Other' },
 ];
 
 export default function TaxFormPage() {
@@ -27,7 +27,7 @@ export default function TaxFormPage() {
   const [update, { isLoading: isUpdating }] = useUpdateTaxRecordMutation();
 
   const [code, setCode] = useState('');
-  const [taxType, setTaxType] = useState<TaxType>('SalesTax');
+  const [taxType, setTaxType] = useState<TaxType>('VAT');
   const [amount, setAmount] = useState('');
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');

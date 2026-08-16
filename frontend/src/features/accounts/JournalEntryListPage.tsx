@@ -18,11 +18,11 @@ export default function JournalEntryListPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const todayStr = new Date().toISOString().split('T')[0];
-  const [fromDate, setFromDate] = useState(todayStr);
-  const [toDate, setToDate] = useState(todayStr);
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useGetJournalEntriesQuery({ pageNumber: page + 1, pageSize: rowsPerPage, search: search || undefined, fromDate: fromDate || undefined, toDate: toDate || undefined });
+  const { data, isLoading } = useGetJournalEntriesQuery({ pageNumber: page + 1, pageSize: rowsPerPage, search: search || undefined, startDate: startDate || undefined, endDate: endDate || undefined });
   const [deleteEntry] = useDeleteJournalEntryMutation();
 
   const handleDelete = async () => {
@@ -44,8 +44,8 @@ export default function JournalEntryListPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField label="Search" size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} sx={{ minWidth: 200 }} />
-          <TextField label="From Date" type="date" size="small" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true } }} />
-          <TextField label="To Date" type="date" size="small" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true } }} />
+          <TextField label="From Date" type="date" size="small" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true } }} />
+          <TextField label="To Date" type="date" size="small" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true } }} />
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">

@@ -76,7 +76,7 @@ export interface JournalEntryQuery {
   pageNumber?: number;
   pageSize?: number;
   search?: string;
-  fromDate?: string;
-  toDate?: string;
+  startDate?: string;
+  endDate?: string;
   isPosted?: boolean;
 }

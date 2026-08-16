@@ -1,4 +1,4 @@
-export type TaxType = 'SalesTax' | 'IncomeTax' | 'PRA' | 'WithholdingTax' | 'SecurityDeposit';
+export type TaxType = 'VAT' | 'GST' | 'Income' | 'Withholding' | 'Other';
 
 export interface TaxRecordDto {
   id: string;

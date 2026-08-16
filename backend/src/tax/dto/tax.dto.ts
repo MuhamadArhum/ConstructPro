@@ -59,6 +59,21 @@ export class CreateTaxDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isPaid?: boolean;
+
+  @ApiPropertyOptional({ example: '2026-08-10' })
+  @IsOptional()
+  @IsDateString()
+  paidDate?: string;
 }
 
 export class UpdateTaxDto {

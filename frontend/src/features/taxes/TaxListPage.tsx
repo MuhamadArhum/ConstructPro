@@ -13,7 +13,7 @@ import { useGetTaxRecordsQuery, useGetTaxSummaryQuery, useDeleteTaxRecordMutatio
 import type { TaxType } from '../../types/tax.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
-const taxTypeLabels: Record<TaxType, string> = { SalesTax: 'Sales Tax', IncomeTax: 'Income Tax', PRA: 'PRA', WithholdingTax: 'Withholding Tax (WHT)', SecurityDeposit: 'Security Deposit' };
+const taxTypeLabels: Record<TaxType, string> = { VAT: 'VAT', GST: 'GST', Income: 'Income Tax', Withholding: 'Withholding Tax (WHT)', Other: 'Other' };
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
 export default function TaxListPage() {
