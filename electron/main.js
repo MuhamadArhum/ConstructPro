@@ -167,8 +167,8 @@ function startBackend(dbPath) {
 
 function showUpdatePopup(version) {
   const popup = new BrowserWindow({
-    width: 420,
-    height: 260,
+    width: 440,
+    height: 280,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -177,7 +177,7 @@ function showUpdatePopup(version) {
     modal: true,
     frame: false,
     transparent: false,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F5F2E8',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
@@ -192,64 +192,98 @@ function showUpdatePopup(version) {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #F5F2E8;
     height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
+    border: 1px solid #D3CDBA;
   }
   .header {
-    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
-    padding: 20px 24px 16px;
+    background: #0E2A47;
+    padding: 18px 22px;
     display: flex;
     align-items: center;
     gap: 14px;
     -webkit-app-region: drag;
+    flex-shrink: 0;
   }
   .icon-wrap {
-    width: 44px; height: 44px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 10px;
+    width: 40px; height: 40px;
+    background: rgba(232,93,31,0.2);
+    border: 1px solid rgba(232,93,31,0.4);
+    border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .icon-wrap svg { width: 24px; height: 24px; }
-  .header-text { color: white; }
-  .header-text h2 { font-size: 16px; font-weight: 700; letter-spacing: 0.3px; }
-  .header-text p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .icon-wrap svg { width: 22px; height: 22px; }
+  .header-text { flex: 1; }
+  .header-text .app-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ffffff;
+    line-height: 1;
+  }
+  .header-text .sub {
+    font-size: 11px;
+    color: #9AC6E8;
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
   .badge {
-    margin-left: auto;
-    background: rgba(255,255,255,0.2);
+    background: #E85D1F;
     color: white;
     font-size: 11px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
+    font-weight: 700;
+    padding: 4px 11px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .divider-line {
+    height: 2px;
+    background: #E85D1F;
+    width: 100%;
     flex-shrink: 0;
   }
   .body {
-    padding: 20px 24px;
+    padding: 22px 24px 18px;
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 10px;
+  }
+  .update-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .update-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #E85D1F;
+    flex-shrink: 0;
   }
   .body p {
-    color: #424242;
+    color: #14181B;
     font-size: 13.5px;
-    line-height: 1.6;
+    line-height: 1.55;
   }
-  .body p span {
-    color: #1565c0;
-    font-weight: 600;
+  .body p strong {
+    color: #0E2A47;
+    font-weight: 700;
   }
   .note {
-    margin-top: 10px;
-    font-size: 12px !important;
-    color: #9e9e9e !important;
+    font-size: 11.5px;
+    color: #6B7178;
+    padding-left: 18px;
+    border-left: 2px solid #D3CDBA;
+    line-height: 1.5;
   }
   .footer {
     padding: 0 24px 20px;
@@ -258,48 +292,54 @@ function showUpdatePopup(version) {
     justify-content: flex-end;
   }
   button {
-    padding: 9px 22px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
     border: none;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     transition: all 0.15s;
   }
   .btn-later {
-    background: #f5f5f5;
-    color: #616161;
+    background: transparent;
+    color: #6B7178;
+    border: 1px solid #D3CDBA;
   }
-  .btn-later:hover { background: #eeeeee; }
+  .btn-later:hover { background: #ECE8DB; color: #3B4147; border-color: #b8b0a0; }
   .btn-restart {
-    background: #1565c0;
+    background: #E85D1F;
     color: white;
-    box-shadow: 0 2px 8px rgba(21,101,192,0.35);
   }
-  .btn-restart:hover { background: #1976d2; box-shadow: 0 4px 12px rgba(21,101,192,0.45); }
+  .btn-restart:hover { background: #C24A16; }
 </style>
 </head>
 <body>
   <div class="header">
     <div class="icon-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#E85D1F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
     </div>
     <div class="header-text">
-      <h2>ConstructPro</h2>
-      <p>Update Available</p>
+      <div class="app-name">ConstructPro</div>
+      <div class="sub">Update Ready</div>
     </div>
     <div class="badge">v${version}</div>
   </div>
+  <div class="divider-line"></div>
   <div class="body">
-    <p>A new version <span>v${version}</span> has been downloaded and is ready to install.</p>
-    <p class="note">The app will restart automatically to apply the update.</p>
+    <div class="update-row">
+      <div class="update-dot"></div>
+      <p>Version <strong>v${version}</strong> has been downloaded and is ready to install.</p>
+    </div>
+    <p class="note">The app will close and restart automatically to apply the update. Your data will not be affected.</p>
   </div>
   <div class="footer">
     <button class="btn-later" onclick="later()">Later</button>
-    <button class="btn-restart" onclick="restart()">Restart Now</button>
+    <button class="btn-restart" onclick="restart()">Restart &amp; Install</button>
   </div>
   <script>
     const { ipcRenderer } = require('electron');
