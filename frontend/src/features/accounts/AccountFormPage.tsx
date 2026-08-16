@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
@@ -14,7 +14,7 @@ export default function AccountFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading } = useGetAccountByIdQuery(id ?? '', { skip: !isEdit });
-  const { data: allAccounts } = useGetAccountsQuery({ pageSize: 200 });
+  const { data: allAccounts } = useGetAccountsQuery({ pageSize: 500 });
   const [create, { isLoading: isCreating }] = useCreateAccountMutation();
   const [update, { isLoading: isUpdating }] = useUpdateAccountMutation();
 
@@ -31,6 +31,12 @@ export default function AccountFormPage() {
       setParentId(existing.parentId ?? ''); setIsActive(existing.isActive); setDescription(existing.description ?? '');
     }
   }, [existing]);
+
+  const selectedParent = allAccounts?.items.find((a) => a.id === parentId);
+  const level = selectedParent ? selectedParent.level + 1 : 1;
+
+  // Filter parent options: exclude current account and Level 4 accounts (they can't have children)
+  const parentOptions = allAccounts?.items.filter((a) => a.id !== id && a.level < 4) ?? [];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -66,10 +72,14 @@ export default function AccountFormPage() {
             <FormControl fullWidth>
               <InputLabel>Parent Account</InputLabel>
               <Select label="Parent Account" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-                <MenuItem value="">None</MenuItem>
-                {allAccounts?.items.filter(a => a.id !== id).map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name}</MenuItem>)}
+                <MenuItem value="">None (Root Account — Level 1)</MenuItem>
+                {parentOptions.map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name} (Level {a.level})</MenuItem>)}
               </Select>
             </FormControl>
+            <Alert severity="info" sx={{ py: 0.5 }}>
+              This account will be created at <strong>Level {level}</strong>
+              {level === 4 ? ' — Transactions can be posted to this account' : ' — Summary account (no direct transactions)'}
+            </Alert>
             <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth multiline rows={2} />
             <FormControlLabel control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />} label="Active" />
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>

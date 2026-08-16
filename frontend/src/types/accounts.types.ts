@@ -11,6 +11,7 @@ export interface ChartOfAccountDto {
   isActive: boolean;
   description?: string;
   balance: number;
+  level: number;
   createdAt: string;
 }
 
@@ -31,6 +32,30 @@ export interface AccountQuery {
   search?: string;
   accountType?: string;
   isActive?: boolean;
+  level?: number;
+  level4Only?: boolean;
+}
+
+export interface LedgerEntryDto {
+  id: string;
+  date: string;
+  entryNumber: string;
+  description?: string;
+  reference?: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
+
+export interface AccountLedgerDto {
+  account: ChartOfAccountDto;
+  entries: LedgerEntryDto[];
+  closingBalance: number;
+}
+
+export interface LedgerQuery {
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface JournalEntryLineDto {

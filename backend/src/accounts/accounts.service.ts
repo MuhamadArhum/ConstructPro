@@ -11,6 +11,7 @@ import {
   AccountQueryDto,
   CreateJournalEntryDto,
   JournalEntryQueryDto,
+  LedgerQueryDto,
 } from './dto/accounts.dto';
 
 @Injectable()
@@ -39,6 +40,14 @@ export class AccountsService {
 
     if (query.isActive !== undefined) {
       where.isActive = query.isActive;
+    }
+
+    if (query.level !== undefined) {
+      where.level = query.level;
+    }
+
+    if (query.level4Only === true) {
+      where.level = 4;
     }
 
     const [accounts, total] = await Promise.all([
@@ -89,12 +98,21 @@ export class AccountsService {
       throw new ConflictException(`Account with code '${dto.code}' already exists`);
     }
 
+    const level = await this.getAccountLevel(dto.parentId);
+
+    if (level > 4) {
+      throw new BadRequestException(`Cannot create account: maximum hierarchy depth is 4 levels. The selected parent is already at level ${level - 1}.`);
+    }
+
     if (dto.parentId) {
       const parent = await this.prisma.chartOfAccount.findUnique({
         where: { id: dto.parentId },
       });
       if (!parent) {
         throw new NotFoundException(`Parent account with id ${dto.parentId} not found`);
+      }
+      if (parent.level === 4) {
+        throw new BadRequestException(`Cannot create a child of a Level 4 account. Level 4 accounts are leaf accounts and cannot have children.`);
       }
     }
 
@@ -105,9 +123,10 @@ export class AccountsService {
         accountType: dto.accountType,
         parentId: dto.parentId ?? null,
         description: dto.description,
+        level,
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
-      include: { children: true },
+      include: { children: true, parent: true },
     });
 
     return this.mapAccount(account);
@@ -121,14 +140,28 @@ export class AccountsService {
     if (dto.code !== undefined) data.code = dto.code;
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.accountType !== undefined) data.accountType = dto.accountType;
-    if (dto.parentId !== undefined) data.parentId = dto.parentId;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.description !== undefined) data.description = dto.description;
+
+    if (dto.parentId !== undefined) {
+      data.parentId = dto.parentId || null;
+      const newLevel = await this.getAccountLevel(dto.parentId || undefined);
+      if (newLevel > 4) {
+        throw new BadRequestException(`Cannot move account: maximum hierarchy depth is 4 levels.`);
+      }
+      if (dto.parentId) {
+        const parent = await this.prisma.chartOfAccount.findUnique({ where: { id: dto.parentId } });
+        if (parent && parent.level === 4) {
+          throw new BadRequestException(`Cannot set a Level 4 account as parent. Level 4 accounts are leaf accounts and cannot have children.`);
+        }
+      }
+      data.level = newLevel;
+    }
 
     const account = await this.prisma.chartOfAccount.update({
       where: { id },
       data,
-      include: { children: true },
+      include: { children: true, parent: true },
     });
 
     return this.mapAccount(account);
@@ -236,6 +269,13 @@ export class AccountsService {
       throw new BadRequestException('Journal entry must have at least one line');
     }
 
+    // Validate all accounts are level 4
+    for (const line of dto.lines) {
+      const account = await this.prisma.chartOfAccount.findUnique({ where: { id: line.accountId } });
+      if (!account) throw new BadRequestException(`Account ${line.accountId} not found`);
+      if (account.level !== 4) throw new BadRequestException(`Account "${account.name}" is level ${account.level}. Only Level 4 accounts can be used in journal entries.`);
+    }
+
     const totalDebit = dto.lines.reduce((sum, l) => sum + (l.debit ?? 0), 0);
     const totalCredit = dto.lines.reduce((sum, l) => sum + (l.credit ?? 0), 0);
 
@@ -286,9 +326,96 @@ export class AccountsService {
     return { message: 'Journal entry deleted successfully' };
   }
 
+  // ─── Helpers ──────────────────────────────────────────────────────
+
+  private async getAccountLevel(parentId?: string): Promise<number> {
+    if (!parentId) return 1;
+    const parent = await this.prisma.chartOfAccount.findUnique({ where: { id: parentId } });
+    if (!parent) return 1;
+    return parent.level + 1;
+  }
+
+  private async computeBalance(account: any): Promise<number> {
+    if (account.level !== 4) return 0;
+    const lines = await this.prisma.journalEntryLine.aggregate({
+      where: { accountId: account.id },
+      _sum: { debit: true, credit: true },
+    });
+    const debit = Number(lines._sum.debit ?? 0);
+    const credit = Number(lines._sum.credit ?? 0);
+    if (account.accountType === 'Asset' || account.accountType === 'Expense') {
+      return debit - credit;
+    }
+    return credit - debit;
+  }
+
+  // ─── Ledger ───────────────────────────────────────────────────────
+
+  async getAccountLedger(id: string, query: LedgerQueryDto) {
+    const account = await this.findAccountById(id);
+    if (account.level !== 4) throw new BadRequestException('Ledger is only available for Level 4 accounts');
+
+    const where: any = { accountId: id };
+    if (query.startDate || query.endDate) {
+      where.journalEntry = { date: {} };
+      if (query.startDate) where.journalEntry.date.gte = new Date(query.startDate);
+      if (query.endDate) {
+        const end = new Date(query.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.journalEntry.date.lte = end;
+      }
+    }
+
+    const lines = await this.prisma.journalEntryLine.findMany({
+      where,
+      include: { journalEntry: true },
+      orderBy: { journalEntry: { date: 'asc' } },
+    });
+
+    let runningBalance = 0;
+    const isDebitNormal = account.accountType === 'Asset' || account.accountType === 'Expense';
+
+    const entries = lines.map((line) => {
+      const debit = Number(line.debit);
+      const credit = Number(line.credit);
+      if (isDebitNormal) runningBalance += debit - credit;
+      else runningBalance += credit - debit;
+      return {
+        id: line.id,
+        date: line.journalEntry.date,
+        entryNumber: line.journalEntry.entryNumber,
+        description: line.journalEntry.description ?? line.description,
+        reference: line.journalEntry.reference,
+        debit,
+        credit,
+        balance: runningBalance,
+      };
+    });
+
+    return { account, entries, closingBalance: runningBalance };
+  }
+
+  async getLevel4Accounts() {
+    const accounts = await this.prisma.chartOfAccount.findMany({
+      where: { level: 4, isActive: true },
+      orderBy: { code: 'asc' },
+      include: { parent: true },
+    });
+    return accounts.map((a) => this.mapAccountSync(a));
+  }
+
   // ─── Mappers ──────────────────────────────────────────────────────
 
   private mapAccount(account: any) {
+    return {
+      ...account,
+      accountTypeDisplay: account.accountType,
+      parentName: account.parent?.name ?? null,
+      balance: 0,
+    };
+  }
+
+  private mapAccountSync(account: any) {
     return {
       ...account,
       accountTypeDisplay: account.accountType,
