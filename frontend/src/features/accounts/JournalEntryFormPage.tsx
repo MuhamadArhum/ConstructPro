@@ -5,14 +5,14 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import { useCreateJournalEntryMutation, useGetAccountsQuery } from './accountsApi';
+import { useCreateJournalEntryMutation, useGetLevel4AccountsQuery } from './accountsApi';
 import type { CreateJournalEntryLineRequest } from '../../types/accounts.types';
 
 export default function JournalEntryFormPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { data: accounts } = useGetAccountsQuery({ pageSize: 200, isActive: true });
+  const { data: accounts } = useGetLevel4AccountsQuery();
   const [createEntry, { isLoading }] = useCreateJournalEntryMutation();
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -70,7 +70,7 @@ export default function JournalEntryFormPage() {
                       <FormControl fullWidth size="small">
                         <Select value={line.accountId} onChange={(e) => updateLine(index, 'accountId', e.target.value)} displayEmpty>
                           <MenuItem value=""><em>Select Account</em></MenuItem>
-                          {accounts?.items?.map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name}</MenuItem>)}
+                          {accounts?.map((a) => <MenuItem key={a.id} value={a.id}>{a.code} — {a.name}</MenuItem>)}
                         </Select>
                       </FormControl>
                     </TableCell>

@@ -504,6 +504,7 @@ model ChartOfAccount {
   accountType AccountType
   parentId    String?
   isActive    Boolean            @default(true)
+  level       Int                @default(1)
   description String?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt

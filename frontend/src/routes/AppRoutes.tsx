@@ -62,6 +62,7 @@ const TaxListPage           = lazy(() => import('../features/taxes/TaxListPage')
 const TaxFormPage           = lazy(() => import('../features/taxes/TaxFormPage'));
 const ChartOfAccountsPage   = lazy(() => import('../features/accounts/ChartOfAccountsPage'));
 const AccountFormPage       = lazy(() => import('../features/accounts/AccountFormPage'));
+const AccountLedgerPage     = lazy(() => import('../features/accounts/AccountLedgerPage'));
 const JournalEntryListPage  = lazy(() => import('../features/accounts/JournalEntryListPage'));
 const JournalEntryFormPage  = lazy(() => import('../features/accounts/JournalEntryFormPage'));
 
@@ -184,11 +185,12 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Accounts.View} />}>
-            <Route path="/accounts"              element={<S><ChartOfAccountsPage /></S>} />
-            <Route path="/accounts/new"          element={<S><AccountFormPage /></S>} />
-            <Route path="/accounts/:id/edit"     element={<S><AccountFormPage /></S>} />
-            <Route path="/accounts/journal"      element={<S><JournalEntryListPage /></S>} />
-            <Route path="/accounts/journal/new"  element={<S><JournalEntryFormPage /></S>} />
+            <Route path="/accounts"                          element={<S><ChartOfAccountsPage /></S>} />
+            <Route path="/accounts/new"                      element={<S><AccountFormPage /></S>} />
+            <Route path="/accounts/:id/edit"                 element={<S><AccountFormPage /></S>} />
+            <Route path="/accounts/chart/:id/ledger"         element={<S><AccountLedgerPage /></S>} />
+            <Route path="/accounts/journal"                  element={<S><JournalEntryListPage /></S>} />
+            <Route path="/accounts/journal/new"              element={<S><JournalEntryFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Invoices.View} />}>

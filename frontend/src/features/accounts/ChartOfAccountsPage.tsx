@@ -4,6 +4,7 @@ import TableSkeleton from '../../components/common/TableSkeleton';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -23,9 +24,16 @@ export default function ChartOfAccountsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [search, setSearch] = useState('');
   const [accountType, setAccountType] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useGetAccountsQuery({ pageNumber: page + 1, pageSize: rowsPerPage, search: search || undefined, accountType: accountType || undefined });
+  const { data, isLoading } = useGetAccountsQuery({
+    pageNumber: page + 1,
+    pageSize: rowsPerPage,
+    search: search || undefined,
+    accountType: accountType || undefined,
+    level: levelFilter ? Number(levelFilter) : undefined,
+  });
   const [deleteAccount] = useDeleteAccountMutation();
 
   const handleDelete = async () => {
@@ -56,29 +64,47 @@ export default function ChartOfAccountsPage() {
               {(['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'] as AccountType[]).map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
           </FormControl>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 130 } }}>
+            <InputLabel>Level</InputLabel>
+            <Select label="Level" value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setPage(0); }}>
+              <MenuItem value="">All Levels</MenuItem>
+              <MenuItem value="1">Level 1</MenuItem>
+              <MenuItem value="2">Level 2</MenuItem>
+              <MenuItem value="3">Level 3</MenuItem>
+              <MenuItem value="4">Level 4 (Leaf)</MenuItem>
+            </Select>
+          </FormControl>
         </Stack>
       </Paper>
       <TableContainer component={Paper} variant="outlined">
         <Table size="small">
-          <TableHead><TableRow><TableCell>Code</TableCell><TableCell>Name</TableCell><TableCell>Type</TableCell><TableCell>Parent</TableCell><TableCell align="right">Balance</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>Code</TableCell><TableCell>Name</TableCell><TableCell>Level</TableCell><TableCell>Type</TableCell><TableCell>Parent</TableCell><TableCell align="right">Balance</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
           <TableBody>
-            {isLoading ? <TableSkeleton cols={7} /> : (
+            {isLoading ? <TableSkeleton cols={8} /> : (
               <>
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
                     <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.code}</TableCell>
-                    <TableCell>{row.name}</TableCell>
+                    <TableCell sx={{ paddingLeft: `${(row.level - 1) * 16 + 8}px` }}>{row.name}</TableCell>
+                    <TableCell><Chip label={`L${row.level}`} size="small" variant="outlined" color={row.level === 4 ? 'success' : 'default'} /></TableCell>
                     <TableCell><Chip label={row.accountTypeDisplay} color={typeColors[row.accountType]} size="small" /></TableCell>
                     <TableCell>{row.parentName ?? '-'}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(row.balance)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{row.level === 4 ? fmt(row.balance) : '-'}</TableCell>
                     <TableCell><Chip label={row.isActive ? 'Active' : 'Inactive'} color={row.isActive ? 'success' : 'default'} size="small" /></TableCell>
                     <TableCell align="right">
+                      {row.level === 4 && (
+                        <Tooltip title="View Ledger">
+                          <IconButton size="small" color="primary" onClick={() => navigate(`/accounts/chart/${row.id}/ledger`)}>
+                            <ReceiptLongIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <PermissionGate permission={Perms.Accounts.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/accounts/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                       <PermissionGate permission={Perms.Accounts.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.items.length && <TableRow><TableCell colSpan={7} align="center">No accounts found</TableCell></TableRow>}
+                {!data?.items.length && <TableRow><TableCell colSpan={8} align="center">No accounts found</TableCell></TableRow>}
               </>
             )}
           </TableBody>

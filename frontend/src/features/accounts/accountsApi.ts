@@ -1,6 +1,6 @@
 import { baseApi } from '../../api/baseApi';
 import type { PaginatedList } from '../../types/common.types';
-import type { ChartOfAccountDto, CreateChartOfAccountRequest, UpdateChartOfAccountRequest, AccountQuery, JournalEntryDto, CreateJournalEntryRequest, JournalEntryQuery } from '../../types/accounts.types';
+import type { ChartOfAccountDto, CreateChartOfAccountRequest, UpdateChartOfAccountRequest, AccountQuery, JournalEntryDto, CreateJournalEntryRequest, JournalEntryQuery, AccountLedgerDto, LedgerQuery } from '../../types/accounts.types';
 
 export const accountsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -40,10 +40,19 @@ export const accountsApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/accounts/journal/${id}`, method: 'DELETE' }),
       invalidatesTags: ['JournalEntry', 'Account'],
     }),
+    getLevel4Accounts: builder.query<ChartOfAccountDto[], void>({
+      query: () => ({ url: '/accounts/chart/level4' }),
+      providesTags: ['Account'],
+    }),
+    getAccountLedger: builder.query<AccountLedgerDto, { id: string; params?: LedgerQuery }>({
+      query: ({ id, params }) => ({ url: `/accounts/chart/${id}/ledger`, params }),
+      providesTags: (_r, _e, { id }) => [{ type: 'Account' as const, id }],
+    }),
   }),
 });
 
 export const {
   useGetAccountsQuery, useGetAccountByIdQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation,
   useGetJournalEntriesQuery, useGetJournalEntryByIdQuery, useCreateJournalEntryMutation, useDeleteJournalEntryMutation,
+  useGetLevel4AccountsQuery, useGetAccountLedgerQuery,
 } = accountsApi;

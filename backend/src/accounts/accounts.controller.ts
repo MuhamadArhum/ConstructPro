@@ -25,6 +25,7 @@ import {
   AccountQueryDto,
   CreateJournalEntryDto,
   JournalEntryQueryDto,
+  LedgerQueryDto,
 } from './dto/accounts.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -46,6 +47,24 @@ export class AccountsController {
   @ApiResponse({ status: 200, description: 'Returns paginated chart of accounts' })
   findAllAccounts(@Query() query: AccountQueryDto) {
     return this.accountsService.findAllAccounts(query);
+  }
+
+  @Get('chart/level4')
+  @HasPermission('Accounts.View')
+  @ApiOperation({ summary: 'Get all active Level 4 accounts (leaf accounts for journal entries)' })
+  @ApiResponse({ status: 200, description: 'Returns list of Level 4 accounts' })
+  getLevel4Accounts() {
+    return this.accountsService.getLevel4Accounts();
+  }
+
+  @Get('chart/:id/ledger')
+  @HasPermission('Accounts.View')
+  @ApiOperation({ summary: 'Get account ledger with running balance (Level 4 only)' })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({ status: 200, description: 'Returns ledger entries with running balance' })
+  @ApiResponse({ status: 400, description: 'Account is not Level 4' })
+  getAccountLedger(@Param('id') id: string, @Query() query: LedgerQueryDto) {
+    return this.accountsService.getAccountLedger(id, query);
   }
 
   @Get('chart/:id')
