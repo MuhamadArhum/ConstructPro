@@ -91,7 +91,7 @@ export default function PlantFormPage() {
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField label="Serial Number" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} fullWidth />
-              <FormControl fullWidth><InputLabel>Status</InputLabel><Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as PlantStatus)}><MenuItem value="Active">Active</MenuItem><MenuItem value="UnderMaintenance">Under Maintenance</MenuItem><MenuItem value="Disposed">Disposed</MenuItem></Select></FormControl>
+              <FormControl fullWidth><InputLabel>Status</InputLabel><Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as PlantStatus)}><MenuItem value="Active">Active</MenuItem><MenuItem value="Inactive">Inactive</MenuItem><MenuItem value="Maintenance">Under Maintenance</MenuItem><MenuItem value="Retired">Retired / Disposed</MenuItem></Select></FormControl>
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField label="Purchase Price" type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />

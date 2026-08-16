@@ -1,4 +1,4 @@
-export type StockTransactionType = 'StockIn' | 'StockOut' | 'MaterialIssue' | 'Adjustment';
+export type StockTransactionType = 'In' | 'Out' | 'Adjustment';
 
 export interface InventoryItemDto {
   id: string;

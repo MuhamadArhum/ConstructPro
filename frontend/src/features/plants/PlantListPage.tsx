@@ -13,7 +13,7 @@ import { useGetPlantsQuery, useDeletePlantMutation } from './plantApi';
 import type { PlantStatus } from '../../types/plant.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
-const statusColors: Record<PlantStatus, 'success' | 'warning' | 'error'> = { Active: 'success', UnderMaintenance: 'warning', Disposed: 'error' };
+const statusColors: Record<PlantStatus, 'success' | 'warning' | 'error' | 'default'> = { Active: 'success', Inactive: 'default', Maintenance: 'warning', Retired: 'error' };
 const fmt = (n?: number) => n != null ? `PKR ${n.toLocaleString()}` : '-';
 
 export default function PlantListPage() {
@@ -51,8 +51,9 @@ export default function PlantListPage() {
             <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
               <MenuItem value="Active">Active</MenuItem>
-              <MenuItem value="UnderMaintenance">Under Maintenance</MenuItem>
-              <MenuItem value="Disposed">Disposed</MenuItem>
+              <MenuItem value="Inactive">Inactive</MenuItem>
+              <MenuItem value="Maintenance">Under Maintenance</MenuItem>
+              <MenuItem value="Retired">Retired / Disposed</MenuItem>
             </Select>
           </FormControl>
         </Stack>

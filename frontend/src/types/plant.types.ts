@@ -1,4 +1,4 @@
-export type PlantStatus = 'Active' | 'UnderMaintenance' | 'Disposed';
+export type PlantStatus = 'Active' | 'Inactive' | 'Maintenance' | 'Retired';
 
 export interface PlantDto {
   id: string;

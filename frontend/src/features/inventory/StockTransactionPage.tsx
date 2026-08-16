@@ -8,7 +8,7 @@ import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import type { StockTransactionType } from '../../types/inventory.types';
 
-const typeColors: Record<StockTransactionType, 'success' | 'error' | 'warning' | 'info'> = { StockIn: 'success', StockOut: 'error', MaterialIssue: 'warning', Adjustment: 'info' };
+const typeColors: Record<StockTransactionType, 'success' | 'error' | 'info'> = { In: 'success', Out: 'error', Adjustment: 'info' };
 
 export default function StockTransactionPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +19,7 @@ export default function StockTransactionPage() {
   const { data: transactions, isLoading: loadingTxns } = useGetStockTransactionsQuery(id ?? '', { skip: !id });
   const [addTransaction, { isLoading: isAdding }] = useAddStockTransactionMutation();
 
-  const [type, setType] = useState<StockTransactionType>('StockIn');
+  const [type, setType] = useState<StockTransactionType>('In');
   const [quantity, setQuantity] = useState('');
   const [unitPrice, setUnitPrice] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -64,9 +64,8 @@ export default function StockTransactionPage() {
               <FormControl fullWidth required>
                 <InputLabel>Type</InputLabel>
                 <Select label="Type" value={type} onChange={(e) => setType(e.target.value as StockTransactionType)}>
-                  <MenuItem value="StockIn">Stock In</MenuItem>
-                  <MenuItem value="StockOut">Stock Out</MenuItem>
-                  <MenuItem value="MaterialIssue">Material Issue</MenuItem>
+                  <MenuItem value="In">Stock In</MenuItem>
+                  <MenuItem value="Out">Stock Out</MenuItem>
                   <MenuItem value="Adjustment">Adjustment</MenuItem>
                 </Select>
               </FormControl>
