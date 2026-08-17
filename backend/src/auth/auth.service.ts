@@ -29,8 +29,16 @@ export class AuthService {
 
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
 
-    if (user.lockoutEnd && user.lockoutEnd > new Date()) {
-      throw new UnauthorizedException('Account is locked. Try again later.');
+    if (user.lockoutEnd) {
+      if (user.lockoutEnd > new Date()) {
+        throw new UnauthorizedException('Account is locked. Try again later.');
+      }
+      // Lockout expired — reset counter so expired lockout doesn't accumulate
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { accessFailedCount: 0, lockoutEnd: null },
+      });
+      user.accessFailedCount = 0;
     }
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
@@ -122,10 +130,6 @@ export class AuthService {
       where: { id: user.id },
       data: { passwordResetToken: token, passwordResetTokenExpiry: expiry },
     });
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[Password Reset] Token generated for ${user.email}`);
-    }
 
     return { message: 'If that email exists, a reset link has been sent.' };
   }

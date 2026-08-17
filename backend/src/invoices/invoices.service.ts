@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateInvoiceDto,
@@ -15,36 +15,39 @@ export class InvoicesService {
     pageSize = 10,
     status?: string,
     customerId?: string,
+    search?: string,
   ) {
-    try {
-      const skip = (page - 1) * pageSize;
-      const where: any = {};
+    const skip = (page - 1) * pageSize;
+    const where: any = {};
 
-      if (status) where.status = status;
-      if (customerId) where.customerId = customerId;
-
-      const [data, total] = await Promise.all([
-        this.prisma.invoice.findMany({
-          where,
-          skip,
-          take: pageSize,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            customer: { select: { id: true, name: true } },
-            project: { select: { id: true, name: true } },
-          },
-        }),
-        this.prisma.invoice.count({ where }),
-      ]);
-
-      return {
-        data: data.map((inv) => this.mapInvoice(inv)),
-        total,
-      };
-    } catch (err) {
-      console.error('[InvoicesService.findAll]', err);
-      return { data: [], total: 0 };
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+    if (search) {
+      where.OR = [
+        { invoiceNumber: { contains: search } },
+        { customer: { name: { contains: search } } },
+        { notes: { contains: search } },
+      ];
     }
+
+    const [data, total] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.invoice.count({ where }),
+    ]);
+
+    return {
+      data: data.map((inv) => this.mapInvoice(inv)),
+      total,
+    };
   }
 
   async findOne(id: string) {
@@ -79,9 +82,9 @@ export class InvoicesService {
     const taxAmount = dto.taxAmount ?? 0;
     const total = subtotal + taxAmount;
 
-    const suffix = Math.floor(Math.random() * 9000) + 1000;
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const invoiceNumber = `INV-${dateStr}-${suffix}`;
+    const count = await this.prisma.invoice.count();
+    const invoiceNumber = `INV-${dateStr}-${String(count + 1).padStart(4, '0')}`;
 
     const invoice = await this.prisma.$transaction(async (tx) => {
       return tx.invoice.create({
@@ -199,8 +202,8 @@ export class InvoicesService {
       },
     });
 
-    // If paid, create a customer payment transaction and update customer totals
-    if (dto.status === 'Paid') {
+    // Only process payment transaction when transitioning TO Paid for the first time
+    if (dto.status === 'Paid' && invoice.status !== 'Paid') {
       const invoiceTotal = Number(invoice.total);
       await this.prisma.$transaction([
         this.prisma.customerTransaction.create({
@@ -227,7 +230,15 @@ export class InvoicesService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
+
+    if (invoice.status === 'Paid') {
+      throw new BadRequestException(
+        'Cannot delete a Paid invoice. Change status to Cancelled first.',
+      );
+    }
+
     await this.prisma.invoice.delete({ where: { id } });
     return { message: 'Invoice deleted successfully' };
   }

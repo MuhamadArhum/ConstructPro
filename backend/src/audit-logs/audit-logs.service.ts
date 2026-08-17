@@ -18,6 +18,7 @@ export interface AuditLogQuery {
   pageNumber?: number;
   pageSize?: number;
   userId?: string;
+  search?: string;
   action?: string;
   entityType?: string;
   startDate?: string;
@@ -56,7 +57,13 @@ export class AuditLogsService {
       where.userId = query.userId;
     }
 
-    if (query.action) {
+    if (query.search) {
+      where.OR = [
+        { action: { contains: query.search } },
+        { userEmail: { contains: query.search } },
+        { entityType: { contains: query.search } },
+      ];
+    } else if (query.action) {
       where.action = { contains: query.action };
     }
 

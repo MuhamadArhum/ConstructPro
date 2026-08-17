@@ -178,6 +178,13 @@ export class EmployeesService {
   async processSalary(id: string, dto: ProcessSalaryDto) {
     await this.findById(id);
 
+    const existing = await this.prisma.salaryPayment.findUnique({
+      where: { employeeId_month_year: { employeeId: id, month: dto.month, year: dto.year } },
+    });
+    if (existing) {
+      throw new ConflictException(`Salary for ${dto.month}/${dto.year} already processed`);
+    }
+
     const basicSalary = Number(dto.basicSalary);
     const bonus = Number(dto.bonus ?? 0);
     const deductions = Number(dto.deductions ?? 0);

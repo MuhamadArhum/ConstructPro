@@ -16,9 +16,9 @@ export interface AuditLogQueryParams {
   search?: string;
   userId?: string;
   action?: string;
-  succeeded?: boolean;
-  fromDate?: string;
-  toDate?: string;
+  entityType?: string;
+  startDate?: string;
+  endDate?: string;
   pageNumber?: number;
   pageSize?: number;
 }

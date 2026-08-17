@@ -3,7 +3,10 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import BlockIcon from '@mui/icons-material/BlockOutlined';
 import KeyIcon from '@mui/icons-material/KeyOutlined';
+import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {
   Alert, Avatar, Box, Button, Chip, Dialog, DialogActions, DialogContent,
   DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody,
@@ -13,7 +16,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import PermissionGate from '../../components/common/PermissionGate';
-import { useAdminResetPasswordMutation, useDeactivateUserMutation, useGetUsersQuery } from './usersApi';
+import { useAdminResetPasswordMutation, useDeactivateUserMutation, useGetUsersQuery, useUnlockAccountMutation } from './usersApi';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { Perms } from '../../utils/permissions';
@@ -30,11 +33,23 @@ export default function UserListPage() {
   });
   const [deactivateUser] = useDeactivateUserMutation();
   const [adminResetPassword, { isLoading: isResettingPw }] = useAdminResetPasswordMutation();
+  const [unlockAccount] = useUnlockAccountMutation();
 
   const [pendingDeactivateId, setPendingDeactivateId] = useState<string | null>(null);
   const [resetPwUserId, setResetPwUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleUnlock = async (userId: string) => {
+    try {
+      await unlockAccount(userId).unwrap();
+      dispatch(showSnackbar({ message: 'Account unlocked successfully.', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to unlock account.', severity: 'error' }));
+    }
+  };
 
   const handleConfirmDeactivate = async () => {
     if (!pendingDeactivateId) return;
@@ -48,10 +63,26 @@ export default function UserListPage() {
     }
   };
 
+  const generateTempPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+    let pass = '';
+    for (let i = 0; i < 10; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+    setNewPassword(pass);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(newPassword).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const openResetDialog = (userId: string) => {
     setResetPwUserId(userId);
     setNewPassword('');
     setPwError(null);
+    setResetSuccess(null);
+    setCopied(false);
   };
 
   const handleResetPassword = async () => {
@@ -63,8 +94,7 @@ export default function UserListPage() {
     }
     try {
       await adminResetPassword({ id: resetPwUserId, body: { newPassword } }).unwrap();
-      dispatch(showSnackbar({ message: 'Password reset successfully.', severity: 'success' }));
-      setResetPwUserId(null);
+      setResetSuccess(newPassword);
     } catch (err) {
       const apiError = err as { data?: ApiError };
       setPwError(apiError.data?.title ?? 'Failed to reset password.');
@@ -147,11 +177,16 @@ export default function UserListPage() {
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={user.isActive ? 'Active' : 'Inactive'}
-                      color={user.isActive ? 'success' : 'default'}
-                      size="small"
-                    />
+                    <Stack direction="row" spacing={0.5}>
+                      <Chip
+                        label={user.isActive ? 'Active' : 'Inactive'}
+                        color={user.isActive ? 'success' : 'default'}
+                        size="small"
+                      />
+                      {user.isLockedOut && (
+                        <Chip label="Locked" color="error" size="small" />
+                      )}
+                    </Stack>
                   </TableCell>
                   <TableCell align="right">
                     <PermissionGate permission={Perms.Users.Edit}>
@@ -169,6 +204,13 @@ export default function UserListPage() {
                           <KeyIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      {user.isLockedOut && (
+                        <Tooltip title="Unlock account">
+                          <IconButton size="small" color="warning" onClick={() => handleUnlock(user.id)}>
+                            <LockOpenIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </PermissionGate>
                     <PermissionGate permission={Perms.Users.Delete}>
                       <Tooltip title={user.isActive ? 'Deactivate user' : 'Already inactive'}>
@@ -211,7 +253,7 @@ export default function UserListPage() {
 
       <Dialog
         open={Boolean(resetPwUserId)}
-        onClose={() => setResetPwUserId(null)}
+        onClose={() => { if (!resetSuccess) setResetPwUserId(null); }}
         maxWidth="xs"
         fullWidth
       >
@@ -219,24 +261,50 @@ export default function UserListPage() {
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {pwError && <Alert severity="error" sx={{ borderRadius: 2 }}>{pwError}</Alert>}
-            <TextField
-              label="New Password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              fullWidth
-              autoFocus
-              helperText="Minimum 8 characters"
-            />
+            {resetSuccess ? (
+              <>
+                <Alert severity="success">Password reset successfully. Share this password with the user securely.</Alert>
+                <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 2 }}>
+                  <Typography variant="body1" sx={{ fontFamily: 'monospace', fontWeight: 700, letterSpacing: 1 }}>
+                    {resetSuccess}
+                  </Typography>
+                  <Tooltip title={copied ? 'Copied!' : 'Copy to clipboard'}>
+                    <IconButton size="small" onClick={handleCopy}>
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Paper>
+              </>
+            ) : (
+              <>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <TextField
+                    label="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    fullWidth
+                    autoFocus
+                    helperText="Minimum 8 characters"
+                  />
+                  <Tooltip title="Generate random password">
+                    <IconButton onClick={generateTempPassword} sx={{ mt: 1 }}>
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setResetPwUserId(null)} disabled={isResettingPw}>
-            Cancel
+          <Button onClick={() => setResetPwUserId(null)}>
+            {resetSuccess ? 'Close' : 'Cancel'}
           </Button>
-          <Button variant="contained" onClick={handleResetPassword} disabled={isResettingPw}>
-            {isResettingPw ? 'Resetting…' : 'Reset Password'}
-          </Button>
+          {!resetSuccess && (
+            <Button variant="contained" onClick={handleResetPassword} disabled={isResettingPw}>
+              {isResettingPw ? 'Resetting…' : 'Reset Password'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </>

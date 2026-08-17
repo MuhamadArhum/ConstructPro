@@ -6,7 +6,7 @@ import { useGetNotificationsQuery, useMarkAllAsReadMutation, useMarkAsReadMutati
 import type { NotificationType } from '../../types/notification.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
-const typeColors: Record<NotificationType, 'error' | 'warning' | 'info' | 'success' | 'default'> = { SalaryDue: 'warning', TaxDue: 'error', MaintenanceDue: 'info', LowStock: 'warning', PendingPayment: 'error', General: 'default' };
+const typeColors: Record<NotificationType, 'error' | 'warning' | 'info' | 'success' | 'default'> = { System: 'default', Alert: 'info', Info: 'success', Warning: 'warning' };
 
 export default function NotificationsPage() {
   const dispatch = useAppDispatch();

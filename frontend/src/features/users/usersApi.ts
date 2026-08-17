@@ -55,6 +55,13 @@ export const usersApi = baseApi.injectEndpoints({
         data: body,
       }),
     }),
+    unlockAccount: builder.mutation<{ message: string }, string>({
+      query: (id) => ({ url: `/users/${id}/unlock`, method: 'POST' }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -66,4 +73,5 @@ export const {
   useUpdateUserMutation,
   useDeactivateUserMutation,
   useAdminResetPasswordMutation,
+  useUnlockAccountMutation,
 } = usersApi;

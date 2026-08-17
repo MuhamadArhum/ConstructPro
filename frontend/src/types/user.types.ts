@@ -10,6 +10,9 @@ export interface User {
   createdAt: string;
   lastLoginAt: string | null;
   roles: AppRole[];
+  isLockedOut: boolean;
+  lockoutEnd: string | null;
+  accessFailedCount: number;
 }
 
 export interface CreateUserRequest {

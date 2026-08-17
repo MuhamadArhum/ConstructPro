@@ -25,45 +25,40 @@ export class ProjectsService {
     search?: string,
     status?: string,
   ) {
-    try {
-      const skip = (page - 1) * pageSize;
+    const skip = (page - 1) * pageSize;
 
-      const where: any = {};
+    const where: any = {};
 
-      if (search) {
-        where.OR = [
-          { code: { contains: search } },
-          { name: { contains: search } },
-          { siteAddress: { contains: search } },
-          { managerName: { contains: search } },
-        ];
-      }
-
-      if (status) {
-        where.status = status;
-      }
-
-      const [data, total] = await Promise.all([
-        this.prisma.project.findMany({
-          where,
-          skip,
-          take: pageSize,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            client: { select: { id: true, name: true } },
-          },
-        }),
-        this.prisma.project.count({ where }),
-      ]);
-
-      return {
-        data: data.map((p) => this.mapProject(p)),
-        total,
-      };
-    } catch (err) {
-      console.error('[ProjectsService.findAll]', err);
-      return { data: [], total: 0 };
+    if (search) {
+      where.OR = [
+        { code: { contains: search } },
+        { name: { contains: search } },
+        { siteAddress: { contains: search } },
+        { managerName: { contains: search } },
+      ];
     }
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.project.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          client: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.project.count({ where }),
+    ]);
+
+    return {
+      data: data.map((p) => this.mapProject(p)),
+      total,
+    };
   }
 
   async findOne(id: string) {
@@ -241,21 +236,17 @@ export class ProjectsService {
   async addExpense(projectId: string, dto: CreateProjectExpenseDto) {
     await this.findOne(projectId);
 
-    const [expense] = await this.prisma.$transaction([
-      this.prisma.projectExpense.create({
-        data: {
-          projectId,
-          category: dto.category,
-          amount: dto.amount,
-          date: new Date(dto.date),
-          description: dto.description,
-        },
-      }),
-      this.prisma.project.update({
-        where: { id: projectId },
-        data: { spent: { increment: dto.amount } },
-      }),
-    ]);
+    const expense = await this.prisma.projectExpense.create({
+      data: {
+        projectId,
+        category: dto.category,
+        amount: dto.amount,
+        date: new Date(dto.date),
+        description: dto.description,
+      },
+    });
+
+    await this.syncSpent(projectId);
 
     return { ...expense, amount: Number(expense.amount) };
   }
@@ -266,15 +257,19 @@ export class ProjectsService {
     });
     if (!expense) throw new NotFoundException('Expense not found');
 
-    await this.prisma.$transaction([
-      this.prisma.projectExpense.delete({ where: { id: expenseId } }),
-      this.prisma.project.update({
-        where: { id: projectId },
-        data: { spent: { decrement: Number(expense.amount) } },
-      }),
-    ]);
+    await this.prisma.projectExpense.delete({ where: { id: expenseId } });
+    await this.syncSpent(projectId);
 
     return { message: 'Expense deleted successfully' };
+  }
+
+  private async syncSpent(projectId: string) {
+    const agg = await this.prisma.projectExpense.aggregate({
+      _sum: { amount: true },
+      where: { projectId },
+    });
+    const spent = Number(agg._sum.amount ?? 0);
+    await this.prisma.project.update({ where: { id: projectId }, data: { spent } });
   }
 
   // ── Labour ──────────────────────────────────────────────────────────────────

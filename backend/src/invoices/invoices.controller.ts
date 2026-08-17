@@ -42,17 +42,20 @@ export class InvoicesController {
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'customerId', required: false })
+  @ApiQuery({ name: 'search', required: false })
   findAll(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('status') status?: string,
     @Query('customerId') customerId?: string,
+    @Query('search') search?: string,
   ) {
     return this.invoicesService.findAll(
       page ? parseInt(page, 10) : 1,
       pageSize ? parseInt(pageSize, 10) : 10,
       status,
       customerId,
+      search,
     );
   }
 

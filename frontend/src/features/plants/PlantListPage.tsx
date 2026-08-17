@@ -3,6 +3,7 @@ import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import BuildIcon from '@mui/icons-material/BuildOutlined';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -87,6 +88,7 @@ export default function PlantListPage() {
                     <TableCell>{fmt(row.currentValue)}</TableCell>
                     <TableCell><Chip label={row.statusDisplay} color={statusColors[row.status]} size="small" /></TableCell>
                     <TableCell align="right">
+                      <Tooltip title="Maintenance History"><IconButton size="small" onClick={() => navigate(`/plants/${row.id}/maintenance`)}><BuildIcon fontSize="small" /></IconButton></Tooltip>
                       <PermissionGate permission={Perms.Plants.Edit}><Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/plants/${row.id}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                       <PermissionGate permission={Perms.Plants.Delete}><Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></PermissionGate>
                     </TableCell>

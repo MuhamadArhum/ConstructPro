@@ -84,6 +84,15 @@ export class UsersController {
     return this.usersService.deactivate(id);
   }
 
+  @Post(':id/unlock')
+  @HasPermission('Users.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unlock a locked-out user account' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  unlockAccount(@Param('id') id: string) {
+    return this.usersService.unlockAccount(id);
+  }
+
   @Post(':id/reset-password')
   @HasPermission('Users.Edit')
   @HttpCode(HttpStatus.OK)

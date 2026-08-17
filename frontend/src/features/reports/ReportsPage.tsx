@@ -36,6 +36,10 @@ const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string | Date | null | undefined) =>
   d ? new Date(d).toLocaleDateString('en-GB') : '—';
 const today = () => new Date().toISOString().split('T')[0];
+const firstOfMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+};
 
 function SummaryCard({
   label,
@@ -797,7 +801,7 @@ type TabValue = (typeof TABS)[number]['value'];
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('finance');
-  const [fromDate, setFromDate] = useState(today());
+  const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
 
   return (

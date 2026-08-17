@@ -12,13 +12,6 @@ import { HasPermission } from '../common/decorators/permissions.decorator';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  @Get('stats')
-  @HasPermission('Dashboard.View')
-  @ApiOperation({ summary: 'Get dashboard statistics and recent activity' })
-  getStats() {
-    return this.dashboardService.getStats();
-  }
-
   @Get()
   @HasPermission('Dashboard.View')
   @ApiOperation({ summary: 'Get full dashboard data including projects, invoices, and alerts' })

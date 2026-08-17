@@ -23,6 +23,7 @@ import {
   CreatePlantDto,
   UpdatePlantDto,
   PlantQueryDto,
+  AddPlantMaintenanceDto,
 } from './dto/plant.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -89,5 +90,29 @@ export class PlantsController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   remove(@Param('id') id: string) {
     return this.plantsService.remove(id);
+  }
+
+  @Get(':id/maintenance')
+  @HasPermission('Plants.View')
+  @ApiOperation({ summary: 'Get maintenance history for a plant' })
+  @ApiParam({ name: 'id', description: 'Plant UUID' })
+  getMaintenanceHistory(@Param('id') id: string) {
+    return this.plantsService.getMaintenanceHistory(id);
+  }
+
+  @Post(':id/maintenance')
+  @HasPermission('Plants.Edit')
+  @ApiOperation({ summary: 'Add a maintenance record to a plant' })
+  @ApiParam({ name: 'id', description: 'Plant UUID' })
+  addMaintenance(@Param('id') id: string, @Body() dto: AddPlantMaintenanceDto) {
+    return this.plantsService.addMaintenance(id, dto);
+  }
+
+  @Delete(':id/maintenance/:recordId')
+  @HasPermission('Plants.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a maintenance record from a plant' })
+  deleteMaintenance(@Param('id') id: string, @Param('recordId') recordId: string) {
+    return this.plantsService.deleteMaintenance(id, recordId);
   }
 }

@@ -25,6 +25,7 @@ import { NavLink } from 'react-router-dom';
 import { useAppSelector } from '../../app/hooks';
 import { Perms } from '../../utils/permissions';
 import AppLogo from '../common/AppLogo';
+import { useGetUnreadCountQuery } from '../../features/notifications/notificationApi';
 
 export const SIDEBAR_WIDTH = 230;
 
@@ -56,8 +57,8 @@ const navItems: NavItem[] = [
   { label: 'Customers',       path: '/customers',       icon: <PersonIcon fontSize="small" />,        permission: Perms.Customers.View,  section: 'Procurement' },
   { label: 'Suppliers',       path: '/suppliers',       icon: <LocalShippingIcon fontSize="small" />, permission: Perms.Suppliers.View   },
   { label: 'Inventory',       path: '/inventory',       icon: <InventoryIcon fontSize="small" />,     permission: Perms.Inventory.View   },
-  { label: 'Invoices',        path: '/invoices',        icon: <InvoiceIcon fontSize="small" />        },
-  { label: 'Purchase Orders', path: '/purchase-orders', icon: <ShoppingCartIcon fontSize="small" />   },
+  { label: 'Invoices',        path: '/invoices',        icon: <InvoiceIcon fontSize="small" />,       permission: Perms.Invoices.View        },
+  { label: 'Purchase Orders', path: '/purchase-orders', icon: <ShoppingCartIcon fontSize="small" />,  permission: Perms.PurchaseOrders.View  },
 
   { label: 'Reports',         path: '/reports',       icon: <BarChartIcon fontSize="small" />,      permission: Perms.Reports.View,       section: 'System' },
   { label: 'Notifications',   path: '/notifications', icon: <NotificationsIcon fontSize="small" />, permission: Perms.Notifications.View  },
@@ -84,6 +85,9 @@ const drawerSx = {
 
 function DrawerContent({ onClose }: { onClose: () => void }) {
   const permissions = useAppSelector((state) => state.auth.user?.permissions ?? []);
+  const { data: unreadData } = useGetUnreadCountQuery(undefined, { pollingInterval: 60000 });
+  const unreadCount = unreadData?.count ?? 0;
+
   const visibleItems = navItems.filter((item) => !item.permission || permissions.includes(item.permission));
 
   const handleNavClick = () => {
@@ -98,7 +102,9 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
       </Box>
 
       <List sx={{ pt: '18px', pb: 2, overflowY: 'auto', flex: 1, px: '12px' }}>
-        {visibleItems.map((item) => (
+        {visibleItems.map((item) => {
+          const badge = item.path === '/notifications' && unreadCount > 0 ? unreadCount : item.badge;
+          return (
           <Box key={item.path}>
             {item.section && (
               <Typography
@@ -149,14 +155,15 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
                   },
                 }}
               />
-              {item.badge != null && (
+              {badge != null && (
                 <Box sx={{ background: '#E85D1F', color: '#081B30', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 600, px: '6px', py: '1px', borderRadius: '10px', lineHeight: 1.6 }}>
-                  {item.badge}
+                  {badge}
                 </Box>
               )}
             </ListItemButton>
           </Box>
-        ))}
+          );
+        })}
       </List>
 
       <Box sx={{ px: '20px', py: '16px', borderTop: '1px solid rgba(154,198,232,0.18)', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', opacity: 0.5, color: '#9AC6E8' }}>

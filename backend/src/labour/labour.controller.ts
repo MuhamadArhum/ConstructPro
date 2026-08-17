@@ -25,6 +25,7 @@ import {
   CreateLabourDto,
   UpdateLabourDto,
   UpsertAttendanceDto,
+  BulkUpsertAttendanceDto,
   AddAdvanceDto,
   LabourQueryDto,
 } from './dto/labour.dto';
@@ -55,7 +56,7 @@ export class LabourController {
     return this.labourService.getNextCode().then((code) => ({ code }));
   }
 
-  // NOTE: POST /attendance and PUT /attendance MUST be before /:id routes
+  // NOTE: POST /attendance* routes MUST be before /:id routes
   @Post('attendance')
   @HasPermission('Labour.Edit')
   @ApiOperation({ summary: 'Create or update attendance record for a labour worker' })
@@ -63,6 +64,14 @@ export class LabourController {
   @ApiResponse({ status: 404, description: 'Labour not found' })
   upsertAttendance(@Body() dto: UpsertAttendanceDto) {
     return this.labourService.upsertAttendance(dto);
+  }
+
+  @Post('attendance/bulk')
+  @HasPermission('Labour.Edit')
+  @ApiOperation({ summary: 'Bulk create or update attendance records (save whole month at once)' })
+  @ApiResponse({ status: 201, description: 'Attendance records saved' })
+  bulkUpsertAttendance(@Body() dto: BulkUpsertAttendanceDto) {
+    return this.labourService.bulkUpsertAttendance(dto);
   }
 
   @Get(':id')

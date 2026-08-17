@@ -33,8 +33,8 @@ export default function InvoiceFormPage() {
   const dispatch = useAppDispatch();
 
   const { data: existing, isLoading: loadingExisting } = useGetInvoiceQuery(id ?? '', { skip: !isEdit });
-  const { data: customersData } = useGetCustomersQuery({ pageSize: 100 });
-  const { data: projectsData } = useGetProjectsQuery({ pageSize: 100 });
+  const { data: customersData } = useGetCustomersQuery({ pageSize: 1000 });
+  const { data: projectsData } = useGetProjectsQuery({ pageSize: 1000 });
 
   const [createInvoice, { isLoading: creating }] = useCreateInvoiceMutation();
   const [updateInvoice, { isLoading: updating }] = useUpdateInvoiceMutation();

@@ -4,6 +4,7 @@ import {
   CreatePlantDto,
   UpdatePlantDto,
   PlantQueryDto,
+  AddPlantMaintenanceDto,
 } from './dto/plant.dto';
 import { generateCode } from '../common/utils/generate-code';
 
@@ -147,6 +148,62 @@ export class PlantsService {
     await this.prisma.plant.delete({ where: { id } });
 
     return { message: 'Plant deleted successfully' };
+  }
+
+  async getMaintenanceHistory(plantId: string) {
+    await this.findById(plantId);
+
+    return this.prisma.plantMaintenance.findMany({
+      where: { plantId },
+      orderBy: { maintenanceDate: 'desc' },
+    });
+  }
+
+  async addMaintenance(plantId: string, dto: AddPlantMaintenanceDto) {
+    await this.findById(plantId);
+
+    const record = await this.prisma.plantMaintenance.create({
+      data: {
+        plantId,
+        maintenanceDate: new Date(dto.maintenanceDate),
+        description: dto.description ?? null,
+        cost: dto.cost ?? 0,
+        serviceProvider: dto.serviceProvider ?? null,
+        nextMaintenanceDate: dto.nextMaintenanceDate ? new Date(dto.nextMaintenanceDate) : null,
+        notes: dto.notes ?? null,
+      },
+    });
+
+    if (dto.nextMaintenanceDate) {
+      await this.prisma.plant.update({
+        where: { id: plantId },
+        data: {
+          lastMaintenanceDate: new Date(dto.maintenanceDate),
+          nextMaintenanceDate: new Date(dto.nextMaintenanceDate),
+        },
+      });
+    } else {
+      await this.prisma.plant.update({
+        where: { id: plantId },
+        data: { lastMaintenanceDate: new Date(dto.maintenanceDate) },
+      });
+    }
+
+    return record;
+  }
+
+  async deleteMaintenance(plantId: string, recordId: string) {
+    await this.findById(plantId);
+
+    const record = await this.prisma.plantMaintenance.findFirst({
+      where: { id: recordId, plantId },
+    });
+
+    if (!record) throw new NotFoundException('Maintenance record not found');
+
+    await this.prisma.plantMaintenance.delete({ where: { id: recordId } });
+
+    return { message: 'Maintenance record deleted' };
   }
 
   private mapPlant(plant: {

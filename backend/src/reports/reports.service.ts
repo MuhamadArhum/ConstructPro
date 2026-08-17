@@ -104,7 +104,7 @@ export class ReportsService {
       category: i.category,
       description: i.description ?? null,
       amount: Number(i.amount),
-      reference: (i as any).reference ?? null,
+      reference: i.customerName ?? i.projectName ?? null,
     }));
 
     const expenseRows = expenses.map((e) => ({
@@ -113,7 +113,7 @@ export class ReportsService {
       category: e.category,
       description: e.description ?? null,
       amount: Number(e.amount),
-      reference: (e as any).reference ?? null,
+      reference: e.vendor ?? null,
     }));
 
     return {
@@ -373,25 +373,31 @@ export class ReportsService {
   }
 
   async getEmployeeReport() {
-    const employees = await this.prisma.employee.findMany({
-      include: { salaryPayments: true },
-      orderBy: { fullName: 'asc' },
-    });
+    const [employees, salaryAggregates] = await Promise.all([
+      this.prisma.employee.findMany({
+        orderBy: { fullName: 'asc' },
+      }),
+      this.prisma.salaryPayment.groupBy({
+        by: ['employeeId'],
+        _sum: { netSalary: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    const aggByEmployee = new Map(
+      salaryAggregates.map((a) => [
+        a.employeeId,
+        { total: Number(a._sum.netSalary ?? 0), count: a._count.id },
+      ]),
+    );
 
     const totalEmployees = employees.length;
     const activeEmployees = employees.filter((e) => e.isActive).length;
-
     let totalSalaryPaid = 0;
 
     const employeeRows = employees.map((emp) => {
-      const salaryPaidCount = emp.salaryPayments.length;
-      const empTotalSalaryPaid = emp.salaryPayments.reduce(
-        (sum, sp) => sum + Number(sp.netSalary),
-        0,
-      );
-
-      totalSalaryPaid += empTotalSalaryPaid;
-
+      const agg = aggByEmployee.get(emp.id) ?? { total: 0, count: 0 };
+      totalSalaryPaid += agg.total;
       return {
         id: emp.id,
         name: emp.fullName,
@@ -399,8 +405,8 @@ export class ReportsService {
         department: emp.department ?? null,
         salary: Number(emp.basicSalary),
         isActive: emp.isActive,
-        salaryPaidCount,
-        totalSalaryPaid: empTotalSalaryPaid,
+        salaryPaidCount: agg.count,
+        totalSalaryPaid: agg.total,
       };
     });
 
@@ -447,7 +453,6 @@ export class ReportsService {
       return {
         id: m.id,
         name: m.name,
-        type: (m as any).type ?? null,
         model: m.model ?? null,
         status: m.status,
         maintenanceCount,

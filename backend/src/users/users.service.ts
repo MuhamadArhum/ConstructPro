@@ -31,11 +31,7 @@ export class UsersService {
         where,
         skip,
         take: limit,
-        include: {
-          roles: {
-            include: { role: true },
-          },
-        },
+        include: { roles: { include: { role: true } } },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.user.count({ where }),
@@ -164,6 +160,15 @@ export class UsersService {
     return this.mapUser(user);
   }
 
+  async unlockAccount(id: string) {
+    await this.findById(id);
+    await this.prisma.user.update({
+      where: { id },
+      data: { accessFailedCount: 0, lockoutEnd: null },
+    });
+    return { message: 'Account unlocked successfully' };
+  }
+
   async adminResetPassword(id: string, dto: AdminResetPasswordDto) {
     await this.findById(id);
 
@@ -185,8 +190,12 @@ export class UsersService {
     createdAt: Date;
     lastLoginAt: Date | null;
     profilePicturePath: string | null;
+    lockoutEnd?: Date | null;
+    accessFailedCount?: number;
     roles: Array<{ role: { id: string; name: string } }>;
   }) {
+    const now = new Date();
+    const isLockedOut = !!(user.lockoutEnd && user.lockoutEnd > now);
     return {
       id: user.id,
       fullName: user.fullName,
@@ -196,6 +205,9 @@ export class UsersService {
       lastLoginAt: user.lastLoginAt,
       profilePicturePath: user.profilePicturePath,
       roles: user.roles.map((ur) => ur.role.name),
+      isLockedOut,
+      lockoutEnd: user.lockoutEnd ?? null,
+      accessFailedCount: user.accessFailedCount ?? 0,
     };
   }
 }

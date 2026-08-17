@@ -1,8 +1,9 @@
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const { randomBytes } = require('crypto');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
@@ -29,6 +30,27 @@ function logErr(...args) {
   const msg = args.join(' ');
   console.error(msg);
   try { logStream?.write('[ERR] ' + msg + '\n'); } catch {}
+}
+
+function getOrCreateSecrets() {
+  const secretsPath = path.join(app.getPath('userData'), 'secrets.json');
+  try {
+    if (fs.existsSync(secretsPath)) {
+      const raw = fs.readFileSync(secretsPath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed.jwtSecret && parsed.jwtSecret.length >= 32) return parsed;
+    }
+  } catch {}
+
+  const secrets = { jwtSecret: randomBytes(48).toString('hex') };
+  try {
+    fs.mkdirSync(path.dirname(secretsPath), { recursive: true });
+    fs.writeFileSync(secretsPath, JSON.stringify(secrets), 'utf8');
+    log('[startup] Generated new per-install JWT secret');
+  } catch (err) {
+    logErr('[startup] Failed to persist JWT secret:', err.message);
+  }
+  return secrets;
 }
 
 function getBackendPath() {
@@ -120,19 +142,19 @@ function startBackend(dbPath) {
   log('[startup] STATIC_PATH exists:', fs.existsSync(staticPath));
   log('[startup] index.html exists:', fs.existsSync(path.join(staticPath, 'index.html')));
 
+  const secrets = getOrCreateSecrets();
+
   const env = {
     ...process.env,
     ELECTRON_RUN_AS_NODE: '1',
     DATABASE_URL: `file:${dbPath}`,
     PORT: String(PORT),
     NODE_ENV: 'production',
-    JWT_SECRET: 'ConstructPro-JWT-Secret-Key-2024-SuperSecure-32chars!',
+    JWT_SECRET: secrets.jwtSecret,
     JWT_EXPIRES_IN: '8h',
     JWT_REFRESH_DAYS: '7',
     CORS_ORIGINS: `http://localhost:${PORT}`,
     STATIC_PATH: staticPath,
-    ADMIN_EMAIL: 'admin@constructpro.com',
-    ADMIN_PASSWORD: 'Admin@123456',
   };
 
   const nodeExe = process.execPath;
@@ -180,8 +202,9 @@ function showUpdatePopup(version) {
     backgroundColor: '#F5F2E8',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'update-preload.js'),
     },
   });
 
@@ -342,9 +365,8 @@ function showUpdatePopup(version) {
     <button class="btn-restart" onclick="restart()">Restart &amp; Install</button>
   </div>
   <script>
-    const { ipcRenderer } = require('electron');
-    function restart() { ipcRenderer.send('update-action', 'restart'); }
-    function later() { ipcRenderer.send('update-action', 'later'); }
+    function restart() { window.updateBridge.restart(); }
+    function later() { window.updateBridge.later(); }
   </script>
 </body>
 </html>`;
@@ -352,7 +374,6 @@ function showUpdatePopup(version) {
   popup.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   popup.setMenu(null);
 
-  const { ipcMain } = require('electron');
   ipcMain.once('update-action', (_, action) => {
     popup.close();
     if (action === 'restart') autoUpdater.quitAndInstall();

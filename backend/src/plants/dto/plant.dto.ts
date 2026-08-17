@@ -153,6 +153,39 @@ export class UpdatePlantDto {
   notes?: string;
 }
 
+export class AddPlantMaintenanceDto {
+  @ApiProperty({ example: '2024-06-15' })
+  @IsDateString()
+  maintenanceDate: string;
+
+  @ApiPropertyOptional({ example: 'Annual overhaul and calibration' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 45000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  cost?: number;
+
+  @ApiPropertyOptional({ example: 'ABC Services Ltd' })
+  @IsOptional()
+  @IsString()
+  serviceProvider?: string;
+
+  @ApiPropertyOptional({ example: '2024-12-15' })
+  @IsOptional()
+  @IsDateString()
+  nextMaintenanceDate?: string;
+
+  @ApiPropertyOptional({ example: 'Replaced worn parts' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
 export class PlantQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

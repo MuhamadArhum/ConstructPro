@@ -42,3 +42,24 @@ export interface PlantQuery {
   search?: string;
   status?: string;
 }
+
+export interface PlantMaintenanceDto {
+  id: string;
+  plantId: string;
+  maintenanceDate: string;
+  description?: string;
+  cost: number;
+  serviceProvider?: string;
+  nextMaintenanceDate?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface AddPlantMaintenanceRequest {
+  maintenanceDate: string;
+  description?: string;
+  cost?: number;
+  serviceProvider?: string;
+  nextMaintenanceDate?: string;
+  notes?: string;
+}

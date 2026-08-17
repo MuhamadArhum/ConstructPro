@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateLabourDto,
   UpdateLabourDto,
   UpsertAttendanceDto,
+  BulkUpsertAttendanceDto,
   AddAdvanceDto,
   LabourQueryDto,
 } from './dto/labour.dto';
@@ -226,6 +227,39 @@ export class LabourService {
     return this.mapAttendance(attendance);
   }
 
+  async bulkUpsertAttendance(dto: BulkUpsertAttendanceDto) {
+    if (!dto.records || dto.records.length === 0) {
+      return { saved: 0 };
+    }
+
+    const labourIds = [...new Set(dto.records.map((r) => r.labourId))];
+    const existing = await this.prisma.labour.findMany({
+      where: { id: { in: labourIds } },
+      select: { id: true },
+    });
+    const foundIds = new Set(existing.map((l) => l.id));
+    const missing = labourIds.find((id) => !foundIds.has(id));
+    if (missing) throw new NotFoundException(`Labour with id ${missing} not found`);
+
+    await this.prisma.$transaction(
+      dto.records.map((r) =>
+        this.prisma.labourAttendance.upsert({
+          where: { labourId_date: { labourId: r.labourId, date: new Date(r.date) } },
+          update: { isPresent: r.isPresent, overtimeHours: Number(r.overtimeHours ?? 0), notes: r.notes },
+          create: {
+            labourId: r.labourId,
+            date: new Date(r.date),
+            isPresent: r.isPresent,
+            overtimeHours: Number(r.overtimeHours ?? 0),
+            notes: r.notes,
+          },
+        }),
+      ),
+    );
+
+    return { saved: dto.records.length };
+  }
+
   async getAdvances(id: string) {
     await this.findById(id);
 
@@ -239,6 +273,10 @@ export class LabourService {
 
   async addAdvance(id: string, dto: AddAdvanceDto) {
     await this.findById(id);
+
+    if (Number(dto.amount) <= 0) {
+      throw new BadRequestException('Advance amount must be greater than zero');
+    }
 
     const advance = await this.prisma.labourAdvance.create({
       data: {

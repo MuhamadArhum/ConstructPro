@@ -39,6 +39,7 @@ const VehicleFormPage          = lazy(() => import('../features/vehicles/Vehicle
 const VehicleMaintenancePage   = lazy(() => import('../features/vehicles/VehicleMaintenancePage'));
 const PlantListPage            = lazy(() => import('../features/plants/PlantListPage'));
 const PlantFormPage            = lazy(() => import('../features/plants/PlantFormPage'));
+const PlantMaintenancePage     = lazy(() => import('../features/plants/PlantMaintenancePage'));
 
 // Projects
 const ProjectListPage   = lazy(() => import('../features/projects/ProjectListPage'));
@@ -147,9 +148,10 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Plants.View} />}>
-            <Route path="/plants"          element={<S><PlantListPage /></S>} />
-            <Route path="/plants/new"      element={<S><PlantFormPage /></S>} />
-            <Route path="/plants/:id/edit" element={<S><PlantFormPage /></S>} />
+            <Route path="/plants"                       element={<S><PlantListPage /></S>} />
+            <Route path="/plants/new"                   element={<S><PlantFormPage /></S>} />
+            <Route path="/plants/:id/edit"              element={<S><PlantFormPage /></S>} />
+            <Route path="/plants/:id/maintenance"       element={<S><PlantMaintenancePage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Projects.View} />}>

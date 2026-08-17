@@ -37,12 +37,12 @@ export class ProfileService {
     const updateData: {
       fullName?: string;
       email?: string;
+      phoneNumber?: string;
     } = {};
 
     if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
     if (dto.email !== undefined) updateData.email = dto.email;
-    // phoneNumber is accepted in DTO but not stored in User model;
-    // it is accepted for forward-compatibility and ignored at persistence level
+    if (dto.phoneNumber !== undefined) updateData.phoneNumber = dto.phoneNumber;
 
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -96,6 +96,7 @@ export class ProfileService {
     id: string;
     fullName: string;
     email: string;
+    phoneNumber: string | null;
     isActive: boolean;
     createdAt: Date;
     lastLoginAt: Date | null;
@@ -106,6 +107,7 @@ export class ProfileService {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
+      phoneNumber: user.phoneNumber,
       isActive: user.isActive,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,

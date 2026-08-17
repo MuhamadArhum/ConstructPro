@@ -5,6 +5,8 @@ import {
   IsNumber,
   IsBoolean,
   IsDateString,
+  IsArray,
+  ValidateNested,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -140,6 +142,14 @@ export class UpsertAttendanceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class BulkUpsertAttendanceDto {
+  @ApiProperty({ type: [UpsertAttendanceDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpsertAttendanceDto)
+  records: UpsertAttendanceDto[];
 }
 
 export class AddAdvanceDto {

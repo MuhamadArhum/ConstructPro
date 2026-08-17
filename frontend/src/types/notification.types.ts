@@ -1,4 +1,4 @@
-export type NotificationType = 'SalaryDue' | 'TaxDue' | 'MaintenanceDue' | 'LowStock' | 'PendingPayment' | 'General';
+export type NotificationType = 'System' | 'Alert' | 'Info' | 'Warning';
 
 export interface NotificationDto {
   id: string;

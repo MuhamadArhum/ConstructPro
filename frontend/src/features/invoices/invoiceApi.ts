@@ -3,7 +3,7 @@ import type { Invoice, CreateInvoiceDto } from '../../types/invoice.types';
 
 export const invoiceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getInvoices: builder.query<{ data: Invoice[]; total: number }, { page?: number; pageSize?: number; status?: string; customerId?: string }>({
+    getInvoices: builder.query<{ data: Invoice[]; total: number }, { page?: number; pageSize?: number; status?: string; customerId?: string; search?: string }>({
       query: (params) => ({ url: '/invoices', params }),
       providesTags: [{ type: 'Invoice', id: 'LIST' }],
     }),

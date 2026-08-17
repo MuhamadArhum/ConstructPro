@@ -32,10 +32,17 @@ export default function InvoiceListPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<{ id: string; status: string } | null>(null);
 
-  const { data, isLoading } = useGetInvoicesQuery({ page: page + 1, pageSize: rowsPerPage, status: status || undefined });
+  const { data, isLoading } = useGetInvoicesQuery({
+    page: page + 1,
+    pageSize: rowsPerPage,
+    status: status || undefined,
+    search: search || undefined,
+  });
   const [deleteInvoice] = useDeleteInvoiceMutation();
   const [updateStatus] = useUpdateInvoiceStatusMutation();
 
@@ -51,12 +58,22 @@ export default function InvoiceListPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = (id: string, newStatus: string) => {
+    if (newStatus === 'Paid' || newStatus === 'Cancelled') {
+      setPendingStatus({ id, status: newStatus });
+    } else {
+      confirmStatusChange(id, newStatus);
+    }
+  };
+
+  const confirmStatusChange = async (id: string, newStatus: string) => {
     try {
       await updateStatus({ id, status: newStatus }).unwrap();
       dispatch(showSnackbar({ message: 'Status updated', severity: 'success' }));
     } catch {
       dispatch(showSnackbar({ message: 'Failed to update status', severity: 'error' }));
+    } finally {
+      setPendingStatus(null);
     }
   };
 
@@ -76,7 +93,10 @@ export default function InvoiceListPage() {
             size="small"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { setSearch(searchInput); setPage(0); }
+            }}
+            onBlur={() => { setSearch(searchInput); setPage(0); }}
             sx={{ minWidth: { sm: 250 } }}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -174,6 +194,20 @@ export default function InvoiceListPage() {
         destructive
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingStatus)}
+        title={`Mark as ${pendingStatus?.status}`}
+        message={
+          pendingStatus?.status === 'Paid'
+            ? 'Marking this invoice as Paid will update the customer balance and cannot be changed back without manual correction.'
+            : 'Marking this invoice as Cancelled will remove it from active billing. Are you sure?'
+        }
+        confirmLabel={`Mark ${pendingStatus?.status}`}
+        destructive={pendingStatus?.status === 'Cancelled'}
+        onConfirm={() => pendingStatus && confirmStatusChange(pendingStatus.id, pendingStatus.status)}
+        onCancel={() => setPendingStatus(null)}
       />
     </Box>
   );

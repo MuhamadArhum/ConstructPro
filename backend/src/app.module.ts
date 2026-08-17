@@ -38,7 +38,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
   controllers: [AppController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ServeStaticModule.forRoot({
       // In esbuild bundle, __dirname is backend/ not backend/dist/
       // STATIC_PATH env var is set by Electron to the correct public folder path

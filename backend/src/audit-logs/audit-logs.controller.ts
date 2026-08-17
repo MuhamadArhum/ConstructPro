@@ -18,6 +18,7 @@ export class AuditLogsController {
   @ApiQuery({ name: 'pageNumber', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'userId', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'action', required: false, type: String })
   @ApiQuery({ name: 'entityType', required: false, type: String })
   @ApiQuery({ name: 'startDate', required: false, type: String })
@@ -26,6 +27,7 @@ export class AuditLogsController {
     @Query('pageNumber') pageNumber?: string,
     @Query('pageSize') pageSize?: string,
     @Query('userId') userId?: string,
+    @Query('search') search?: string,
     @Query('action') action?: string,
     @Query('entityType') entityType?: string,
     @Query('startDate') startDate?: string,
@@ -35,6 +37,7 @@ export class AuditLogsController {
       pageNumber: pageNumber ? parseInt(pageNumber, 10) : undefined,
       pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
       userId,
+      search,
       action,
       entityType,
       startDate,
