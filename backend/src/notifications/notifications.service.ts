@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
@@ -124,7 +125,7 @@ export class NotificationsService {
     const sentAlerts = new Set(existingAlerts.map((n) => `${n.userId}:${n.entityId}`));
 
     const toCreate: {
-      type: string;
+      type: NotificationType;
       title: string;
       message: string;
       entityId: string;
