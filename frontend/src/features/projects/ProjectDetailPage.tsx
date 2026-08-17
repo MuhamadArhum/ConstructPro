@@ -366,8 +366,8 @@ export default function ProjectDetailPage() {
           <Tab label="Expenses" />
           <Tab label="Labour" />
           <Tab label="Machinery" />
-          <Tab label={`Invoices (${project.invoicesCount ?? 0})`} />
-          <Tab label={`Purchase Orders (${project.purchaseOrdersCount ?? 0})`} />
+          <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
+          <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -443,7 +443,7 @@ export default function ProjectDetailPage() {
                       return (
                         <TableRow key={ms.id} hover sx={{ bgcolor: overdue ? 'error.50' : undefined }}>
                           <TableCell sx={{ fontWeight: 600 }}>
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Stack direction="row" sx={{ alignItems: 'center' }} spacing={0.5}>
                               {overdue && <WarningAmberIcon fontSize="small" color="error" />}
                               <span>{ms.title}</span>
                             </Stack>
@@ -505,7 +505,7 @@ export default function ProjectDetailPage() {
                   total: project.expenses?.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0) ?? 0,
                 })).filter((r) => r.total > 0);
                 return (
-                  <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mb: 2 }}>
+                  <Stack direction="row" sx={{ flexWrap: 'wrap', mb: 2 }} spacing={1}>
                     {byCategory.map(({ cat, total }) => (
                       <Chip key={cat} label={`${cat}: ${fmt(total)}`} size="small" variant="outlined" />
                     ))}

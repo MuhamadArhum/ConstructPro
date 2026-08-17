@@ -110,12 +110,17 @@ export default function TaxListPage() {
       await updateRecord({
         id: markPaidId,
         data: {
-          ...row,
+          taxType: row.taxType,
+          amount: row.amount,
           isPaid: true,
           paidDate: new Date().toISOString().split('T')[0],
           periodStart: row.periodStart.split('T')[0],
           periodEnd: row.periodEnd.split('T')[0],
+          code: row.code ?? undefined,
           dueDate: row.dueDate?.split('T')[0],
+          reference: row.reference,
+          description: row.description,
+          notes: row.notes,
         },
       }).unwrap();
       dispatch(showSnackbar({ message: 'Tax record marked as paid', severity: 'success' }));
@@ -171,7 +176,7 @@ export default function TaxListPage() {
 
       {/* Filters */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap' }}>
           <TextField
             label="Search" size="small" value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}

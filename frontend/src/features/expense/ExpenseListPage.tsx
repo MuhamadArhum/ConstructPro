@@ -147,7 +147,7 @@ export default function ExpenseListPage() {
 
       {/* Filters */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap' }}>
           <TextField
             label="Search" size="small" value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}

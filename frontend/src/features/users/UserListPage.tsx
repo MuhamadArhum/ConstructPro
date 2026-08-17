@@ -277,7 +277,7 @@ export default function UserListPage() {
               </>
             ) : (
               <>
-                <Stack direction="row" spacing={1} alignItems="flex-start">
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
                   <TextField
                     label="New Password"
                     value={newPassword}
