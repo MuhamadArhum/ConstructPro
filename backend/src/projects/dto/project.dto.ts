@@ -4,12 +4,16 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
+  IsIn,
   Min,
   Max,
   IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
+
+const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled'] as const;
+const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'] as const;
 
 export class CreateProjectDto {
   @IsOptional()
@@ -37,7 +41,7 @@ export class CreateProjectDto {
   startDate: string;
 
   @IsOptional()
-  @IsString()
+  @IsDateString()
   endDate?: string;
 
   @IsOptional()
@@ -47,7 +51,7 @@ export class CreateProjectDto {
   budget?: number;
 
   @IsOptional()
-  @IsString()
+  @IsIn(PROJECT_STATUSES)
   status?: string;
 
   @IsOptional()
@@ -77,7 +81,7 @@ export class CreateMilestoneDto {
   @IsString()
   description?: string;
 
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
   dueDate: string;
 }
@@ -89,7 +93,7 @@ export class UpdateMilestoneDto extends PartialType(CreateMilestoneDto) {
 }
 
 export class CreateProjectExpenseDto {
-  @IsString()
+  @IsIn(EXPENSE_CATEGORIES)
   @IsNotEmpty()
   category: string;
 
@@ -106,6 +110,8 @@ export class CreateProjectExpenseDto {
   @IsString()
   description?: string;
 }
+
+export class UpdateProjectExpenseDto extends PartialType(CreateProjectExpenseDto) {}
 
 export class AssignLabourDto {
   @IsString()

@@ -25,6 +25,7 @@ import {
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateProjectExpenseDto,
+  UpdateProjectExpenseDto,
   AssignLabourDto,
   AssignMachineryDto,
 } from './dto/project.dto';
@@ -48,6 +49,13 @@ export class ProjectsController {
     return this.projectsService.getNextCode().then((code) => ({ code }));
   }
 
+  @Get('summary')
+  @HasPermission('Project.View')
+  @ApiOperation({ summary: 'Get projects summary stats (totals, active count, overdue milestones)' })
+  getSummary() {
+    return this.projectsService.getSummary();
+  }
+
   @Get()
   @HasPermission('Project.View')
   @ApiOperation({ summary: 'Get all projects with pagination and filters' })
@@ -55,17 +63,26 @@ export class ProjectsController {
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'clientId', required: false })
+  @ApiQuery({ name: 'startDateFrom', required: false })
+  @ApiQuery({ name: 'startDateTo', required: false })
   findAll(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
+    @Query('clientId') clientId?: string,
+    @Query('startDateFrom') startDateFrom?: string,
+    @Query('startDateTo') startDateTo?: string,
   ) {
     return this.projectsService.findAll(
       page ? parseInt(page, 10) : 1,
       pageSize ? parseInt(pageSize, 10) : 10,
       search,
       status,
+      clientId,
+      startDateFrom,
+      startDateTo,
     );
   }
 
@@ -150,6 +167,19 @@ export class ProjectsController {
   @ApiParam({ name: 'id', description: 'Project UUID' })
   addExpense(@Param('id') id: string, @Body() dto: CreateProjectExpenseDto) {
     return this.projectsService.addExpense(id, dto);
+  }
+
+  @Patch(':id/expenses/:expId')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Update project expense' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'expId', description: 'Expense UUID' })
+  updateExpense(
+    @Param('id') id: string,
+    @Param('expId') expId: string,
+    @Body() dto: UpdateProjectExpenseDto,
+  ) {
+    return this.projectsService.updateExpense(id, expId, dto);
   }
 
   @Delete(':id/expenses/:expId')

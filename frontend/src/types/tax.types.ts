@@ -21,7 +21,9 @@ export interface TaxSummaryDto {
   totalTax: number;
   totalPaid: number;
   totalPending: number;
+  overdueAmount: number;
   overdueCount: number;
+  byType: { taxType: TaxType; total: number }[];
 }
 
 export interface CreateTaxRecordRequest {
@@ -46,6 +48,6 @@ export interface TaxQuery {
   search?: string;
   taxType?: string;
   isPaid?: boolean;
-  fromDate?: string;
-  toDate?: string;
+  startDate?: string;
+  endDate?: string;
 }

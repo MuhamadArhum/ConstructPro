@@ -1,32 +1,15 @@
 import { useState } from 'react';
 import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  FormControl,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
-  Tooltip,
-  Typography,
+  Box, Button, Card, CardContent, Chip, FormControl, Grid, IconButton,
+  InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Table,
+  TableBody, TableCell, TableContainer, TableHead, TablePagination,
+  TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -53,6 +36,30 @@ const categoryLabels: Record<ExpenseCategory, string> = {
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
+function exportToCsv(rows: any[]) {
+  const headers = ['Code', 'Date', 'Category', 'Description', 'Vendor', 'Amount'];
+  const lines = [
+    headers.join(','),
+    ...rows.map((r) =>
+      [
+        r.code ?? '',
+        new Date(r.date).toLocaleDateString('en-GB'),
+        categoryLabels[r.category as ExpenseCategory] ?? r.category,
+        `"${(r.description ?? '').replace(/"/g, '""')}"`,
+        r.vendor ?? '',
+        r.amount,
+      ].join(','),
+    ),
+  ].join('\n');
+  const blob = new Blob([lines], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ExpenseListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -61,22 +68,28 @@ export default function ExpenseListPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const todayStr = new Date().toISOString().split('T')[0];
-  const [fromDate, setFromDate] = useState(todayStr);
-  const [toDate, setToDate] = useState(todayStr);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [amountMin, setAmountMin] = useState('');
+  const [amountMax, setAmountMax] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useGetExpensesQuery({
+  const query = {
     pageNumber: page + 1,
     pageSize: rowsPerPage,
     search: search || undefined,
     category: category || undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-  });
+    amountMin: amountMin ? parseFloat(amountMin) : undefined,
+    amountMax: amountMax ? parseFloat(amountMax) : undefined,
+  };
 
+  const { data, isLoading } = useGetExpensesQuery(query);
   const { data: summary } = useGetExpenseSummaryQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
+
+  const hasFilters = !!(search || category || fromDate || toDate || amountMin || amountMax);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -90,17 +103,32 @@ export default function ExpenseListPage() {
     }
   };
 
+  const handleExport = () => {
+    const rows = data?.items ?? [];
+    if (!rows.length) {
+      dispatch(showSnackbar({ message: 'No data to export', severity: 'warning' }));
+      return;
+    }
+    exportToCsv(rows);
+  };
+
   return (
     <Box>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h1">Expense</Typography>
-        <PermissionGate permission={Perms.Expense.Create}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/expense/new')}>
-            Add Expense
+        <Typography variant="h1">Expenses</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleExport}>
+            Export CSV
           </Button>
-        </PermissionGate>
+          <PermissionGate permission={Perms.Expense.Create}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/expense/new')}>
+              Add Expense
+            </Button>
+          </PermissionGate>
+        </Stack>
       </Stack>
 
+      {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[
           { label: 'Total All Time', value: summary?.totalAllTime ?? 0 },
@@ -110,32 +138,24 @@ export default function ExpenseListPage() {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="body2" color="text.secondary">{card.label}</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'error.main' }}>
-                  {fmt(card.value)}
-                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'error.main' }}>{fmt(card.value)}</Typography>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
+      {/* Filters */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
           <TextField
-            label="Search by code / description"
-            size="small"
-            value={search}
+            label="Search" size="small" value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') setPage(0); }}
-            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}
+            sx={{ minWidth: 200 }}
           />
-          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 200 } }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Category</InputLabel>
-            <Select
-              label="Category"
-              value={category}
-              onChange={(e) => { setCategory(e.target.value); setPage(0); }}
-            >
+            <Select label="Category" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
               {(Object.keys(categoryLabels) as ExpenseCategory[]).map((k) => (
                 <MenuItem key={k} value={k}>{categoryLabels[k]}</MenuItem>
@@ -143,29 +163,39 @@ export default function ExpenseListPage() {
             </Select>
           </FormControl>
           <TextField
-            label="From Date"
-            type="date"
-            size="small"
-            value={fromDate}
+            label="From Date" type="date" size="small" value={fromDate}
             onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
-            slotProps={{ inputLabel: { shrink: true } }}
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 150 }}
           />
           <TextField
-            label="To Date"
-            type="date"
-            size="small"
-            value={toDate}
+            label="To Date" type="date" size="small" value={toDate}
             onChange={(e) => { setToDate(e.target.value); setPage(0); }}
-            slotProps={{ inputLabel: { shrink: true } }}
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 150 }}
           />
-          {(fromDate || toDate || search || category) && (
-            <Button size="small" onClick={() => { setSearch(''); setCategory(''); setFromDate(''); setToDate(''); setPage(0); }}>
+          <TextField
+            label="Min Amount" type="number" size="small" value={amountMin}
+            onChange={(e) => { setAmountMin(e.target.value); setPage(0); }}
+            slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+            sx={{ minWidth: 140 }}
+          />
+          <TextField
+            label="Max Amount" type="number" size="small" value={amountMax}
+            onChange={(e) => { setAmountMax(e.target.value); setPage(0); }}
+            slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+            sx={{ minWidth: 140 }}
+          />
+          {hasFilters && (
+            <Button size="small" variant="text" onClick={() => {
+              setSearch(''); setCategory(''); setFromDate(''); setToDate('');
+              setAmountMin(''); setAmountMax(''); setPage(0);
+            }}>
               Clear
             </Button>
           )}
         </Stack>
       </Paper>
 
+      {/* Table */}
       <TableContainer component={Paper} variant="outlined">
         <Table size="small">
           <TableHead>
@@ -185,16 +215,19 @@ export default function ExpenseListPage() {
                 {data?.items.map((row) => (
                   <TableRow key={row.id} hover>
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
-                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>
                       <Chip label={categoryLabels[row.category]} size="small" />
                     </TableCell>
-                    <TableCell>{row.description}</TableCell>
+                    <TableCell>{row.description ?? '-'}</TableCell>
                     <TableCell>{row.vendor ?? '-'}</TableCell>
-                    <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>
-                      {fmt(row.amount)}
-                    </TableCell>
+                    <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>{fmt(row.amount)}</TableCell>
                     <TableCell align="right">
+                      <Tooltip title="View">
+                        <IconButton size="small" onClick={() => navigate(`/expense/${row.id}`)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <PermissionGate permission={Perms.Expense.Edit}>
                         <Tooltip title="Edit">
                           <IconButton size="small" onClick={() => navigate(`/expense/${row.id}/edit`)}>
@@ -221,11 +254,6 @@ export default function ExpenseListPage() {
             )}
           </TableBody>
         </Table>
-        {(data?.totalCount ?? 0) > 0 && (
-          <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1, display: 'block', borderTop: '1px solid', borderColor: 'divider' }}>
-            Showing {Math.min(page * rowsPerPage + 1, data?.totalCount ?? 0)}–{Math.min((page + 1) * rowsPerPage, data?.totalCount ?? 0)} of {data?.totalCount ?? 0} records
-          </Typography>
-        )}
         <TablePagination
           component="div"
           count={data?.totalCount ?? 0}

@@ -71,7 +71,7 @@ export class UpdateExpenseDto {
 
   @ApiPropertyOptional({ example: '2026-07-01' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   date?: string;
 
   @ApiPropertyOptional({ example: 'Payment for foundation work' })
@@ -124,4 +124,18 @@ export class ExpenseQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ example: 1000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountMin?: number;
+
+  @ApiPropertyOptional({ example: 500000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountMax?: number;
 }

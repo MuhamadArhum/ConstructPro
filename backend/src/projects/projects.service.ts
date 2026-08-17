@@ -10,6 +10,7 @@ import {
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateProjectExpenseDto,
+  UpdateProjectExpenseDto,
   AssignLabourDto,
   AssignMachineryDto,
 } from './dto/project.dto';
@@ -24,6 +25,9 @@ export class ProjectsService {
     pageSize = 10,
     search?: string,
     status?: string,
+    clientId?: string,
+    startDateFrom?: string,
+    startDateTo?: string,
   ) {
     const skip = (page - 1) * pageSize;
 
@@ -38,8 +42,13 @@ export class ProjectsService {
       ];
     }
 
-    if (status) {
-      where.status = status;
+    if (status) where.status = status;
+    if (clientId) where.clientId = clientId;
+
+    if (startDateFrom || startDateTo) {
+      where.startDate = {};
+      if (startDateFrom) where.startDate.gte = new Date(startDateFrom);
+      if (startDateTo) where.startDate.lte = new Date(startDateTo);
     }
 
     const [data, total] = await Promise.all([
@@ -218,6 +227,19 @@ export class ProjectsService {
       },
     });
 
+    // Auto-calculate progress from milestone completion ratio
+    if (dto.isCompleted !== undefined) {
+      const allMilestones = await this.prisma.projectMilestone.findMany({
+        where: { projectId },
+        select: { isCompleted: true },
+      });
+      const completedCount = allMilestones.filter((m) => m.isCompleted).length;
+      const progress = allMilestones.length > 0
+        ? Math.round((completedCount / allMilestones.length) * 100)
+        : 0;
+      await this.prisma.project.update({ where: { id: projectId }, data: { progress } });
+    }
+
     return updated;
   }
 
@@ -232,6 +254,25 @@ export class ProjectsService {
   }
 
   // ── Expenses ────────────────────────────────────────────────────────────────
+
+  async getSummary() {
+    const now = new Date();
+    const [projects, overdueMilestones] = await Promise.all([
+      this.prisma.project.findMany({
+        select: { status: true, budget: true, spent: true },
+      }),
+      this.prisma.projectMilestone.count({
+        where: { isCompleted: false, dueDate: { lt: now } },
+      }),
+    ]);
+
+    const totalProjects = projects.length;
+    const activeProjects = projects.filter((p) => p.status === 'Active').length;
+    const totalBudget = projects.reduce((s, p) => s + Number(p.budget), 0);
+    const totalSpent = projects.reduce((s, p) => s + Number(p.spent), 0);
+
+    return { totalProjects, activeProjects, totalBudget, totalSpent, overdueMilestones };
+  }
 
   async addExpense(projectId: string, dto: CreateProjectExpenseDto) {
     await this.findOne(projectId);
@@ -249,6 +290,26 @@ export class ProjectsService {
     await this.syncSpent(projectId);
 
     return { ...expense, amount: Number(expense.amount) };
+  }
+
+  async updateExpense(projectId: string, expenseId: string, dto: UpdateProjectExpenseDto) {
+    const expense = await this.prisma.projectExpense.findFirst({
+      where: { id: expenseId, projectId },
+    });
+    if (!expense) throw new NotFoundException('Expense not found');
+
+    const updated = await this.prisma.projectExpense.update({
+      where: { id: expenseId },
+      data: {
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.description !== undefined && { description: dto.description }),
+      },
+    });
+
+    await this.syncSpent(projectId);
+    return { ...updated, amount: Number(updated.amount) };
   }
 
   async deleteExpense(projectId: string, expenseId: string) {

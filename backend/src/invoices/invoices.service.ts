@@ -16,12 +16,14 @@ export class InvoicesService {
     status?: string,
     customerId?: string,
     search?: string,
+    projectId?: string,
   ) {
     const skip = (page - 1) * pageSize;
     const where: any = {};
 
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
+    if (projectId) where.projectId = projectId;
     if (search) {
       where.OR = [
         { invoiceNumber: { contains: search } },

@@ -15,6 +15,7 @@ export class PurchaseOrdersService {
     pageSize = 10,
     status?: string,
     supplierId?: string,
+    projectId?: string,
   ) {
     try {
       const skip = (page - 1) * pageSize;
@@ -22,6 +23,7 @@ export class PurchaseOrdersService {
 
       if (status) where.status = status;
       if (supplierId) where.supplierId = supplierId;
+      if (projectId) where.projectId = projectId;
 
       const [data, total] = await Promise.all([
         this.prisma.purchaseOrder.findMany({

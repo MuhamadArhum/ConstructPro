@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import {
-  Box, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, InputAdornment,
   InputLabel, LinearProgress, MenuItem, Paper, Select, Stack, Tab, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
@@ -11,6 +11,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -25,6 +27,7 @@ import {
   useUpdateMilestoneMutation,
   useDeleteMilestoneMutation,
   useAddProjectExpenseMutation,
+  useUpdateProjectExpenseMutation,
   useDeleteProjectExpenseMutation,
   useAssignLabourMutation,
   useRemoveLabourMutation,
@@ -33,14 +36,32 @@ import {
 } from './projectApi';
 import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
+import { useGetInvoicesQuery } from '../invoices/invoiceApi';
+import { useGetPurchaseOrdersQuery } from '../purchase-orders/purchaseOrderApi';
 import ProjectFormDialog from './ProjectFormDialog';
 import { PROJECT_STATUS_COLORS } from '../../utils/statusColors';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 const today = () => new Date().toISOString().split('T')[0];
+const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
 
 const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
+
+const INV_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
+  if (s === 'Sent') return 'info';
+  if (s === 'Paid') return 'success';
+  if (s === 'Overdue') return 'error';
+  if (s === 'Cancelled') return 'default';
+  return 'warning';
+};
+
+const PO_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
+  if (s === 'Sent') return 'info';
+  if (s === 'Received') return 'success';
+  if (s === 'Cancelled') return 'default';
+  return 'warning';
+};
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,22 +71,28 @@ export default function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  // Milestone state
   const [milestoneOpen, setMilestoneOpen] = useState(false);
+  const [editMilestoneId, setEditMilestoneId] = useState<string | null>(null);
   const [msTitle, setMsTitle] = useState('');
   const [msDescription, setMsDescription] = useState('');
   const [msDueDate, setMsDueDate] = useState(today());
 
+  // Expense state
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
   const [expCategory, setExpCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [expAmount, setExpAmount] = useState('');
   const [expDate, setExpDate] = useState(today());
   const [expDescription, setExpDescription] = useState('');
   const [deleteExpId, setDeleteExpId] = useState<string | null>(null);
 
+  // Labour state
   const [labourOpen, setLabourOpen] = useState(false);
   const [selectedLabourId, setSelectedLabourId] = useState('');
   const [removeLabourId, setRemoveLabourId] = useState<string | null>(null);
 
+  // Machinery state
   const [machineryOpen, setMachineryOpen] = useState(false);
   const [selectedMachineryId, setSelectedMachineryId] = useState('');
   const [removeMachineryId, setRemoveMachineryId] = useState<string | null>(null);
@@ -73,12 +100,21 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading } = useGetProjectQuery(id ?? '', { skip: !id });
   const { data: laboursData } = useGetLaboursQuery({ pageSize: 1000 });
   const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 1000 });
+  const { data: invoicesData } = useGetInvoicesQuery(
+    { projectId: id, pageSize: 100 },
+    { skip: !id || tab !== 5 },
+  );
+  const { data: posData } = useGetPurchaseOrdersQuery(
+    { projectId: id, pageSize: 100 },
+    { skip: !id || tab !== 6 },
+  );
 
   const [deleteProject] = useDeleteProjectMutation();
   const [addMilestone, { isLoading: addingMs }] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
   const [deleteMilestone] = useDeleteMilestoneMutation();
   const [addExpense, { isLoading: addingExp }] = useAddProjectExpenseMutation();
+  const [updateExpense, { isLoading: updatingExp }] = useUpdateProjectExpenseMutation();
   const [deleteExpense] = useDeleteProjectExpenseMutation();
   const [assignLabour, { isLoading: assigningLabour }] = useAssignLabourMutation();
   const [removeLabour] = useRemoveLabourMutation();
@@ -96,15 +132,34 @@ export default function ProjectDetailPage() {
     setDeleteOpen(false);
   };
 
-  const handleAddMilestone = async (e: FormEvent) => {
+  const openAddMilestone = () => {
+    setEditMilestoneId(null);
+    setMsTitle(''); setMsDescription(''); setMsDueDate(today());
+    setMilestoneOpen(true);
+  };
+
+  const openEditMilestone = (ms: { id: string; title: string; description?: string | null; dueDate: string }) => {
+    setEditMilestoneId(ms.id);
+    setMsTitle(ms.title);
+    setMsDescription(ms.description ?? '');
+    setMsDueDate(ms.dueDate.split('T')[0]);
+    setMilestoneOpen(true);
+  };
+
+  const handleSaveMilestone = async (e: FormEvent) => {
     e.preventDefault();
+    const data = { title: msTitle, description: msDescription || undefined, dueDate: msDueDate };
     try {
-      await addMilestone({ id: id!, data: { title: msTitle, description: msDescription || undefined, dueDate: msDueDate } }).unwrap();
-      dispatch(showSnackbar({ message: 'Milestone added', severity: 'success' }));
+      if (editMilestoneId) {
+        await updateMilestone({ id: id!, mid: editMilestoneId, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Milestone updated', severity: 'success' }));
+      } else {
+        await addMilestone({ id: id!, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Milestone added', severity: 'success' }));
+      }
       setMilestoneOpen(false);
-      setMsTitle(''); setMsDescription(''); setMsDueDate(today());
     } catch {
-      dispatch(showSnackbar({ message: 'Failed to add milestone', severity: 'error' }));
+      dispatch(showSnackbar({ message: 'Failed to save milestone', severity: 'error' }));
     }
   };
 
@@ -126,15 +181,38 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleAddExpense = async (e: FormEvent) => {
+  const openAddExpense = () => {
+    setEditExpenseId(null);
+    setExpCategory(EXPENSE_CATEGORIES[0]);
+    setExpAmount('');
+    setExpDate(today());
+    setExpDescription('');
+    setExpenseOpen(true);
+  };
+
+  const openEditExpense = (exp: { id: string; category: string; amount: number; date: string; description?: string | null }) => {
+    setEditExpenseId(exp.id);
+    setExpCategory(exp.category);
+    setExpAmount(String(exp.amount));
+    setExpDate(exp.date.split('T')[0]);
+    setExpDescription(exp.description ?? '');
+    setExpenseOpen(true);
+  };
+
+  const handleSaveExpense = async (e: FormEvent) => {
     e.preventDefault();
+    const data = { category: expCategory, amount: parseFloat(expAmount), date: expDate, description: expDescription || undefined };
     try {
-      await addExpense({ id: id!, data: { category: expCategory, amount: parseFloat(expAmount), date: expDate, description: expDescription || undefined } }).unwrap();
-      dispatch(showSnackbar({ message: 'Expense added', severity: 'success' }));
+      if (editExpenseId) {
+        await updateExpense({ id: id!, expId: editExpenseId, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Expense updated', severity: 'success' }));
+      } else {
+        await addExpense({ id: id!, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Expense added', severity: 'success' }));
+      }
       setExpenseOpen(false);
-      setExpCategory(EXPENSE_CATEGORIES[0]); setExpAmount(''); setExpDate(today()); setExpDescription('');
     } catch {
-      dispatch(showSnackbar({ message: 'Failed to add expense', severity: 'error' }));
+      dispatch(showSnackbar({ message: 'Failed to save expense', severity: 'error' }));
     }
   };
 
@@ -197,9 +275,11 @@ export default function ProjectDetailPage() {
   if (!project) return <Typography>Project not found</Typography>;
 
   const remaining = project.budget - project.spent;
+  const budgetUsedPct = project.budget > 0 ? (project.spent / project.budget) * 100 : 0;
   const totalExpenses = project.expenses?.reduce((s, e) => s + e.amount, 0) ?? 0;
   const laboursList = laboursData?.items ?? [];
   const machineriesList = machineriesData?.items ?? [];
+  const overdueMilestones = project.milestones?.filter((m) => !m.isCompleted && isOverdue(m.dueDate)).length ?? 0;
 
   return (
     <Box>
@@ -214,6 +294,23 @@ export default function ProjectDetailPage() {
         <Button startIcon={<DeleteIcon />} variant="outlined" color="error" onClick={() => setDeleteOpen(true)}>Delete</Button>
       </Stack>
 
+      {/* Budget Alert */}
+      {project.budget > 0 && budgetUsedPct >= 100 && (
+        <Alert severity="error" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
+          Budget exceeded! Spent <strong>{fmt(project.spent)}</strong> of <strong>{fmt(project.budget)}</strong> budget.
+        </Alert>
+      )}
+      {project.budget > 0 && budgetUsedPct >= 80 && budgetUsedPct < 100 && (
+        <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
+          Budget warning: <strong>{Math.round(budgetUsedPct)}%</strong> used ({fmt(project.spent)} of {fmt(project.budget)}).
+        </Alert>
+      )}
+      {overdueMilestones > 0 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <strong>{overdueMilestones}</strong> milestone{overdueMilestones > 1 ? 's are' : ' is'} overdue.
+        </Alert>
+      )}
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card variant="outlined">
@@ -224,10 +321,20 @@ export default function ProjectDetailPage() {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card variant="outlined">
+          <Card variant="outlined" sx={{ borderColor: budgetUsedPct >= 80 ? 'warning.main' : undefined }}>
             <CardContent>
               <Typography variant="body2" color="text.secondary">Spent</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{fmt(project.spent)}</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: budgetUsedPct >= 100 ? 'error.main' : budgetUsedPct >= 80 ? 'warning.main' : 'text.primary' }}>
+                {fmt(project.spent)}
+              </Typography>
+              {project.budget > 0 && (
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(budgetUsedPct, 100)}
+                  color={budgetUsedPct >= 100 ? 'error' : budgetUsedPct >= 80 ? 'warning' : 'primary'}
+                  sx={{ mt: 0.5, height: 4, borderRadius: 2 }}
+                />
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -253,15 +360,18 @@ export default function ProjectDetailPage() {
       </Grid>
 
       <Paper variant="outlined">
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }} variant="scrollable" scrollButtons="auto">
           <Tab label="Overview" />
-          <Tab label="Milestones" />
+          <Tab label={`Milestones${overdueMilestones > 0 ? ` ⚠ ${overdueMilestones}` : ''}`} />
           <Tab label="Expenses" />
           <Tab label="Labour" />
           <Tab label="Machinery" />
+          <Tab label={`Invoices (${project.invoicesCount ?? 0})`} />
+          <Tab label={`Purchase Orders (${project.purchaseOrdersCount ?? 0})`} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
+          {/* ── Overview ── */}
           {tab === 0 && (
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -308,10 +418,11 @@ export default function ProjectDetailPage() {
             </Grid>
           )}
 
+          {/* ── Milestones ── */}
           {tab === 1 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
-                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setMilestoneOpen(true)}>
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={openAddMilestone}>
                   Add Milestone
                 </Button>
               </Stack>
@@ -327,34 +438,50 @@ export default function ProjectDetailPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {project.milestones?.map((ms) => (
-                      <TableRow key={ms.id} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{ms.title}</TableCell>
-                        <TableCell>{ms.description ?? '-'}</TableCell>
-                        <TableCell>{fmtDate(ms.dueDate)}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={ms.isCompleted ? 'Completed' : 'Pending'}
-                            color={ms.isCompleted ? 'success' : 'warning'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title={ms.isCompleted ? 'Mark Pending' : 'Mark Complete'}>
-                            <IconButton size="small" onClick={() => handleToggleMilestone(ms.id, ms.isCompleted)}>
-                              {ms.isCompleted ? <CheckCircleIcon fontSize="small" color="success" /> : <RadioButtonUncheckedIcon fontSize="small" />}
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton size="small" color="error" onClick={() => handleDeleteMilestone(ms.id)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {project.milestones?.map((ms) => {
+                      const overdue = !ms.isCompleted && isOverdue(ms.dueDate);
+                      return (
+                        <TableRow key={ms.id} hover sx={{ bgcolor: overdue ? 'error.50' : undefined }}>
+                          <TableCell sx={{ fontWeight: 600 }}>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              {overdue && <WarningAmberIcon fontSize="small" color="error" />}
+                              <span>{ms.title}</span>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>{ms.description ?? '-'}</TableCell>
+                          <TableCell sx={{ color: overdue ? 'error.main' : undefined, fontWeight: overdue ? 600 : undefined }}>
+                            {fmtDate(ms.dueDate)}
+                            {overdue && <Typography variant="caption" color="error" sx={{ ml: 0.5 }}>Overdue</Typography>}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={ms.isCompleted ? 'Completed' : overdue ? 'Overdue' : 'Pending'}
+                              color={ms.isCompleted ? 'success' : overdue ? 'error' : 'warning'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Tooltip title={ms.isCompleted ? 'Mark Pending' : 'Mark Complete'}>
+                              <IconButton size="small" onClick={() => handleToggleMilestone(ms.id, ms.isCompleted)}>
+                                {ms.isCompleted ? <CheckCircleIcon fontSize="small" color="success" /> : <RadioButtonUncheckedIcon fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit">
+                              <IconButton size="small" onClick={() => openEditMilestone(ms)}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton size="small" color="error" onClick={() => handleDeleteMilestone(ms.id)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     {!project.milestones?.length && (
-                      <TableRow><TableCell colSpan={5}><EmptyState message="No milestones yet" actionLabel="Add Milestone" onAction={() => setMilestoneOpen(true)} /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No milestones yet" actionLabel="Add Milestone" onAction={openAddMilestone} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -362,14 +489,29 @@ export default function ProjectDetailPage() {
             </>
           )}
 
+          {/* ── Expenses ── */}
           {tab === 2 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="body2">Total: <strong>{fmt(totalExpenses)}</strong></Typography>
-                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setExpenseOpen(true)}>
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={openAddExpense}>
                   Add Expense
                 </Button>
               </Stack>
+              {/* Category breakdown */}
+              {(project.expenses?.length ?? 0) > 0 && (() => {
+                const byCategory = EXPENSE_CATEGORIES.map((cat) => ({
+                  cat,
+                  total: project.expenses?.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0) ?? 0,
+                })).filter((r) => r.total > 0);
+                return (
+                  <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mb: 2 }}>
+                    {byCategory.map(({ cat, total }) => (
+                      <Chip key={cat} label={`${cat}: ${fmt(total)}`} size="small" variant="outlined" />
+                    ))}
+                  </Stack>
+                );
+              })()}
               <TableContainer component={Paper} variant="outlined">
                 <Table size="small">
                   <TableHead>
@@ -389,6 +531,11 @@ export default function ProjectDetailPage() {
                         <TableCell>{exp.description ?? '-'}</TableCell>
                         <TableCell align="right">{fmt(exp.amount)}</TableCell>
                         <TableCell align="right">
+                          <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => openEditExpense(exp)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Delete">
                             <IconButton size="small" color="error" onClick={() => setDeleteExpId(exp.id)}>
                               <DeleteIcon fontSize="small" />
@@ -398,7 +545,7 @@ export default function ProjectDetailPage() {
                       </TableRow>
                     ))}
                     {!project.expenses?.length && (
-                      <TableRow><TableCell colSpan={5}><EmptyState message="No expenses yet" actionLabel="Add Expense" onAction={() => setExpenseOpen(true)} /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No expenses yet" actionLabel="Add Expense" onAction={openAddExpense} /></TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -406,6 +553,7 @@ export default function ProjectDetailPage() {
             </>
           )}
 
+          {/* ── Labour ── */}
           {tab === 3 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
@@ -449,6 +597,7 @@ export default function ProjectDetailPage() {
             </>
           )}
 
+          {/* ── Machinery ── */}
           {tab === 4 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
@@ -491,6 +640,126 @@ export default function ProjectDetailPage() {
               </TableContainer>
             </>
           )}
+
+          {/* ── Invoices ── */}
+          {tab === 5 && (
+            <>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                {invoicesData?.data.length ? (() => {
+                  const invTotal = invoicesData.data.reduce((s, inv) => s + inv.total, 0);
+                  const invPaid = invoicesData.data.filter((inv) => inv.status === 'Paid').reduce((s, inv) => s + inv.total, 0);
+                  const invOutstanding = invTotal - invPaid;
+                  return (
+                    <Stack direction="row" spacing={2}>
+                      <Typography variant="body2">Billed: <strong>{fmt(invTotal)}</strong></Typography>
+                      <Typography variant="body2" color="success.main">Paid: <strong>{fmt(invPaid)}</strong></Typography>
+                      <Typography variant="body2" color={invOutstanding > 0 ? 'warning.main' : 'text.secondary'}>Outstanding: <strong>{fmt(invOutstanding)}</strong></Typography>
+                    </Stack>
+                  );
+                })() : <Box />}
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => navigate(`/invoices/new`)}>
+                  New Invoice
+                </Button>
+              </Stack>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Invoice #</TableCell>
+                      <TableCell>Customer</TableCell>
+                      <TableCell>Issue Date</TableCell>
+                      <TableCell>Due Date</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {invoicesData?.data.map((inv) => (
+                      <TableRow key={inv.id} hover>
+                        <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{inv.invoiceNumber}</TableCell>
+                        <TableCell>{inv.customer?.name ?? '-'}</TableCell>
+                        <TableCell>{fmtDate(inv.issueDate)}</TableCell>
+                        <TableCell>{fmtDate(inv.dueDate)}</TableCell>
+                        <TableCell align="right">{fmt(inv.total)}</TableCell>
+                        <TableCell><Chip label={inv.status} color={INV_STATUS_COLOR(inv.status)} size="small" /></TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="View">
+                            <IconButton size="small" onClick={() => navigate(`/invoices/${inv.id}`)}>
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!invoicesData?.data.length && (
+                      <TableRow><TableCell colSpan={7}><EmptyState message="No invoices for this project" actionLabel="New Invoice" onAction={() => navigate('/invoices/new')} /></TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+
+          {/* ── Purchase Orders ── */}
+          {tab === 6 && (
+            <>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                {posData?.data.length ? (() => {
+                  const poTotal = posData.data.reduce((s, po) => s + po.total, 0);
+                  const poReceived = posData.data.filter((po) => po.status === 'Received').reduce((s, po) => s + po.total, 0);
+                  const poPending = posData.data.filter((po) => !['Received', 'Cancelled'].includes(po.status)).reduce((s, po) => s + po.total, 0);
+                  return (
+                    <Stack direction="row" spacing={2}>
+                      <Typography variant="body2">Ordered: <strong>{fmt(poTotal)}</strong></Typography>
+                      <Typography variant="body2" color="success.main">Received: <strong>{fmt(poReceived)}</strong></Typography>
+                      <Typography variant="body2" color={poPending > 0 ? 'warning.main' : 'text.secondary'}>Pending: <strong>{fmt(poPending)}</strong></Typography>
+                    </Stack>
+                  );
+                })() : <Box />}
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => navigate(`/purchase-orders/new`)}>
+                  New PO
+                </Button>
+              </Stack>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>PO #</TableCell>
+                      <TableCell>Supplier</TableCell>
+                      <TableCell>Issue Date</TableCell>
+                      <TableCell>Expected Delivery</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {posData?.data.map((po) => (
+                      <TableRow key={po.id} hover>
+                        <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{po.poNumber}</TableCell>
+                        <TableCell>{po.supplier?.name ?? '-'}</TableCell>
+                        <TableCell>{fmtDate(po.issueDate)}</TableCell>
+                        <TableCell>{po.expectedDelivery ? fmtDate(po.expectedDelivery) : '-'}</TableCell>
+                        <TableCell align="right">{fmt(po.total)}</TableCell>
+                        <TableCell><Chip label={po.status} color={PO_STATUS_COLOR(po.status)} size="small" /></TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="View">
+                            <IconButton size="small" onClick={() => navigate(`/purchase-orders/${po.id}`)}>
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!posData?.data.length && (
+                      <TableRow><TableCell colSpan={7}><EmptyState message="No purchase orders for this project" actionLabel="New PO" onAction={() => navigate('/purchase-orders/new')} /></TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
         </Box>
       </Paper>
 
@@ -506,9 +775,10 @@ export default function ProjectDetailPage() {
         onCancel={() => setDeleteOpen(false)}
       />
 
+      {/* Add / Edit Milestone Dialog */}
       <Dialog open={milestoneOpen} onClose={() => setMilestoneOpen(false)} maxWidth="sm" fullWidth>
-        <form onSubmit={handleAddMilestone}>
-          <DialogTitle>Add Milestone</DialogTitle>
+        <form onSubmit={handleSaveMilestone}>
+          <DialogTitle>{editMilestoneId ? 'Edit Milestone' : 'Add Milestone'}</DialogTitle>
           <DialogContent dividers>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <TextField label="Title" value={msTitle} onChange={(e) => setMsTitle(e.target.value)} required fullWidth />
@@ -527,15 +797,16 @@ export default function ProjectDetailPage() {
           <DialogActions>
             <Button onClick={() => setMilestoneOpen(false)}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={addingMs}>
-              {addingMs ? <CircularProgress size={20} /> : 'Add'}
+              {addingMs ? <CircularProgress size={20} /> : editMilestoneId ? 'Update' : 'Add'}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
 
+      {/* Add / Edit Expense Dialog */}
       <Dialog open={expenseOpen} onClose={() => setExpenseOpen(false)} maxWidth="sm" fullWidth>
-        <form onSubmit={handleAddExpense}>
-          <DialogTitle>Add Expense</DialogTitle>
+        <form onSubmit={handleSaveExpense}>
+          <DialogTitle>{editExpenseId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
           <DialogContent dividers>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <FormControl fullWidth>
@@ -567,13 +838,14 @@ export default function ProjectDetailPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setExpenseOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={addingExp}>
-              {addingExp ? <CircularProgress size={20} /> : 'Add'}
+            <Button type="submit" variant="contained" disabled={addingExp || updatingExp}>
+              {(addingExp || updatingExp) ? <CircularProgress size={20} /> : editExpenseId ? 'Update' : 'Add'}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
 
+      {/* Assign Labour Dialog */}
       <Dialog open={labourOpen} onClose={() => setLabourOpen(false)} maxWidth="xs" fullWidth>
         <form onSubmit={handleAssignLabour}>
           <DialogTitle>Assign Labour</DialogTitle>
@@ -600,6 +872,7 @@ export default function ProjectDetailPage() {
         </form>
       </Dialog>
 
+      {/* Assign Machinery Dialog */}
       <Dialog open={machineryOpen} onClose={() => setMachineryOpen(false)} maxWidth="xs" fullWidth>
         <form onSubmit={handleAssignMachinery}>
           <DialogTitle>Assign Machinery</DialogTitle>
@@ -635,7 +908,6 @@ export default function ProjectDetailPage() {
         onConfirm={handleDeleteExpense}
         onCancel={() => setDeleteExpId(null)}
       />
-
       <ConfirmDialog
         open={Boolean(removeLabourId)}
         title="Remove Labour"
@@ -645,7 +917,6 @@ export default function ProjectDetailPage() {
         onConfirm={handleRemoveLabour}
         onCancel={() => setRemoveLabourId(null)}
       />
-
       <ConfirmDialog
         open={Boolean(removeMachineryId)}
         title="Remove Machinery"

@@ -15,10 +15,9 @@ export interface ExpenseDto {
   id: string;
   code?: string;
   category: ExpenseCategory;
-  categoryDisplay: string;
   amount: number;
   date: string;
-  description: string;
+  description?: string;
   vendor?: string;
   billPath?: string;
   createdAt: string;
@@ -30,10 +29,11 @@ export interface ExpenseSummaryDto {
 }
 
 export interface CreateExpenseRequest {
+  code?: string;
   category: ExpenseCategory;
   amount: number;
   date: string;
-  description: string;
+  description?: string;
   vendor?: string;
 }
 
@@ -46,4 +46,6 @@ export interface ExpenseQuery {
   category?: string;
   fromDate?: string;
   toDate?: string;
+  amountMin?: number;
+  amountMax?: number;
 }

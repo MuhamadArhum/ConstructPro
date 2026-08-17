@@ -42,17 +42,20 @@ export class PurchaseOrdersController {
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'supplierId', required: false })
+  @ApiQuery({ name: 'projectId', required: false })
   findAll(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('status') status?: string,
     @Query('supplierId') supplierId?: string,
+    @Query('projectId') projectId?: string,
   ) {
     return this.purchaseOrdersService.findAll(
       page ? parseInt(page, 10) : 1,
       pageSize ? parseInt(pageSize, 10) : 10,
       status,
       supplierId,
+      projectId,
     );
   }
 

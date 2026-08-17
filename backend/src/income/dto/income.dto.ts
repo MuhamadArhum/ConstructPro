@@ -145,4 +145,18 @@ export class IncomeQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ example: 1000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountMin?: number;
+
+  @ApiPropertyOptional({ example: 500000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountMax?: number;
 }

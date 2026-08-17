@@ -19,8 +19,10 @@ const ProfilePage          = lazy(() => import('../features/profile/ProfilePage'
 // Finance
 const IncomeListPage       = lazy(() => import('../features/income/IncomeListPage'));
 const IncomeFormPage       = lazy(() => import('../features/income/IncomeFormPage'));
+const IncomeDetailPage     = lazy(() => import('../features/income/IncomeDetailPage'));
 const ExpenseListPage      = lazy(() => import('../features/expense/ExpenseListPage'));
 const ExpenseFormPage      = lazy(() => import('../features/expense/ExpenseFormPage'));
+const ExpenseDetailPage    = lazy(() => import('../features/expense/ExpenseDetailPage'));
 
 // Labour & HR
 const LabourListPage       = lazy(() => import('../features/labour/LabourListPage'));
@@ -61,6 +63,7 @@ const StockTransactionPage  = lazy(() => import('../features/inventory/StockTran
 // Finance tools
 const TaxListPage           = lazy(() => import('../features/taxes/TaxListPage'));
 const TaxFormPage           = lazy(() => import('../features/taxes/TaxFormPage'));
+const TaxDetailPage         = lazy(() => import('../features/taxes/TaxDetailPage'));
 const ChartOfAccountsPage   = lazy(() => import('../features/accounts/ChartOfAccountsPage'));
 const AccountFormPage       = lazy(() => import('../features/accounts/AccountFormPage'));
 const AccountLedgerPage     = lazy(() => import('../features/accounts/AccountLedgerPage'));
@@ -110,12 +113,14 @@ export default function AppRoutes() {
           <Route element={<PermissionRoute permission={Perms.Income.View} />}>
             <Route path="/income"          element={<S><IncomeListPage /></S>} />
             <Route path="/income/new"      element={<S><IncomeFormPage /></S>} />
+            <Route path="/income/:id"      element={<S><IncomeDetailPage /></S>} />
             <Route path="/income/:id/edit" element={<S><IncomeFormPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Expense.View} />}>
             <Route path="/expense"          element={<S><ExpenseListPage /></S>} />
             <Route path="/expense/new"      element={<S><ExpenseFormPage /></S>} />
+            <Route path="/expense/:id"      element={<S><ExpenseDetailPage /></S>} />
             <Route path="/expense/:id/edit" element={<S><ExpenseFormPage /></S>} />
           </Route>
 
@@ -183,6 +188,7 @@ export default function AppRoutes() {
           <Route element={<PermissionRoute permission={Perms.Tax.View} />}>
             <Route path="/tax"          element={<S><TaxListPage /></S>} />
             <Route path="/tax/new"      element={<S><TaxFormPage /></S>} />
+            <Route path="/tax/:id"      element={<S><TaxDetailPage /></S>} />
             <Route path="/tax/:id/edit" element={<S><TaxFormPage /></S>} />
           </Route>
 

@@ -1,29 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Box,
-  Button,
-  FormControl,
-  FormControlLabel,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
+  Autocomplete, Box, Button, CircularProgress, FormControl, FormControlLabel,
+  InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Switch,
+  TextField, Typography,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import {
-  useCreateIncomeMutation,
-  useGetIncomeByIdQuery,
-  useUpdateIncomeMutation,
-  useGetNextIncomeCodeQuery,
+  useCreateIncomeMutation, useGetIncomeByIdQuery,
+  useUpdateIncomeMutation, useGetNextIncomeCodeQuery,
 } from './incomeApi';
+import { useGetCustomersQuery } from '../customers/customerApi';
+import { useGetProjectsQuery } from '../projects/projectApi';
 import type { IncomeCategory } from '../../types/income.types';
 
 const categories: { value: IncomeCategory; label: string }[] = [
@@ -38,12 +28,13 @@ export default function IncomeFormPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { data: existing, isLoading: isLoadingExisting } = useGetIncomeByIdQuery(id ?? '', {
-    skip: !isEdit,
-  });
+  const { data: existing, isLoading: isLoadingExisting } = useGetIncomeByIdQuery(id ?? '', { skip: !isEdit });
   const { data: nextCodeData, isLoading: isLoadingCode } = useGetNextIncomeCodeQuery(undefined, { skip: isEdit, refetchOnMountOrArgChange: true });
   const [create, { isLoading: isCreating }] = useCreateIncomeMutation();
   const [update, { isLoading: isUpdating }] = useUpdateIncomeMutation();
+
+  const { data: customersData } = useGetCustomersQuery({ pageSize: 1000 });
+  const { data: projectsData } = useGetProjectsQuery({ pageSize: 1000 });
 
   const [code, setCode] = useState('');
   const [category, setCategory] = useState<IncomeCategory>('CustomerPayment');
@@ -54,10 +45,11 @@ export default function IncomeFormPage() {
   const [projectName, setProjectName] = useState('');
   const [isPaid, setIsPaid] = useState(true);
 
+  const customers = customersData?.items ?? (customersData as any)?.data ?? [];
+  const projects = projectsData?.data ?? [];
+
   useEffect(() => {
-    if (!isEdit && nextCodeData?.code) {
-      setCode(nextCodeData.code);
-    }
+    if (!isEdit && nextCodeData?.code) setCode(nextCodeData.code);
   }, [nextCodeData, isEdit]);
 
   useEffect(() => {
@@ -66,7 +58,7 @@ export default function IncomeFormPage() {
       setCategory(existing.category);
       setAmount(String(existing.amount));
       setDate(existing.date.split('T')[0]);
-      setDescription(existing.description);
+      setDescription(existing.description ?? '');
       setCustomerName(existing.customerName ?? '');
       setProjectName(existing.projectName ?? '');
       setIsPaid(existing.isPaid);
@@ -84,7 +76,7 @@ export default function IncomeFormPage() {
       category,
       amount: parseFloat(amount),
       date,
-      description,
+      description: description || undefined,
       customerName: customerName || undefined,
       projectName: projectName || undefined,
       isPaid,
@@ -101,11 +93,7 @@ export default function IncomeFormPage() {
     } catch (err) {
       const apiError = err as { data?: { message?: string } };
       const msg = apiError.data?.message;
-      if (msg?.includes('Code already in use')) {
-        dispatch(showSnackbar({ message: 'Code already in use. Please choose a different code.', severity: 'error' }));
-      } else {
-        dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update income record.' : 'Failed to create income record.'), severity: 'error' }));
-      }
+      dispatch(showSnackbar({ message: msg ?? (isEdit ? 'Failed to update income record.' : 'Failed to create income record.'), severity: 'error' }));
     }
   };
 
@@ -113,9 +101,7 @@ export default function IncomeFormPage() {
 
   return (
     <Box sx={{ maxWidth: 600 }}>
-      <Typography variant="h1" sx={{ mb: 3 }}>
-        {isEdit ? 'Edit Income' : 'Add Income'}
-      </Typography>
+      <Typography variant="h1" sx={{ mb: 3 }}>{isEdit ? 'Edit Income' : 'Add Income'}</Typography>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
@@ -126,30 +112,20 @@ export default function IncomeFormPage() {
               fullWidth
               slotProps={{ input: { style: { fontFamily: 'monospace' } } }}
               disabled={isLoadingCode}
-              placeholder={isLoadingCode ? 'Generating...' : ''}
               helperText={isLoadingCode ? 'Fetching next code…' : 'Auto-generated. You may override it.'}
             />
 
             <FormControl fullWidth required>
               <InputLabel>Category</InputLabel>
-              <Select
-                label="Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as IncomeCategory)}
-              >
-                {categories.map((c) => (
-                  <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
-                ))}
+              <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value as IncomeCategory)}>
+                {categories.map((c) => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
               </Select>
             </FormControl>
 
             <TextField
-              label="Amount"
-              type="number"
-              value={amount}
+              label="Amount" type="number" value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              required
-              fullWidth
+              required fullWidth
               slotProps={{
                 input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> },
                 htmlInput: { min: 0 },
@@ -157,37 +133,33 @@ export default function IncomeFormPage() {
             />
 
             <TextField
-              label="Date"
-              type="date"
-              value={date}
+              label="Date" type="date" value={date}
               onChange={(e) => setDate(e.target.value)}
-              required
-              fullWidth
-              slotProps={{ inputLabel: { shrink: true } }}
+              required fullWidth slotProps={{ inputLabel: { shrink: true } }}
             />
 
             <TextField
-              label="Description"
-              value={description}
+              label="Description" value={description}
               onChange={(e) => setDescription(e.target.value)}
-              required
-              fullWidth
-              multiline
-              rows={2}
+              fullWidth multiline rows={2}
             />
 
-            <TextField
-              label="Customer Name"
+            {/* Customer autocomplete */}
+            <Autocomplete
+              freeSolo
+              options={customers.map((c: any) => c.companyName ?? c.name)}
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              fullWidth
+              onInputChange={(_, val) => setCustomerName(val)}
+              renderInput={(params) => <TextField {...params} label="Customer" fullWidth />}
             />
 
-            <TextField
-              label="Project Name"
+            {/* Project autocomplete */}
+            <Autocomplete
+              freeSolo
+              options={projects.map((p: any) => p.name)}
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              fullWidth
+              onInputChange={(_, val) => setProjectName(val)}
+              renderInput={(params) => <TextField {...params} label="Project" fullWidth />}
             />
 
             <FormControlLabel
@@ -198,7 +170,7 @@ export default function IncomeFormPage() {
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/income')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>
-                {isEdit ? 'Save Changes' : 'Add Income'}
+                {(isCreating || isUpdating) ? <CircularProgress size={20} /> : isEdit ? 'Save Changes' : 'Add Income'}
               </Button>
             </Stack>
           </Stack>

@@ -3,7 +3,7 @@ import type { PurchaseOrder, CreatePurchaseOrderDto } from '../../types/purchase
 
 export const purchaseOrderApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getPurchaseOrders: builder.query<{ data: PurchaseOrder[]; total: number }, { page?: number; pageSize?: number; status?: string; supplierId?: string }>({
+    getPurchaseOrders: builder.query<{ data: PurchaseOrder[]; total: number }, { page?: number; pageSize?: number; status?: string; supplierId?: string; projectId?: string }>({
       query: (params) => ({ url: '/purchase-orders', params }),
       providesTags: [{ type: 'PurchaseOrder', id: 'LIST' }],
     }),

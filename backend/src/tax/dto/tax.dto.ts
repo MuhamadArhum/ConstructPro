@@ -106,7 +106,7 @@ export class UpdateTaxDto {
 
   @ApiPropertyOptional({ example: '2026-08-15' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   dueDate?: string;
 
   @ApiPropertyOptional({ example: 'TAX-2026-001' })

@@ -1,22 +1,28 @@
 import { useState } from 'react';
 import {
-  Box, Button, Chip, FormControl, IconButton, InputLabel, LinearProgress,
-  MenuItem, Paper, Select, Stack, Table, TableBody, TableCell,
-  TableContainer, TableHead, TablePagination, TableRow, TextField,
-  Tooltip, Typography,
+  Box, Button, Card, CardContent, Chip, FormControl, Grid, IconButton,
+  InputLabel, LinearProgress, MenuItem, Paper, Select, Skeleton, Stack,
+  Table, TableBody, TableCell, TableContainer, TableHead, TablePagination,
+  TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import TableSkeleton from '../../components/common/TableSkeleton';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useGetProjectsQuery, useDeleteProjectMutation } from './projectApi';
+import { useGetProjectsQuery, useDeleteProjectMutation, useGetProjectSummaryQuery } from './projectApi';
 import ProjectFormDialog from './ProjectFormDialog';
 import type { ProjectStatus } from '../../types/project.types';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
 const STATUS_COLORS: Record<ProjectStatus, 'info' | 'success' | 'warning' | 'primary' | 'error'> = {
@@ -37,14 +43,20 @@ export default function ProjectListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [startDateFrom, setStartDateFrom] = useState('');
+  const [startDateTo, setStartDateTo] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data: summary, isLoading: summaryLoading } = useGetProjectSummaryQuery();
 
   const { data, isLoading } = useGetProjectsQuery({
     page: page + 1,
     pageSize: rowsPerPage,
     search: search || undefined,
     status: status || undefined,
+    startDateFrom: startDateFrom || undefined,
+    startDateTo: startDateTo || undefined,
   });
 
   const [deleteProject] = useDeleteProjectMutation();
@@ -73,8 +85,34 @@ export default function ProjectListPage() {
         </Button>
       </Stack>
 
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {([
+          { label: 'Total Projects', value: summary?.totalProjects ?? 0, icon: <FolderOpenIcon />, color: 'primary.main' },
+          { label: 'Active Projects', value: summary?.activeProjects ?? 0, icon: <CheckCircleOutlineIcon />, color: 'success.main' },
+          { label: 'Total Budget', value: fmt(summary?.totalBudget ?? 0), icon: <AccountBalanceWalletIcon />, color: 'info.main' },
+          { label: 'Total Spent', value: fmt(summary?.totalSpent ?? 0), icon: <TrendingUpIcon />, color: 'warning.main' },
+          { label: 'Overdue Milestones', value: summary?.overdueMilestones ?? 0, icon: <WarningAmberIcon />, color: (summary?.overdueMilestones ?? 0) > 0 ? 'error.main' : 'text.secondary' },
+        ] as const).map(({ label, value, icon, color }) => (
+          <Grid key={label} size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                  <Box sx={{ color, display: 'flex' }}>{icon}</Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>{label}</Typography>
+                </Stack>
+                {summaryLoading ? (
+                  <Skeleton variant="text" width="60%" height={32} />
+                ) : (
+                  <Typography variant="h6" sx={{ fontWeight: 700, color }}>{value}</Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
           <TextField
             label="Search by code / name"
             size="small"
@@ -82,15 +120,42 @@ export default function ProjectListPage() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
             onBlur={() => { setSearch(searchInput); setPage(0); }}
-            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 250 } }}
+            sx={{ minWidth: 220 }}
           />
-          <FormControl size="small" sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Status</InputLabel>
             <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
               {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
             </Select>
           </FormControl>
+          <TextField
+            label="Start Date From"
+            type="date"
+            size="small"
+            value={startDateFrom}
+            onChange={(e) => { setStartDateFrom(e.target.value); setPage(0); }}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 160 }}
+          />
+          <TextField
+            label="Start Date To"
+            type="date"
+            size="small"
+            value={startDateTo}
+            onChange={(e) => { setStartDateTo(e.target.value); setPage(0); }}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 160 }}
+          />
+          {(search || status || startDateFrom || startDateTo) && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => { setSearchInput(''); setSearch(''); setStatus(''); setStartDateFrom(''); setStartDateTo(''); setPage(0); }}
+            >
+              Clear
+            </Button>
+          )}
         </Stack>
       </Paper>
 

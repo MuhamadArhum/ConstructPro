@@ -1,9 +1,17 @@
 import { baseApi } from '../../api/baseApi';
 import type { Project, ProjectDetail, ProjectStats, ProjectMilestone, ProjectExpense, ProjectLabour, ProjectMachinery } from '../../types/project.types';
 
+export interface ProjectSummary {
+  totalProjects: number;
+  activeProjects: number;
+  totalBudget: number;
+  totalSpent: number;
+  overdueMilestones: number;
+}
+
 export const projectApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getProjects: builder.query<{ data: Project[]; total: number }, { page?: number; pageSize?: number; search?: string; status?: string }>({
+    getProjects: builder.query<{ data: Project[]; total: number }, { page?: number; pageSize?: number; search?: string; status?: string; clientId?: string; startDateFrom?: string; startDateTo?: string }>({
       query: (params) => ({ url: '/projects', params }),
       providesTags: [{ type: 'Project', id: 'LIST' }],
     }),
@@ -42,9 +50,17 @@ export const projectApi = baseApi.injectEndpoints({
       query: ({ id, data }) => ({ url: `/projects/${id}/expenses`, method: 'POST', data }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
     }),
+    updateProjectExpense: builder.mutation<ProjectExpense, { id: string; expId: string; data: Partial<ProjectExpense> }>({
+      query: ({ id, expId, data }) => ({ url: `/projects/${id}/expenses/${expId}`, method: 'PATCH', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
     deleteProjectExpense: builder.mutation<void, { id: string; expId: string }>({
       query: ({ id, expId }) => ({ url: `/projects/${id}/expenses/${expId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    getProjectSummary: builder.query<ProjectSummary, void>({
+      query: () => ({ url: '/projects/summary' }),
+      providesTags: [{ type: 'Project', id: 'LIST' }],
     }),
     assignLabour: builder.mutation<ProjectLabour, { id: string; data: { labourId: string } }>({
       query: ({ id, data }) => ({ url: `/projects/${id}/labours`, method: 'POST', data }),
@@ -79,10 +95,12 @@ export const {
   useUpdateMilestoneMutation,
   useDeleteMilestoneMutation,
   useAddProjectExpenseMutation,
+  useUpdateProjectExpenseMutation,
   useDeleteProjectExpenseMutation,
   useAssignLabourMutation,
   useRemoveLabourMutation,
   useAssignMachineryMutation,
   useRemoveMachineryMutation,
   useGetNextProjectCodeQuery,
+  useGetProjectSummaryQuery,
 } = projectApi;

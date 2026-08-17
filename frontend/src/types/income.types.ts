@@ -4,10 +4,9 @@ export interface IncomeDto {
   id: string;
   code?: string;
   category: IncomeCategory;
-  categoryDisplay: string;
   amount: number;
   date: string;
-  description: string;
+  description?: string;
   customerName?: string;
   projectName?: string;
   receiptPath?: string;
@@ -23,10 +22,11 @@ export interface IncomeSummaryDto {
 }
 
 export interface CreateIncomeRequest {
+  code?: string;
   category: IncomeCategory;
   amount: number;
   date: string;
-  description: string;
+  description?: string;
   customerName?: string;
   projectName?: string;
   isPaid: boolean;
@@ -41,4 +41,6 @@ export interface IncomeQuery {
   category?: string;
   fromDate?: string;
   toDate?: string;
+  amountMin?: number;
+  amountMax?: number;
 }
