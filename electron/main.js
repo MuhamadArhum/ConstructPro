@@ -427,6 +427,8 @@ function showUpdatePopup(version) {
   });
 }
 
+ipcMain.handle('get-app-version', () => app.getVersion());
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -476,6 +478,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
     show: false,
     backgroundColor: '#f5f7fa',

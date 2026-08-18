@@ -1,15 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from './settingsApi';
 import Loader from '../../components/common/Loader';
+
+declare global { interface Window { electronAPI?: { getVersion: () => Promise<string> } } }
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const { data: settings, isLoading } = useGetSettingsQuery();
   const [updateSettings, { isLoading: isUpdating }] = useUpdateSettingsMutation();
 
+  const [appVersion, setAppVersion] = useState<string>('');
   const [companyName, setCompanyName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -19,6 +22,10 @@ export default function SettingsPage() {
   const [strn, setStrn] = useState('');
   const [currency, setCurrency] = useState('PKR');
   const [financialYearStart, setFinancialYearStart] = useState('');
+
+  useEffect(() => {
+    window.electronAPI?.getVersion().then(setAppVersion).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (settings) {
@@ -80,6 +87,18 @@ export default function SettingsPage() {
           </Stack>
         </form>
       </Paper>
+
+      {appVersion && (
+        <Paper variant="outlined" sx={{ p: 3, mt: 3 }}>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6">About</Typography>
+              <Typography variant="body2" color="text.secondary">ConstructPro — Construction ERP Management System</Typography>
+            </Box>
+            <Chip label={`v${appVersion}`} color="primary" variant="outlined" />
+          </Stack>
+        </Paper>
+      )}
     </Box>
   );
 }
