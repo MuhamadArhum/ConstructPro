@@ -26,7 +26,6 @@ import {
   UpdateEmployeeDto,
   ProcessSalaryDto,
   EmployeeQueryDto,
-  BulkProcessSalaryDto,
 } from './dto/employee.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -55,14 +54,6 @@ export class EmployeesController {
     return this.employeesService.getNextCode().then((code) => ({ code }));
   }
 
-  @Get('summary')
-  @HasPermission('Employees.View')
-  @ApiOperation({ summary: 'Get employee summary stats' })
-  @ApiResponse({ status: 200, description: 'Returns summary stats' })
-  getSummary() {
-    return this.employeesService.getSummary();
-  }
-
   // NOTE: GET /salaries MUST be before GET /:id to avoid route conflict
   @Get('salaries')
   @HasPermission('Employees.View')
@@ -75,26 +66,6 @@ export class EmployeesController {
     @Query('year') year: string,
   ) {
     return this.employeesService.getAllSalaries(Number(month), Number(year));
-  }
-
-  // NOTE: POST salary/bulk and DELETE salary/:salaryId MUST be before /:id routes
-  @Post('salary/bulk')
-  @HasPermission('Employees.Edit')
-  @ApiOperation({ summary: 'Bulk process salary for multiple employees' })
-  @ApiResponse({ status: 201, description: 'Bulk salary processed' })
-  bulkProcessSalary(@Body() dto: BulkProcessSalaryDto) {
-    return this.employeesService.bulkProcessSalary(dto);
-  }
-
-  @Delete('salary/:salaryId')
-  @HasPermission('Employees.Edit')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a salary payment record' })
-  @ApiParam({ name: 'salaryId', description: 'Salary Payment UUID' })
-  @ApiResponse({ status: 200, description: 'Salary record deleted' })
-  @ApiResponse({ status: 404, description: 'Salary record not found' })
-  deleteSalary(@Param('salaryId') salaryId: string) {
-    return this.employeesService.deleteSalary(salaryId);
   }
 
   @Get(':id')

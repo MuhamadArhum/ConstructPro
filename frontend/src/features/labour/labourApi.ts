@@ -5,30 +5,17 @@ import type {
   LabourAttendanceDto,
   LabourAdvanceDto,
   LabourLedgerDto,
-  LabourSummaryDto,
-  LabourAttendanceByDateItem,
-  LabourPayrollSummaryItem,
-  LabourProjectAssignment,
   CreateLabourRequest,
   UpdateLabourRequest,
   UpsertAttendanceRequest,
   AddAdvanceRequest,
-  AssignLabourToProjectRequest,
 } from '../../types/labour.types';
 
 export const labourApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLabours: builder.query<
       PaginatedList<LabourDto>,
-      {
-        pageNumber?: number;
-        pageSize?: number;
-        search?: string;
-        trade?: string;
-        isActive?: boolean;
-        joinDateFrom?: string;
-        joinDateTo?: string;
-      }
+      { pageNumber?: number; pageSize?: number; search?: string; trade?: string; isActive?: boolean }
     >({
       query: (params) => ({ url: '/labour', params }),
       providesTags: ['Labour'],
@@ -67,20 +54,12 @@ export const labourApi = baseApi.injectEndpoints({
       query: (data) => ({ url: '/labour/attendance', method: 'POST', data }),
       invalidatesTags: ['Labour'],
     }),
-    bulkUpsertAttendance: builder.mutation<{ saved: number }, { records: UpsertAttendanceRequest[] }>({
-      query: (data) => ({ url: '/labour/attendance/bulk', method: 'POST', data }),
-      invalidatesTags: ['Labour'],
-    }),
     getLabourAdvances: builder.query<LabourAdvanceDto[], string>({
       query: (id) => ({ url: `/labour/${id}/advances` }),
       providesTags: ['Labour'],
     }),
     addLabourAdvance: builder.mutation<LabourAdvanceDto, { id: string; data: AddAdvanceRequest }>({
       query: ({ id, data }) => ({ url: `/labour/${id}/advances`, method: 'POST', data }),
-      invalidatesTags: ['Labour'],
-    }),
-    deleteLabourAdvance: builder.mutation<{ deleted: boolean }, string>({
-      query: (id) => ({ url: `/labour/advances/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Labour'],
     }),
     getLabourLedger: builder.query<LabourLedgerDto, { id: string; month: number; year: number }>({
@@ -92,45 +71,6 @@ export const labourApi = baseApi.injectEndpoints({
     }),
     getNextLabourCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/labour/next-code' }),
-    }),
-    getLabourSummary: builder.query<LabourSummaryDto, void>({
-      query: () => ({ url: '/labour/summary' }),
-      providesTags: ['Labour'],
-    }),
-    getLabourAttendanceByDate: builder.query<LabourAttendanceByDateItem[], string>({
-      query: (date) => ({ url: '/labour/attendance/by-date', params: { date } }),
-      providesTags: ['Labour'],
-    }),
-    getLabourPayrollSummary: builder.query<
-      LabourPayrollSummaryItem[],
-      { month: number; year: number }
-    >({
-      query: ({ month, year }) => ({
-        url: '/labour/payroll-summary',
-        params: { month, year },
-      }),
-      providesTags: ['Labour'],
-    }),
-    getLabourProjects: builder.query<LabourProjectAssignment[], string>({
-      query: (id) => ({ url: `/labour/${id}/projects` }),
-      providesTags: ['Labour'],
-    }),
-    assignLabourToProject: builder.mutation<
-      LabourProjectAssignment,
-      { id: string; data: AssignLabourToProjectRequest }
-    >({
-      query: ({ id, data }) => ({ url: `/labour/${id}/projects`, method: 'POST', data }),
-      invalidatesTags: ['Labour'],
-    }),
-    removeLabourProject: builder.mutation<
-      { deleted: boolean },
-      { labourId: string; projectId: string }
-    >({
-      query: ({ labourId, projectId }) => ({
-        url: `/labour/${labourId}/projects/${projectId}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Labour'],
     }),
   }),
 });
@@ -144,16 +84,8 @@ export const {
   useActivateLabourMutation,
   useGetLabourAttendanceQuery,
   useUpsertAttendanceMutation,
-  useBulkUpsertAttendanceMutation,
   useGetLabourAdvancesQuery,
   useAddLabourAdvanceMutation,
-  useDeleteLabourAdvanceMutation,
   useGetLabourLedgerQuery,
   useGetNextLabourCodeQuery,
-  useGetLabourSummaryQuery,
-  useGetLabourAttendanceByDateQuery,
-  useGetLabourPayrollSummaryQuery,
-  useGetLabourProjectsQuery,
-  useAssignLabourToProjectMutation,
-  useRemoveLabourProjectMutation,
 } = labourApi;

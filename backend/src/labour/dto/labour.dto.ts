@@ -204,36 +204,4 @@ export class LabourQueryDto {
   })
   @IsBoolean()
   isActive?: boolean;
-
-  @ApiPropertyOptional({ example: '2024-01-01' })
-  @IsOptional()
-  @IsDateString()
-  joinDateFrom?: string;
-
-  @ApiPropertyOptional({ example: '2024-12-31' })
-  @IsOptional()
-  @IsDateString()
-  joinDateTo?: string;
-}
-
-export class AssignLabourToProjectDto {
-  @ApiProperty({ example: 'project-uuid-here' })
-  @IsString()
-  @IsNotEmpty()
-  projectId: string;
-
-  @ApiPropertyOptional({ example: 'Mason' })
-  @IsOptional()
-  @IsString()
-  role?: string;
-
-  @ApiPropertyOptional({ example: '2024-01-01' })
-  @IsOptional()
-  @IsDateString()
-  startDate?: string;
-
-  @ApiPropertyOptional({ example: '2024-12-31' })
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
 }

@@ -2,11 +2,8 @@ import { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -29,63 +26,16 @@ import EditIcon from '@mui/icons-material/Edit';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import GroupOffIcon from '@mui/icons-material/GroupOff';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
-import {
-  useGetLaboursQuery,
-  useDeactivateLabourMutation,
-  useActivateLabourMutation,
-  useGetLabourSummaryQuery,
-} from './labourApi';
+import { useGetLaboursQuery, useDeactivateLabourMutation, useActivateLabourMutation } from './labourApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
-
-interface SummaryCardProps {
-  label: string;
-  value: string | number;
-  color: 'info' | 'default' | 'warning' | 'error';
-  icon: React.ReactNode;
-}
-
-function SummaryCard({ label, value, color, icon }: SummaryCardProps) {
-  const colorMap: Record<string, string> = {
-    info: '#1976d2',
-    default: '#757575',
-    warning: '#ed6c02',
-    error: '#d32f2f',
-  };
-  const bgMap: Record<string, string> = {
-    info: '#e3f2fd',
-    default: '#f5f5f5',
-    warning: '#fff3e0',
-    error: '#ffebee',
-  };
-  return (
-    <Card variant="outlined" sx={{ borderColor: colorMap[color], bgcolor: bgMap[color] }}>
-      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          <Box sx={{ color: colorMap[color] }}>{icon}</Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">{label}</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: colorMap[color], lineHeight: 1.2 }}>{value}</Typography>
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function LabourListPage() {
   const navigate = useNavigate();
@@ -96,8 +46,6 @@ export default function LabourListPage() {
   const [search, setSearch] = useState('');
   const [trade, setTrade] = useState('');
   const [isActive, setIsActive] = useState('');
-  const [joinDateFrom, setJoinDateFrom] = useState('');
-  const [joinDateTo, setJoinDateTo] = useState('');
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetLaboursQuery({
@@ -106,25 +54,10 @@ export default function LabourListPage() {
     search: search || undefined,
     trade: trade || undefined,
     isActive: isActive === '' ? undefined : isActive === 'true',
-    joinDateFrom: joinDateFrom || undefined,
-    joinDateTo: joinDateTo || undefined,
   });
-
-  const { data: summary } = useGetLabourSummaryQuery();
 
   const [deactivateLabour] = useDeactivateLabourMutation();
   const [activateLabour] = useActivateLabourMutation();
-
-  const hasFilters = Boolean(search || trade || isActive || joinDateFrom || joinDateTo);
-
-  const handleClearFilters = () => {
-    setSearch('');
-    setTrade('');
-    setIsActive('');
-    setJoinDateFrom('');
-    setJoinDateTo('');
-    setPage(0);
-  };
 
   const handleActivate = async (id: string) => {
     try {
@@ -149,65 +82,19 @@ export default function LabourListPage() {
 
   return (
     <Box>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">Labour</Typography>
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            startIcon={<ReceiptLongIcon />}
-            onClick={() => navigate('/labour/payroll')}
-            size="small"
-          >
-            Monthly Payroll
+        <PermissionGate permission={Perms.Labour.Create}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/labour/new')}>
+            Add Labour
           </Button>
-          <PermissionGate permission={Perms.Labour.Create}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/labour/new')}>
-              Add Labour
-            </Button>
-          </PermissionGate>
-        </Stack>
+        </PermissionGate>
       </Stack>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Total Active Workers"
-            value={summary?.totalActive ?? '—'}
-            color="info"
-            icon={<PeopleAltIcon />}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Total Inactive Workers"
-            value={summary?.totalInactive ?? '—'}
-            color="default"
-            icon={<GroupOffIcon />}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Daily Wage Bill"
-            value={summary ? fmt(summary.totalDailyWageBill) : '—'}
-            color="warning"
-            icon={<AttachMoneyIcon />}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Total Pending Advances"
-            value={summary ? fmt(summary.totalPendingAdvances) : '—'}
-            color="error"
-            icon={<AccountBalanceWalletIcon />}
-          />
-        </Grid>
-      </Grid>
-
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Search by code, name, trade, phone"
+            label="Search by code, name, trade, CNIC"
             size="small"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
@@ -230,27 +117,6 @@ export default function LabourListPage() {
               <MenuItem value="false">Inactive</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            label="Join Date From"
-            type="date"
-            size="small"
-            value={joinDateFrom}
-            onChange={(e) => { setJoinDateFrom(e.target.value); setPage(0); }}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}
-          />
-          <TextField
-            label="Join Date To"
-            type="date"
-            size="small"
-            value={joinDateTo}
-            onChange={(e) => { setJoinDateTo(e.target.value); setPage(0); }}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 160 } }}
-          />
-          {hasFilters && (
-            <Button size="small" onClick={handleClearFilters}>Clear Filters</Button>
-          )}
         </Stack>
       </Paper>
 
@@ -295,19 +161,9 @@ export default function LabourListPage() {
                       {fmt(row.totalAdvances)}
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="View Profile">
-                        <IconButton size="small" onClick={() => navigate(`/labour/${row.id}`)}>
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                       <Tooltip title="Attendance">
                         <IconButton size="small" onClick={() => navigate(`/labour/${row.id}/attendance`)}>
                           <EventNoteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Payroll">
-                        <IconButton size="small" onClick={() => navigate(`/labour/${row.id}/payroll`)}>
-                          <MonetizationOnIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <PermissionGate permission={Perms.Labour.Edit}>
