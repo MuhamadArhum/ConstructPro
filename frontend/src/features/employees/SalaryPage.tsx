@@ -68,7 +68,7 @@ export default function SalaryPage() {
   const { data: employee, isLoading: empLoading } = useGetEmployeeByIdQuery(id ?? '', { skip: !id });
   const { data: salaryHistory, isLoading: histLoading } = useGetSalaryHistoryQuery(id ?? '', { skip: !id });
   const [processSalary, { isLoading: processing }] = useProcessSalaryMutation();
-  const [deleteSalary, { isLoading: deleting }] = useDeleteSalaryMutation();
+  const [deleteSalary] = useDeleteSalaryMutation();
 
   const handleOpen = () => {
     setBasicSalary(String(employee?.basicSalary ?? ''));

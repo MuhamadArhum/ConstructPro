@@ -164,7 +164,7 @@ export default function BulkSalaryPage() {
 
       {/* Month/Year Selector */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel>Month</InputLabel>
             <Select label="Month" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
@@ -339,7 +339,7 @@ export default function BulkSalaryPage() {
       {/* Bottom action bar */}
       {rows.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="body2" color="text.secondary">
               {includedRows.length} of {rows.length} employees selected
               {includedRows.length > 0 && (

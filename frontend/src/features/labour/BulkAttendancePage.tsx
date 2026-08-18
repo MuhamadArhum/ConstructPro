@@ -109,8 +109,8 @@ export default function BulkAttendancePage() {
       <AppBreadcrumbs crumbs={[{ label: 'Labour', to: '/labour' }, { label: 'Bulk Attendance' }]} />
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, alignItems: { sm: 'center' } }}>
-        <Typography variant="h1" flex={1}>Bulk Attendance</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Typography variant="h1" sx={{ flex: 1 }}>Bulk Attendance</Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <TextField
             label="Date"
             type="date"

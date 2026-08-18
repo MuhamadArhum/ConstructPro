@@ -76,7 +76,7 @@ function SummaryCard({ label, value, color, icon }: SummaryCardProps) {
   return (
     <Card variant="outlined" sx={{ borderColor: colorMap[color], bgcolor: bgMap[color] }}>
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           <Box sx={{ color: colorMap[color] }}>{icon}</Box>
           <Box>
             <Typography variant="caption" color="text.secondary">{label}</Typography>
@@ -179,7 +179,7 @@ export default function LabourListPage() {
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <SummaryCard
             label="Total Active Workers"
             value={summary?.totalActive ?? '—'}
@@ -187,7 +187,7 @@ export default function LabourListPage() {
             icon={<PeopleAltIcon />}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <SummaryCard
             label="Total Inactive Workers"
             value={summary?.totalInactive ?? '—'}
@@ -195,7 +195,7 @@ export default function LabourListPage() {
             icon={<GroupOffIcon />}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <SummaryCard
             label="Daily Wage Bill"
             value={summary ? fmt(summary.totalDailyWageBill) : '—'}
@@ -203,7 +203,7 @@ export default function LabourListPage() {
             icon={<AttachMoneyIcon />}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <SummaryCard
             label="Total Pending Advances"
             value={summary ? fmt(summary.totalPendingAdvances) : '—'}
@@ -214,7 +214,7 @@ export default function LabourListPage() {
       </Grid>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap' }}>
           <TextField
             label="Search by code, name, trade, phone"
             size="small"

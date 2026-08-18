@@ -98,7 +98,7 @@ export default function EmployeeDetailPage() {
 
       <Grid container spacing={3}>
         {/* Profile Card */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper variant="outlined" sx={{ p: 3 }}>
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" sx={{ flex: 1 }}>Profile</Typography>
@@ -127,7 +127,7 @@ export default function EmployeeDetailPage() {
         </Grid>
 
         {/* Current Month Payroll */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Current Month Payroll</Typography>
             <Divider sx={{ mb: 2 }} />
@@ -226,7 +226,7 @@ export default function EmployeeDetailPage() {
       {/* Quick action card at the bottom */}
       <Card variant="outlined" sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa' }}>
         <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
               Quick Actions
             </Typography>

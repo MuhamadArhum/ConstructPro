@@ -21,7 +21,6 @@ import {
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import { useParams } from 'react-router-dom';
-import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetLabourLedgerQuery } from './labourApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
@@ -63,7 +62,7 @@ export default function LabourPayrollPage() {
       </Box>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, alignItems: { sm: 'center' } }}>
-        <Box flex={1}>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h1" id="payroll-heading">
             {labour?.name ?? '…'} — Payroll — {months[month - 1]} {year}
           </Typography>
@@ -106,7 +105,7 @@ export default function LabourPayrollPage() {
             { label: 'Total Advances', value: fmt(summary.totalAdvances), color: '#d32f2f' },
             { label: 'Net Payable', value: fmt(summary.netPayable), color: '#1a3c5e' },
           ].map(({ label, value, color }) => (
-            <Grid item xs={6} sm={4} md={2.4} key={label}>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }} key={label}>
               <Card variant="outlined" sx={{ textAlign: 'center' }}>
                 <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Typography variant="caption" color="text.secondary">{label}</Typography>

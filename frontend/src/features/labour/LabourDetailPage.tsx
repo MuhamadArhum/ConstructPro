@@ -24,7 +24,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -120,7 +119,7 @@ export default function LabourDetailPage() {
       />
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, alignItems: { sm: 'center' } }}>
-        <Box flex={1}>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{labour.name}</Typography>
           <Typography variant="body2" color="text.secondary">
             {labour.code ? `${labour.code} · ` : ''}{labour.trade ?? 'Labour'}
@@ -143,11 +142,11 @@ export default function LabourDetailPage() {
 
       <Grid container spacing={3}>
         {/* Profile Card */}
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Paper variant="outlined" sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Profile</Typography>
             <Stack spacing={1.5}>
-              <Stack direction="row" justifyContent="space-between">
+              <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">Status</Typography>
                 <Chip
                   label={labour.isActive ? 'Active' : 'Inactive'}
@@ -166,7 +165,7 @@ export default function LabourDetailPage() {
                 { label: 'OT Rate/hr', value: fmt(labour.overtimeRatePerHour) },
                 { label: 'Join Date', value: new Date(labour.joinDate).toLocaleDateString() },
               ].map(({ label, value }) => (
-                <Stack key={label} direction="row" justifyContent="space-between">
+                <Stack key={label} direction="row" sx={{ justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">{label}</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>{value}</Typography>
                 </Stack>
@@ -176,7 +175,7 @@ export default function LabourDetailPage() {
         </Grid>
 
         {/* Current Month Summary */}
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
               Current Month Summary ({new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })})
@@ -190,7 +189,7 @@ export default function LabourDetailPage() {
                   { label: 'Advances', value: fmt(ledger.summary.totalAdvances), color: '#d32f2f' },
                   { label: 'Net Payable', value: fmt(ledger.summary.netPayable), color: '#1a3c5e' },
                 ].map(({ label, value, color }) => (
-                  <Grid item xs={6} sm={4} key={label}>
+                  <Grid size={{ xs: 6, sm: 4 }} key={label}>
                     <Card variant="outlined" sx={{ textAlign: 'center', py: 1 }}>
                       <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
                         <Typography variant="caption" color="text.secondary">{label}</Typography>
@@ -238,9 +237,9 @@ export default function LabourDetailPage() {
         </Grid>
 
         {/* Project Assignments */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Project Assignments</Typography>
               <PermissionGate permission={Perms.Labour.Edit}>
                 <Button size="small" startIcon={<AddIcon />} onClick={() => setAssignOpen(true)}>

@@ -37,7 +37,7 @@ function exportCSV(month: number, year: number, rows: ReturnType<typeof useGetAl
   if (!rows?.length) return;
 
   const headers = ['Code', 'Name', 'Designation', 'Department', 'Basic', 'Bonus', 'Deductions', 'Net Salary', 'Days Present', 'Remarks'];
-  const csvRows = rows.map((r) => [
+  const csvRows = rows.map((r: (typeof rows)[number]) => [
     r.employee?.code ?? '',
     r.employee?.fullName ?? '',
     r.employee?.designation ?? '',
@@ -51,7 +51,7 @@ function exportCSV(month: number, year: number, rows: ReturnType<typeof useGetAl
   ]);
 
   const csvContent = [headers, ...csvRows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .map((row: (string | number)[]) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

@@ -80,7 +80,7 @@ export default function LabourPayrollSummaryPage() {
       <AppBreadcrumbs crumbs={[{ label: 'Labour', to: '/labour' }, { label: 'Monthly Payroll' }]} />
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, alignItems: { sm: 'center' } }}>
-        <Stack direction="row" spacing={1} alignItems="center" flex={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: 1 }}>
           <ReceiptLongIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h1">Monthly Payroll Summary</Typography>
         </Stack>
