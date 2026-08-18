@@ -35,7 +35,6 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import GroupOffIcon from '@mui/icons-material/GroupOff';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
@@ -153,14 +152,6 @@ export default function LabourListPage() {
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h1">Labour</Typography>
         <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            startIcon={<CalendarMonthIcon />}
-            onClick={() => navigate('/labour/attendance/bulk')}
-            size="small"
-          >
-            Bulk Attendance
-          </Button>
           <Button
             variant="outlined"
             startIcon={<ReceiptLongIcon />}

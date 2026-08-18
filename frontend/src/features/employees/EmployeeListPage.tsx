@@ -35,7 +35,6 @@ import GroupOffIcon from '@mui/icons-material/GroupOff';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import GroupsIcon from '@mui/icons-material/Groups';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -152,14 +151,6 @@ export default function EmployeeListPage() {
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h1">Employees</Typography>
         <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            startIcon={<GroupsIcon />}
-            onClick={() => navigate('/employees/bulk-salary')}
-            size="small"
-          >
-            Bulk Salary
-          </Button>
           <Button
             variant="outlined"
             startIcon={<ReceiptLongIcon />}
