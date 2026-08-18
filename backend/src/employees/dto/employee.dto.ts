@@ -7,6 +7,8 @@ import {
   Min,
   Max,
   IsDateString,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -201,4 +203,91 @@ export class EmployeeQueryDto {
   })
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: '2024-01-01' })
+  @IsOptional()
+  @IsString()
+  joinDateFrom?: string;
+
+  @ApiPropertyOptional({ example: '2024-12-31' })
+  @IsOptional()
+  @IsString()
+  joinDateTo?: string;
+
+  @ApiPropertyOptional({ example: 'true', description: 'Return all active employees without pagination' })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  all?: boolean;
+}
+
+export class BulkSalaryEntryDto {
+  @ApiProperty({ example: 'uuid' })
+  @IsString()
+  @IsNotEmpty()
+  employeeId: string;
+
+  @ApiProperty({ example: 50000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  basicSalary: number;
+
+  @ApiPropertyOptional({ example: 5000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  bonus?: number;
+
+  @ApiPropertyOptional({ example: 2000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  deductions?: number;
+
+  @ApiPropertyOptional({ example: 26 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  daysPresent?: number;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  totalDays?: number;
+
+  @ApiPropertyOptional({ example: 'On-time payment' })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class BulkProcessSalaryDto {
+  @ApiProperty({ example: 7 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(12)
+  month: number;
+
+  @ApiProperty({ example: 2024 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(2000)
+  year: number;
+
+  @ApiProperty({ type: [BulkSalaryEntryDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BulkSalaryEntryDto)
+  entries: BulkSalaryEntryDto[];
 }

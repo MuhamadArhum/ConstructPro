@@ -22,16 +22,24 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
+import PrintIcon from '@mui/icons-material/Print';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
-import { useGetEmployeeByIdQuery, useGetSalaryHistoryQuery, useProcessSalaryMutation } from './employeesApi';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import PermissionGate from '../../components/common/PermissionGate';
+import { Perms } from '../../utils/permissions';
+import { useGetEmployeeByIdQuery, useGetSalaryHistoryQuery, useProcessSalaryMutation, useDeleteSalaryMutation } from './employeesApi';
+import { printSalarySlip } from '../../utils/printSalarySlip';
+import type { SalaryPaymentDto, EmployeeDto } from '../../types/employee.types';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -55,10 +63,12 @@ export default function SalaryPage() {
   const [daysPresent, setDaysPresent] = useState('');
   const [totalDays, setTotalDays] = useState('26');
   const [remarks, setRemarks] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: employee, isLoading: empLoading } = useGetEmployeeByIdQuery(id ?? '', { skip: !id });
   const { data: salaryHistory, isLoading: histLoading } = useGetSalaryHistoryQuery(id ?? '', { skip: !id });
   const [processSalary, { isLoading: processing }] = useProcessSalaryMutation();
+  const [deleteSalary, { isLoading: deleting }] = useDeleteSalaryMutation();
 
   const handleOpen = () => {
     setBasicSalary(String(employee?.basicSalary ?? ''));
@@ -86,6 +96,23 @@ export default function SalaryPage() {
     } catch {
       dispatch(showSnackbar({ message: 'Failed to process salary', severity: 'error' }));
     }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteSalary(deleteId).unwrap();
+      dispatch(showSnackbar({ message: 'Salary record deleted', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to delete salary record', severity: 'error' }));
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  const handlePrint = (row: SalaryPaymentDto) => {
+    if (!employee) return;
+    printSalarySlip(employee as EmployeeDto, row);
   };
 
   if (empLoading) return <Loader />;
@@ -126,6 +153,7 @@ export default function SalaryPage() {
                 <TableCell>Days Present</TableCell>
                 <TableCell>Remarks</TableCell>
                 <TableCell>Paid At</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -142,11 +170,25 @@ export default function SalaryPage() {
                   <TableCell>{row.daysPresent}/{row.totalDays}</TableCell>
                   <TableCell>{row.remarks ?? '-'}</TableCell>
                   <TableCell>{new Date(row.paidAt).toLocaleDateString()}</TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Print Slip">
+                      <IconButton size="small" onClick={() => handlePrint(row)}>
+                        <PrintIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <PermissionGate permission={Perms.Employees.Edit}>
+                      <Tooltip title="Delete Record">
+                        <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </PermissionGate>
+                  </TableCell>
                 </TableRow>
               ))}
               {!salaryHistory?.length && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">No salary records</TableCell>
+                  <TableCell colSpan={10} align="center">No salary records</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -241,6 +283,16 @@ export default function SalaryPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="Delete Salary Record"
+        message="Delete this salary record? This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </Box>
   );
 }
