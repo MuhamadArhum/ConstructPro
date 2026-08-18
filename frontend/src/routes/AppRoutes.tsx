@@ -25,9 +25,13 @@ const ExpenseFormPage      = lazy(() => import('../features/expense/ExpenseFormP
 const ExpenseDetailPage    = lazy(() => import('../features/expense/ExpenseDetailPage'));
 
 // Labour & HR
-const LabourListPage       = lazy(() => import('../features/labour/LabourListPage'));
-const LabourFormPage       = lazy(() => import('../features/labour/LabourFormPage'));
-const LabourAttendancePage = lazy(() => import('../features/labour/LabourAttendancePage'));
+const LabourListPage             = lazy(() => import('../features/labour/LabourListPage'));
+const LabourFormPage             = lazy(() => import('../features/labour/LabourFormPage'));
+const LabourAttendancePage       = lazy(() => import('../features/labour/LabourAttendancePage'));
+const LabourDetailPage           = lazy(() => import('../features/labour/LabourDetailPage'));
+const LabourPayrollPage          = lazy(() => import('../features/labour/LabourPayrollPage'));
+const LabourPayrollSummaryPage   = lazy(() => import('../features/labour/LabourPayrollSummaryPage'));
+const BulkAttendancePage         = lazy(() => import('../features/labour/BulkAttendancePage'));
 const EmployeeListPage     = lazy(() => import('../features/employees/EmployeeListPage'));
 const EmployeeFormPage     = lazy(() => import('../features/employees/EmployeeFormPage'));
 const SalaryPage           = lazy(() => import('../features/employees/SalaryPage'));
@@ -125,10 +129,14 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Labour.View} />}>
-            <Route path="/labour"                  element={<S><LabourListPage /></S>} />
-            <Route path="/labour/new"              element={<S><LabourFormPage /></S>} />
-            <Route path="/labour/:id/edit"         element={<S><LabourFormPage /></S>} />
-            <Route path="/labour/:id/attendance"   element={<S><LabourAttendancePage /></S>} />
+            <Route path="/labour"                        element={<S><LabourListPage /></S>} />
+            <Route path="/labour/new"                    element={<S><LabourFormPage /></S>} />
+            <Route path="/labour/payroll"                element={<S><LabourPayrollSummaryPage /></S>} />
+            <Route path="/labour/attendance/bulk"        element={<S><BulkAttendancePage /></S>} />
+            <Route path="/labour/:id/edit"               element={<S><LabourFormPage /></S>} />
+            <Route path="/labour/:id/attendance"         element={<S><LabourAttendancePage /></S>} />
+            <Route path="/labour/:id/payroll"            element={<S><LabourPayrollPage /></S>} />
+            <Route path="/labour/:id"                    element={<S><LabourDetailPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Employees.View} />}>

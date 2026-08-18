@@ -64,12 +64,14 @@ export default function ExpenseListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState(todayStr);
+  const [toDate, setToDate] = useState(todayStr);
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function ExpenseListPage() {
   const { data: summary } = useGetExpenseSummaryQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
 
-  const hasFilters = !!(search || category || fromDate || toDate || amountMin || amountMax);
+  const hasFilters = !!(search || category || fromDate !== todayStr || toDate !== todayStr || amountMin || amountMax);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -186,7 +188,7 @@ export default function ExpenseListPage() {
           />
           {hasFilters && (
             <Button size="small" variant="text" onClick={() => {
-              setSearch(''); setCategory(''); setFromDate(''); setToDate('');
+              setSearch(''); setCategory(''); setFromDate(todayStr); setToDate(todayStr);
               setAmountMin(''); setAmountMax(''); setPage(0);
             }}>
               Clear

@@ -28,6 +28,7 @@ import {
   BulkUpsertAttendanceDto,
   AddAdvanceDto,
   LabourQueryDto,
+  AssignLabourToProjectDto,
 } from './dto/labour.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -56,6 +57,27 @@ export class LabourController {
     return this.labourService.getNextCode().then((code) => ({ code }));
   }
 
+  @Get('summary')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get labour summary stats' })
+  @ApiResponse({ status: 200, description: 'Returns summary counts and totals' })
+  getSummary() {
+    return this.labourService.getSummary();
+  }
+
+  @Get('payroll-summary')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get monthly payroll summary for all active labours' })
+  @ApiQuery({ name: 'month', required: true, type: Number })
+  @ApiQuery({ name: 'year', required: true, type: Number })
+  @ApiResponse({ status: 200, description: 'Returns payroll summary array' })
+  getPayrollSummary(
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.labourService.getPayrollSummary(Number(month), Number(year));
+  }
+
   // NOTE: POST /attendance* routes MUST be before /:id routes
   @Post('attendance')
   @HasPermission('Labour.Edit')
@@ -72,6 +94,26 @@ export class LabourController {
   @ApiResponse({ status: 201, description: 'Attendance records saved' })
   bulkUpsertAttendance(@Body() dto: BulkUpsertAttendanceDto) {
     return this.labourService.bulkUpsertAttendance(dto);
+  }
+
+  @Get('attendance/by-date')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get all active labourers with their attendance for a given date' })
+  @ApiQuery({ name: 'date', required: true, type: String, example: '2024-07-15' })
+  @ApiResponse({ status: 200, description: 'Returns labourers with attendance for that date' })
+  getAttendanceByDate(@Query('date') date: string) {
+    return this.labourService.getAttendanceByDate(date);
+  }
+
+  @Delete('advances/:id')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete an advance payment by ID' })
+  @ApiParam({ name: 'id', description: 'Advance UUID' })
+  @ApiResponse({ status: 200, description: 'Advance deleted' })
+  @ApiResponse({ status: 404, description: 'Advance not found' })
+  deleteAdvance(@Param('id') id: string) {
+    return this.labourService.deleteAdvance(id);
   }
 
   @Get(':id')
@@ -175,5 +217,34 @@ export class LabourController {
     @Query('year') year: string,
   ) {
     return this.labourService.getLedger(id, Number(month), Number(year));
+  }
+
+  @Get(':id/projects')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'List projects assigned to this labour worker' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 200, description: 'Returns list of project assignments' })
+  getLabourProjects(@Param('id') id: string) {
+    return this.labourService.getLabourProjects(id);
+  }
+
+  @Post(':id/projects')
+  @HasPermission('Labour.Edit')
+  @ApiOperation({ summary: 'Assign labour to a project' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 201, description: 'Labour assigned to project' })
+  assignToProject(@Param('id') id: string, @Body() dto: AssignLabourToProjectDto) {
+    return this.labourService.assignLabourToProject(id, dto);
+  }
+
+  @Delete(':id/projects/:projectId')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove labour from a project' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiParam({ name: 'projectId', description: 'Project UUID' })
+  @ApiResponse({ status: 200, description: 'Assignment removed' })
+  removeFromProject(@Param('id') id: string, @Param('projectId') projectId: string) {
+    return this.labourService.removeLabourFromProject(id, projectId);
   }
 }

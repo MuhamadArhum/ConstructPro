@@ -38,13 +38,15 @@ const STATUSES: ProjectStatus[] = ['Planning', 'Active', 'On Hold', 'Completed',
 export default function ProjectListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  const [startDateFrom, setStartDateFrom] = useState('');
-  const [startDateTo, setStartDateTo] = useState('');
+  const [startDateFrom, setStartDateFrom] = useState(todayStr);
+  const [startDateTo, setStartDateTo] = useState(todayStr);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -147,11 +149,11 @@ export default function ProjectListPage() {
             slotProps={{ inputLabel: { shrink: true } }}
             sx={{ minWidth: 160 }}
           />
-          {(search || status || startDateFrom || startDateTo) && (
+          {(search || status || startDateFrom !== todayStr || startDateTo !== todayStr) && (
             <Button
               size="small"
               variant="text"
-              onClick={() => { setSearchInput(''); setSearch(''); setStatus(''); setStartDateFrom(''); setStartDateTo(''); setPage(0); }}
+              onClick={() => { setSearchInput(''); setSearch(''); setStatus(''); setStartDateFrom(todayStr); setStartDateTo(todayStr); setPage(0); }}
             >
               Clear
             </Button>

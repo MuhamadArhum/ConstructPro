@@ -42,6 +42,7 @@
       }
     ],
     "afterPack": "scripts/after-pack.js",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "win": {
       "target": [
         {

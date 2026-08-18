@@ -7,6 +7,7 @@ import {
   BulkUpsertAttendanceDto,
   AddAdvanceDto,
   LabourQueryDto,
+  AssignLabourToProjectDto,
 } from './dto/labour.dto';
 import { generateCode } from '../common/utils/generate-code';
 
@@ -36,6 +37,12 @@ export class LabourService {
 
     if (query.trade) {
       where.trade = { contains: query.trade };
+    }
+
+    if (query.joinDateFrom || query.joinDateTo) {
+      where.joinDate = {};
+      if (query.joinDateFrom) where.joinDate.gte = new Date(query.joinDateFrom);
+      if (query.joinDateTo) where.joinDate.lte = new Date(query.joinDateTo + 'T23:59:59.999Z');
     }
 
     const [labours, total] = await Promise.all([
@@ -348,6 +355,160 @@ export class LabourService {
       attendances: attendances.map((a) => this.mapAttendance(a)),
       advances: advances.map((a) => this.mapAdvance(a)),
     };
+  }
+
+  async getSummary() {
+    const [activeCount, inactiveCount, wageBillResult, advancesResult] = await Promise.all([
+      this.prisma.labour.count({ where: { isActive: true } }),
+      this.prisma.labour.count({ where: { isActive: false } }),
+      this.prisma.labour.aggregate({ _sum: { dailyWage: true }, where: { isActive: true } }),
+      this.prisma.labourAdvance.aggregate({ _sum: { amount: true } }),
+    ]);
+
+    return {
+      totalActive: activeCount,
+      totalInactive: inactiveCount,
+      totalDailyWageBill: Number(wageBillResult._sum.dailyWage ?? 0),
+      totalPendingAdvances: Number(advancesResult._sum.amount ?? 0),
+    };
+  }
+
+  async getAttendanceByDate(date: string) {
+    const dateValue = new Date(date);
+    const nextDay = new Date(dateValue);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const labours = await this.prisma.labour.findMany({
+      where: { isActive: true },
+      include: {
+        attendances: {
+          where: { date: { gte: dateValue, lt: nextDay } },
+          take: 1,
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return labours.map((l) => {
+      const att = l.attendances[0] ?? null;
+      return {
+        labourId: l.id,
+        labourName: l.name,
+        labourCode: l.code,
+        trade: l.trade,
+        dailyWage: Number(l.dailyWage),
+        overtimeRatePerHour: Number(l.overtimeRatePerHour),
+        attendance: att
+          ? {
+              id: att.id,
+              isPresent: att.isPresent,
+              overtimeHours: Number(att.overtimeHours),
+              notes: att.notes,
+            }
+          : null,
+      };
+    });
+  }
+
+  async deleteAdvance(advanceId: string) {
+    const advance = await this.prisma.labourAdvance.findUnique({ where: { id: advanceId } });
+    if (!advance) throw new NotFoundException(`Advance with id ${advanceId} not found`);
+    await this.prisma.labourAdvance.delete({ where: { id: advanceId } });
+    return { deleted: true };
+  }
+
+  async getPayrollSummary(month: number, year: number) {
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const labours = await this.prisma.labour.findMany({
+      where: { isActive: true },
+      include: {
+        attendances: {
+          where: { date: { gte: firstDay, lte: lastDay } },
+        },
+        advances: {
+          where: { date: { gte: firstDay, lte: lastDay } },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return labours.map((l) => {
+      const dailyWage = Number(l.dailyWage);
+      const otRate = Number(l.overtimeRatePerHour);
+      const presentDays = l.attendances.filter((a) => a.isPresent).length;
+      const totalOTHours = l.attendances.reduce((sum, a) => sum + Number(a.overtimeHours), 0);
+      const wagesEarned = presentDays * dailyWage;
+      const overtimePay = totalOTHours * otRate;
+      const totalAdvances = l.advances.reduce((sum, a) => sum + Number(a.amount), 0);
+      const netPayable = wagesEarned + overtimePay - totalAdvances;
+
+      return {
+        labourId: l.id,
+        labourCode: l.code,
+        name: l.name,
+        trade: l.trade,
+        presentDays,
+        wagesEarned,
+        overtimePay,
+        totalAdvances,
+        netPayable,
+      };
+    });
+  }
+
+  async getLabourProjects(labourId: string) {
+    await this.findById(labourId);
+    const assignments = await this.prisma.projectLabour.findMany({
+      where: { labourId },
+      include: { project: { select: { id: true, name: true, code: true, status: true } } },
+      orderBy: { assignedAt: 'desc' },
+    });
+    return assignments.map((a) => ({
+      id: a.id,
+      projectId: a.projectId,
+      projectName: a.project.name,
+      projectCode: a.project.code,
+      projectStatus: a.project.status,
+      assignedAt: a.assignedAt,
+    }));
+  }
+
+  async assignLabourToProject(labourId: string, dto: AssignLabourToProjectDto) {
+    await this.findById(labourId);
+    const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
+    if (!project) throw new NotFoundException(`Project with id ${dto.projectId} not found`);
+
+    const existing = await this.prisma.projectLabour.findUnique({
+      where: { projectId_labourId: { projectId: dto.projectId, labourId } },
+    });
+    if (existing) throw new ConflictException('Labour is already assigned to this project');
+
+    const assignment = await this.prisma.projectLabour.create({
+      data: { projectId: dto.projectId, labourId },
+      include: { project: { select: { id: true, name: true, code: true, status: true } } },
+    });
+
+    return {
+      id: assignment.id,
+      projectId: assignment.projectId,
+      projectName: assignment.project.name,
+      projectCode: assignment.project.code,
+      projectStatus: assignment.project.status,
+      assignedAt: assignment.assignedAt,
+    };
+  }
+
+  async removeLabourFromProject(labourId: string, projectId: string) {
+    const assignment = await this.prisma.projectLabour.findUnique({
+      where: { projectId_labourId: { projectId, labourId } },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.prisma.projectLabour.delete({
+      where: { projectId_labourId: { projectId, labourId } },
+    });
+    return { deleted: true };
   }
 
   private mapLabour(labour: {

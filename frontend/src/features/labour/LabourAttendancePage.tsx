@@ -34,12 +34,17 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PermissionGate from '../../components/common/PermissionGate';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { Perms } from '../../utils/permissions';
 import {
   useGetLabourByIdQuery,
   useGetLabourAttendanceQuery,
   useUpsertAttendanceMutation,
   useGetLabourAdvancesQuery,
   useAddLabourAdvanceMutation,
+  useDeleteLabourAdvanceMutation,
 } from './labourApi';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -64,6 +69,8 @@ export default function LabourAttendancePage() {
 
   const [localPresent, setLocalPresent] = useState<Record<string, boolean>>({});
   const [localOT, setLocalOT] = useState<Record<string, string>>({});
+  const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
+  const [deleteAdvanceId, setDeleteAdvanceId] = useState<string | null>(null);
 
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [advAmount, setAdvAmount] = useState('');
@@ -78,6 +85,7 @@ export default function LabourAttendancePage() {
   const { data: advances } = useGetLabourAdvancesQuery(id ?? '', { skip: !id });
   const [upsertAttendance, { isLoading: saving }] = useUpsertAttendanceMutation();
   const [addAdvance, { isLoading: addingAdv }] = useAddLabourAdvanceMutation();
+  const [deleteAdvance] = useDeleteLabourAdvanceMutation();
 
   const days = getDaysInMonth(year, month);
 
@@ -98,27 +106,52 @@ export default function LabourAttendancePage() {
     return String(getAttForDay(day)?.overtimeHours ?? 0);
   };
 
+  const notes = (day: number) => {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (localNotes[dateStr] !== undefined) return localNotes[dateStr];
+    return getAttForDay(day)?.notes ?? '';
+  };
+
   const handleSave = async () => {
     if (!id || !labour) return;
-    const entries = Object.keys(localPresent);
-    if (entries.length === 0) {
+    const allChangedDates = new Set([
+      ...Object.keys(localPresent),
+      ...Object.keys(localOT),
+      ...Object.keys(localNotes),
+    ]);
+    if (allChangedDates.size === 0) {
       dispatch(showSnackbar({ message: 'No changes to save', severity: 'info' }));
       return;
     }
     try {
-      for (const dateStr of entries) {
+      for (const dateStr of allChangedDates) {
+        const day = parseInt(dateStr.split('-')[2]);
         await upsertAttendance({
           labourId: id,
           date: dateStr,
-          isPresent: localPresent[dateStr],
-          overtimeHours: parseFloat(localOT[dateStr] ?? '0') || 0,
+          isPresent: isPresent(day),
+          overtimeHours: parseFloat(localOT[dateStr] ?? String(getAttForDay(day)?.overtimeHours ?? 0)) || 0,
+          notes: localNotes[dateStr] ?? getAttForDay(day)?.notes ?? undefined,
         }).unwrap();
       }
       setLocalPresent({});
       setLocalOT({});
+      setLocalNotes({});
       dispatch(showSnackbar({ message: 'Attendance saved', severity: 'success' }));
     } catch {
       dispatch(showSnackbar({ message: 'Failed to save attendance', severity: 'error' }));
+    }
+  };
+
+  const handleDeleteAdvance = async () => {
+    if (!deleteAdvanceId) return;
+    try {
+      await deleteAdvance(deleteAdvanceId).unwrap();
+      dispatch(showSnackbar({ message: 'Advance deleted', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to delete advance', severity: 'error' }));
+    } finally {
+      setDeleteAdvanceId(null);
     }
   };
 
@@ -189,6 +222,7 @@ export default function LabourAttendancePage() {
                 <TableCell>Date</TableCell>
                 <TableCell>Present</TableCell>
                 <TableCell>OT Hours</TableCell>
+                <TableCell>Notes</TableCell>
                 <TableCell align="right">Daily Pay</TableCell>
                 <TableCell align="right">OT Pay</TableCell>
                 <TableCell align="right">Total</TableCell>
@@ -225,6 +259,16 @@ export default function LabourAttendancePage() {
                         slotProps={{ input: { inputProps: { min: 0, step: 0.5 } } }}
                       />
                     </TableCell>
+                    <TableCell sx={{ width: 160 }}>
+                      <TextField
+                        size="small"
+                        value={notes(day)}
+                        onChange={(e) => setLocalNotes((prev) => ({ ...prev, [dateStr]: e.target.value }))}
+                        disabled={!present}
+                        placeholder="Notes…"
+                        sx={{ width: 140 }}
+                      />
+                    </TableCell>
                     <TableCell align="right">{present ? fmt(dailyPay) : '-'}</TableCell>
                     <TableCell align="right">{ot > 0 ? fmt(otPay) : '-'}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600 }}>{present ? fmt(total) : '-'}</TableCell>
@@ -252,6 +296,7 @@ export default function LabourAttendancePage() {
               <TableCell>Date</TableCell>
               <TableCell align="right">Amount</TableCell>
               <TableCell>Reason</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -260,16 +305,35 @@ export default function LabourAttendancePage() {
                 <TableCell>{new Date(adv.date).toLocaleDateString()}</TableCell>
                 <TableCell align="right" sx={{ color: 'warning.main', fontWeight: 600 }}>{fmt(adv.amount)}</TableCell>
                 <TableCell>{adv.reason ?? '-'}</TableCell>
+                <TableCell align="right">
+                  <PermissionGate permission={Perms.Labour.Edit}>
+                    <Tooltip title="Delete Advance">
+                      <IconButton size="small" color="error" onClick={() => setDeleteAdvanceId(adv.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </PermissionGate>
+                </TableCell>
               </TableRow>
             ))}
             {!advances?.length && (
               <TableRow>
-                <TableCell colSpan={3} align="center">No advances</TableCell>
+                <TableCell colSpan={4} align="center">No advances</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <ConfirmDialog
+        open={Boolean(deleteAdvanceId)}
+        title="Delete Advance"
+        message="Are you sure you want to delete this advance? This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteAdvance}
+        onCancel={() => setDeleteAdvanceId(null)}
+      />
 
       <Dialog open={advanceOpen} onClose={() => setAdvanceOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Add Advance</DialogTitle>

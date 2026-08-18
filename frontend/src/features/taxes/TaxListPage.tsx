@@ -62,13 +62,15 @@ export default function TaxListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [taxType, setTaxType] = useState('');
   const [isPaid, setIsPaid] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
 
@@ -87,7 +89,7 @@ export default function TaxListPage() {
   const [deleteRecord] = useDeleteTaxRecordMutation();
   const [updateRecord] = useUpdateTaxRecordMutation();
 
-  const hasFilters = !!(search || taxType || isPaid || startDate || endDate);
+  const hasFilters = !!(search || taxType || isPaid || startDate !== todayStr || endDate !== todayStr);
   const now = new Date();
 
   const handleDelete = async () => {
@@ -211,7 +213,7 @@ export default function TaxListPage() {
           />
           {hasFilters && (
             <Button size="small" variant="text" onClick={() => {
-              setSearch(''); setTaxType(''); setIsPaid(''); setStartDate(''); setEndDate(''); setPage(0);
+              setSearch(''); setTaxType(''); setIsPaid(''); setStartDate(todayStr); setEndDate(todayStr); setPage(0);
             }}>
               Clear
             </Button>

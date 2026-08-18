@@ -10,9 +10,8 @@ const fmt = (n: number) => `PKR ${Math.abs(n).toLocaleString()}`;
 export default function AccountLedgerPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const todayStr = new Date().toISOString().split('T')[0];
-  const firstOfYear = `${new Date().getFullYear()}-01-01`;
-  const [startDate, setStartDate] = useState(firstOfYear);
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const [startDate, setStartDate] = useState(todayStr);
   const [endDate, setEndDate] = useState(todayStr);
 
   const { data, isLoading } = useGetAccountLedgerQuery({ id: id!, params: { startDate, endDate } }, { skip: !id });

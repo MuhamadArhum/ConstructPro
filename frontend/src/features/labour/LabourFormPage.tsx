@@ -29,6 +29,7 @@ export default function LabourFormPage() {
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [cnic, setCnic] = useState('');
+  const [address, setAddress] = useState('');
   const [trade, setTrade] = useState('');
   const [dailyWage, setDailyWage] = useState('');
   const [overtimeRatePerHour, setOvertimeRatePerHour] = useState('');
@@ -46,6 +47,7 @@ export default function LabourFormPage() {
       setName(existing.name);
       setPhoneNumber(existing.phoneNumber ?? '');
       setCnic(existing.cnic ?? '');
+      setAddress(existing.address ?? '');
       setTrade(existing.trade ?? '');
       setDailyWage(String(existing.dailyWage));
       setOvertimeRatePerHour(String(existing.overtimeRatePerHour));
@@ -64,6 +66,7 @@ export default function LabourFormPage() {
       name,
       phoneNumber: phoneNumber || undefined,
       cnic: cnic || undefined,
+      address: address || undefined,
       trade: trade || undefined,
       dailyWage: parseFloat(dailyWage),
       overtimeRatePerHour: parseFloat(overtimeRatePerHour),
@@ -112,6 +115,15 @@ export default function LabourFormPage() {
             <TextField label="Trade / Skill" value={trade} onChange={(e) => setTrade(e.target.value)} fullWidth />
             <TextField label="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} fullWidth />
             <TextField label="CNIC" value={cnic} onChange={(e) => setCnic(e.target.value)} fullWidth placeholder="XXXXX-XXXXXXX-X" />
+            <TextField
+              label="Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Optional address"
+            />
 
             <TextField
               label="Daily Wage"
