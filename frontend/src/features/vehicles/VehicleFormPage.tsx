@@ -54,8 +54,8 @@ export default function VehicleFormPage() {
       setStatus(existing.status);
       setTotalMileage(existing.totalMileage.toString());
       setNotes(existing.notes ?? '');
-      setInsuranceExpiry((existing as Record<string, unknown>)['insuranceExpiry'] as string ?? '');
-      setTokenExpiry((existing as Record<string, unknown>)['tokenExpiry'] as string ?? '');
+      setInsuranceExpiry(((existing as unknown) as Record<string, unknown>)['insuranceExpiry'] as string ?? '');
+      setTokenExpiry(((existing as unknown) as Record<string, unknown>)['tokenExpiry'] as string ?? '');
     }
   }, [existing]);
 

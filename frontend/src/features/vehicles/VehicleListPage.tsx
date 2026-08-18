@@ -153,8 +153,8 @@ export default function VehicleListPage() {
               <>
                 {data?.items.map((row) => {
                   const expiryStatus = getExpiryStatus(
-                    (row as Record<string, unknown>)['insuranceExpiry'] as string | null | undefined,
-                    (row as Record<string, unknown>)['tokenExpiry'] as string | null | undefined,
+                    ((row as unknown) as Record<string, unknown>)['insuranceExpiry'] as string | null | undefined,
+                    ((row as unknown) as Record<string, unknown>)['tokenExpiry'] as string | null | undefined,
                   );
                   return (
                     <TableRow
