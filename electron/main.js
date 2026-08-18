@@ -12,21 +12,68 @@ const PORT = 3000;
 
 // ─── File-based logging ───────────────────────────────────────────────────────
 let logStream = null;
-function initLog() {
+let currentLogDate = null;
+
+function getDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getLogDir() {
+  return path.join(app.getPath('logs'), 'ConstructPro-Logs');
+}
+
+function openLogStream(logDir, dateStr) {
+  const logFile = path.join(logDir, `${dateStr}.log`);
+  const stream = fs.createWriteStream(logFile, { flags: 'a' });
+  stream.write(`\n--- ConstructPro started ${new Date().toISOString()} ---\n`);
+  return stream;
+}
+
+function deleteOldLogs(logDir, keepDays = 30) {
   try {
-    const logDir = app.getPath('logs');
-    fs.mkdirSync(logDir, { recursive: true });
-    const logFile = path.join(logDir, 'main.log');
-    logStream = fs.createWriteStream(logFile, { flags: 'a' });
-    logStream.write(`\n\n--- ConstructPro started ${new Date().toISOString()} ---\n`);
+    const files = fs.readdirSync(logDir);
+    const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1000;
+    for (const file of files) {
+      if (!/^\d{4}-\d{2}-\d{2}\.log$/.test(file)) continue;
+      const filePath = path.join(logDir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.mtimeMs < cutoff) fs.unlinkSync(filePath);
+    }
   } catch {}
 }
+
+function initLog() {
+  try {
+    const logDir = getLogDir();
+    fs.mkdirSync(logDir, { recursive: true });
+    currentLogDate = getDateStr();
+    logStream = openLogStream(logDir, currentLogDate);
+    deleteOldLogs(logDir);
+  } catch {}
+}
+
+function rotatIfNeeded() {
+  try {
+    const today = getDateStr();
+    if (today !== currentLogDate) {
+      logStream?.end();
+      const logDir = getLogDir();
+      currentLogDate = today;
+      logStream = openLogStream(logDir, today);
+      deleteOldLogs(logDir);
+    }
+  } catch {}
+}
+
 function log(...args) {
+  rotatIfNeeded();
   const msg = args.join(' ');
   console.log(msg);
   try { logStream?.write(msg + '\n'); } catch {}
 }
 function logErr(...args) {
+  rotatIfNeeded();
   const msg = args.join(' ');
   console.error(msg);
   try { logStream?.write('[ERR] ' + msg + '\n'); } catch {}
