@@ -30,6 +30,8 @@ export default function VehicleFormPage() {
   const [status, setStatus] = useState<VehicleStatus>('Active');
   const [totalMileage, setTotalMileage] = useState('0');
   const [notes, setNotes] = useState('');
+  const [insuranceExpiry, setInsuranceExpiry] = useState('');
+  const [tokenExpiry, setTokenExpiry] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,13 +54,15 @@ export default function VehicleFormPage() {
       setStatus(existing.status);
       setTotalMileage(existing.totalMileage.toString());
       setNotes(existing.notes ?? '');
+      setInsuranceExpiry((existing as Record<string, unknown>)['insuranceExpiry'] as string ?? '');
+      setTokenExpiry((existing as Record<string, unknown>)['tokenExpiry'] as string ?? '');
     }
   }, [existing]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const base = { code: code || undefined, registrationNumber, make, model: model || undefined, year: year ? parseInt(year) : undefined, driverName: driverName || undefined, driverContact: driverContact || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, purchaseDate: purchaseDate || undefined, status, notes: notes || undefined };
+    const base = { code: code || undefined, registrationNumber, make, model: model || undefined, year: year ? parseInt(year) : undefined, driverName: driverName || undefined, driverContact: driverContact || undefined, purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined, purchaseDate: purchaseDate || undefined, status, notes: notes || undefined, ...(insuranceExpiry ? { insuranceExpiry } : {}), ...(tokenExpiry ? { tokenExpiry } : {}) };
     try {
       if (isEdit && id) { await update({ id, data: { ...base, totalMileage: parseFloat(totalMileage) } }).unwrap(); dispatch(showSnackbar({ message: 'Vehicle updated', severity: 'success' })); }
       else { await create(base).unwrap(); dispatch(showSnackbar({ message: 'Vehicle created', severity: 'success' })); }
@@ -118,6 +122,10 @@ export default function VehicleFormPage() {
             </Stack>
             {isEdit && <TextField label="Total Mileage (km)" type="number" value={totalMileage} onChange={(e) => setTotalMileage(e.target.value)} fullWidth slotProps={{ htmlInput: { min: 0 } }} />}
             <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth multiline rows={2} />
+            <Stack direction="row" spacing={2}>
+              <TextField label="Insurance Expiry" type="date" value={insuranceExpiry} onChange={(e) => setInsuranceExpiry(e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+              <TextField label="Token Expiry" type="date" value={tokenExpiry} onChange={(e) => setTokenExpiry(e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+            </Stack>
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
               <Button onClick={() => navigate('/vehicles')}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={isCreating || isUpdating}>{isEdit ? 'Save Changes' : 'Add Vehicle'}</Button>

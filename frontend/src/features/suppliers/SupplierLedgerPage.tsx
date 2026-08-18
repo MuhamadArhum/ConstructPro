@@ -48,6 +48,7 @@ import {
 import type { SupplierTransactionType } from '../../types/supplier.types';
 import { exportLedgerPdf } from '../../utils/exportLedgerPdf';
 import { printLedger } from '../../utils/printLedger';
+import { useGetSettingsQuery } from '../settings/settingsApi';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 const today = () => new Date().toISOString().split('T')[0];
@@ -68,6 +69,8 @@ export default function SupplierLedgerPage() {
   const [txDate, setTxDate] = useState(today());
   const [description, setDescription] = useState('');
   const [reference, setReference] = useState('');
+
+  const { data: settings } = useGetSettingsQuery();
 
   const { data, isLoading } = useGetSupplierLedgerQuery(
     { id: id ?? '', fromDate: fromDate || undefined, toDate: toDate || undefined },
@@ -153,6 +156,7 @@ export default function SupplierLedgerPage() {
             totalDebit: summary?.totalDebit,
             totalCredit: summary?.totalCredit,
             closingBalance: summary?.closingBalance,
+            companyName: settings?.companyName,
           })}
         >
           Print
@@ -169,6 +173,7 @@ export default function SupplierLedgerPage() {
             fromDate, toDate,
             rows: transactions,
             summary,
+            companyName: settings?.companyName,
           })}
         >
           Export PDF

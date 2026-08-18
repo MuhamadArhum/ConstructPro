@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {
   Box,
   Button,
@@ -31,6 +32,17 @@ import {
   useGetMachineryReportQuery,
   useGetVehicleReportQuery,
 } from './reportsApi';
+import type {
+  IncomeExpenseReportDto,
+  LabourReportDto,
+  InventoryReportDto,
+  TaxReportDto,
+  CustomerReportDto,
+  SupplierReportDto,
+  EmployeeReportDto,
+  MachineryReportDto,
+  VehicleReportDto,
+} from '../../types/reports.types';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string | Date | null | undefined) =>
@@ -40,6 +52,19 @@ const firstOfMonth = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
 };
+
+function downloadCSV(filename: string, headers: string[], rows: (string | number | boolean | null | undefined)[][]) {
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function SummaryCard({
   label,
@@ -72,16 +97,80 @@ function SectionLoader() {
   );
 }
 
+// ── SVG Bar Chart ─────────────────────────────────────────────────────────────
+function IncomeExpenseBarChart({ data }: { data: IncomeExpenseReportDto['monthly'] }) {
+  if (!data?.length) return null;
+  const maxVal = Math.max(...data.map((d) => Math.max(d.income, d.expense)), 1);
+  const barW = 20;
+  const gap = 8;
+  const groupW = barW * 2 + gap;
+  const padding = 40;
+  const chartW = data.length * (groupW + 10) + padding;
+  const chartH = 220;
+
+  return (
+    <Box sx={{ overflowX: 'auto', mb: 2 }}>
+      <svg width={chartW} height={chartH} style={{ display: 'block' }}>
+        {data.map((d, i) => {
+          const x = padding / 2 + i * (groupW + 10);
+          const incH = (d.income / maxVal) * 160;
+          const expH = (d.expense / maxVal) * 160;
+          return (
+            <g key={i}>
+              <rect x={x} y={180 - incH} width={barW} height={incH} fill="#1976d2">
+                <title>Income: PKR {d.income.toLocaleString()}</title>
+              </rect>
+              <rect x={x + barW + gap} y={180 - expH} width={barW} height={expH} fill="#d32f2f">
+                <title>Expense: PKR {d.expense.toLocaleString()}</title>
+              </rect>
+              <text x={x + barW} y={200} textAnchor="middle" fontSize={10} fill="#666">
+                {d.monthName?.slice(0, 3)}
+              </text>
+            </g>
+          );
+        })}
+        <line x1={padding / 2 - 5} y1={20} x2={padding / 2 - 5} y2={180} stroke="#ccc" />
+        <line x1={padding / 2 - 5} y1={180} x2={chartW - 10} y2={180} stroke="#ccc" />
+      </svg>
+      <Stack direction="row" spacing={2} sx={{ mt: 1, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ width: 12, height: 12, bgcolor: '#1976d2', borderRadius: 0.5 }} />
+          <Typography variant="caption">Income</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ width: 12, height: 12, bgcolor: '#d32f2f', borderRadius: 0.5 }} />
+          <Typography variant="caption">Expense</Typography>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
+
 // ── Finance Tab ───────────────────────────────────────────────────────────────
 function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
   const { data, isLoading } = useGetIncomeExpenseReportQuery(query);
   const [view, setView] = useState<'monthly' | 'incomes' | 'expenses' | 'category'>('monthly');
 
+  const handleExport = () => {
+    if (!data) return;
+    downloadCSV(
+      'finance-report.csv',
+      ['Month', 'Year', 'Income', 'Expense', 'Profit'],
+      (data.monthly ?? []).map((m) => [m.monthName, m.year, m.income, m.expense, m.profit]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button variant="outlined" size="small" startIcon={<FileDownloadIcon />} onClick={handleExport}>
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <SummaryCard label="Total Income" value={data?.totalIncome ?? 0} color="success.main" />
@@ -106,36 +195,41 @@ function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string 
       </Tabs>
 
       {view === 'monthly' && (
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Month</TableCell>
-                <TableCell align="right">Income (PKR)</TableCell>
-                <TableCell align="right">Expense (PKR)</TableCell>
-                <TableCell align="right">Profit (PKR)</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(data?.monthly ?? []).map((m) => (
-                <TableRow key={`${m.year}-${m.month}`} hover>
-                  <TableCell>{m.monthName} {m.year}</TableCell>
-                  <TableCell align="right" sx={{ color: 'success.main' }}>{m.income.toLocaleString()}</TableCell>
-                  <TableCell align="right" sx={{ color: 'error.main' }}>{m.expense.toLocaleString()}</TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{ fontWeight: 700, color: m.profit >= 0 ? 'success.main' : 'error.main' }}
-                  >
-                    {m.profit.toLocaleString()}
-                  </TableCell>
+        <>
+          {(data?.monthly?.length ?? 0) > 0 && (
+            <IncomeExpenseBarChart data={data?.monthly ?? []} />
+          )}
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Month</TableCell>
+                  <TableCell align="right">Income (PKR)</TableCell>
+                  <TableCell align="right">Expense (PKR)</TableCell>
+                  <TableCell align="right">Profit (PKR)</TableCell>
                 </TableRow>
-              ))}
-              {!(data?.monthly?.length) && (
-                <TableRow><TableCell colSpan={4} align="center">No data</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {(data?.monthly ?? []).map((m) => (
+                  <TableRow key={`${m.year}-${m.month}`} hover>
+                    <TableCell>{m.monthName} {m.year}</TableCell>
+                    <TableCell align="right" sx={{ color: 'success.main' }}>{m.income.toLocaleString()}</TableCell>
+                    <TableCell align="right" sx={{ color: 'error.main' }}>{m.expense.toLocaleString()}</TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: 700, color: m.profit >= 0 ? 'success.main' : 'error.main' }}
+                    >
+                      {m.profit.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!(data?.monthly?.length) && (
+                  <TableRow><TableCell colSpan={4} align="center">No data</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
       )}
 
       {view === 'incomes' && (
@@ -243,10 +337,33 @@ function LabourReport({ fromDate, toDate }: { fromDate: string; toDate: string }
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
   const { data, isLoading } = useGetLabourReportQuery(query);
 
+  const handleExport = (reportData: LabourReportDto) => {
+    downloadCSV(
+      'labour-report.csv',
+      ['Name', 'Trade', 'Daily Wage', 'Present Days', 'Absent Days', 'Total Wages', 'Total Advances', 'Net Payable'],
+      (reportData.labours ?? []).map((l) => [
+        l.name, l.trade ?? '', l.dailyWage, l.presentDays, l.absentDays,
+        l.totalWages, l.totalAdvances, l.netPayable,
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 3 }}>
           <SummaryCard label="Total Labour" value={data?.totalLabour ?? 0} isCount />
@@ -309,6 +426,21 @@ function InventoryReport() {
   const { data, isLoading } = useGetInventoryReportQuery();
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
+  const handleExport = (reportData: InventoryReportDto) => {
+    const items = showLowStockOnly
+      ? (reportData.items ?? []).filter((i) => i.isLowStock)
+      : (reportData.items ?? []);
+    downloadCSV(
+      'inventory-report.csv',
+      ['Name', 'Category', 'Unit', 'Current Stock', 'Low Stock Threshold', 'Unit Price', 'Total Value', 'Supplier', 'Location'],
+      items.map((i) => [
+        i.name, i.category ?? '', i.unit ?? '', i.currentStock,
+        i.lowStockThreshold, i.unitPrice, i.totalValue,
+        i.supplierName ?? '', i.location ?? '',
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   const items = showLowStockOnly
@@ -317,6 +449,18 @@ function InventoryReport() {
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4 }}>
           <SummaryCard label="Total Items" value={data?.totalItems ?? 0} isCount />
@@ -400,10 +544,33 @@ function TaxReport({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
   const { data, isLoading } = useGetTaxReportQuery(query);
 
+  const handleExport = (reportData: TaxReportDto) => {
+    downloadCSV(
+      'tax-report.csv',
+      ['Tax Type', 'Period Start', 'Period End', 'Due Date', 'Amount', 'Paid', 'Notes'],
+      (reportData.records ?? []).map((r) => [
+        r.taxType, fmtDate(r.periodStart), fmtDate(r.periodEnd),
+        fmtDate(r.dueDate), r.amount, r.isPaid ? 'Yes' : 'No', r.notes ?? '',
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 3 }}>
           <SummaryCard label="Total Tax" value={data?.totalTax ?? 0} />
@@ -475,10 +642,33 @@ function TaxReport({ fromDate, toDate }: { fromDate: string; toDate: string }) {
 function CustomerReport() {
   const { data, isLoading } = useGetCustomerReportQuery();
 
+  const handleExport = (reportData: CustomerReportDto) => {
+    downloadCSV(
+      'customer-report.csv',
+      ['Name', 'Company', 'Phone', 'Total Billed', 'Total Paid', 'Outstanding'],
+      (reportData.customers ?? []).map((c) => [
+        c.name, c.companyName ?? '', c.phone ?? '',
+        c.totalBilled, c.totalPaid, c.outstandingBalance,
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 3 }}>
           <SummaryCard label="Total Customers" value={data?.totalCustomers ?? 0} isCount />
@@ -539,10 +729,33 @@ function CustomerReport() {
 function SupplierReport() {
   const { data, isLoading } = useGetSupplierReportQuery();
 
+  const handleExport = (reportData: SupplierReportDto) => {
+    downloadCSV(
+      'supplier-report.csv',
+      ['Name', 'Company', 'Phone', 'Total Purchased', 'Total Paid', 'Outstanding'],
+      (reportData.suppliers ?? []).map((s) => [
+        s.name, s.companyName ?? '', s.phone ?? '',
+        s.totalPurchased, s.totalPaid, s.outstandingBalance,
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 3 }}>
           <SummaryCard label="Total Suppliers" value={data?.totalSuppliers ?? 0} isCount />
@@ -603,10 +816,34 @@ function SupplierReport() {
 function EmployeeReport() {
   const { data, isLoading } = useGetEmployeeReportQuery();
 
+  const handleExport = (reportData: EmployeeReportDto) => {
+    downloadCSV(
+      'employee-report.csv',
+      ['Name', 'Designation', 'Department', 'Basic Salary', 'Salary Paid Count', 'Total Salary Paid', 'Active'],
+      (reportData.employees ?? []).map((e) => [
+        e.name, e.designation ?? '', e.department ?? '',
+        e.salary, e.salaryPaidCount, e.totalSalaryPaid,
+        e.isActive ? 'Yes' : 'No',
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4 }}>
           <SummaryCard label="Total Employees" value={data?.totalEmployees ?? 0} isCount />
@@ -665,10 +902,34 @@ function MachineryReport({ fromDate, toDate }: { fromDate: string; toDate: strin
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
   const { data, isLoading } = useGetMachineryReportQuery(query);
 
+  const handleExport = (reportData: MachineryReportDto) => {
+    downloadCSV(
+      'machinery-report.csv',
+      ['Name', 'Model', 'Status', 'Maintenance Count', 'Total Maintenance Cost', 'Last Maintenance'],
+      (reportData.machinery ?? []).map((m) => [
+        m.name, m.model ?? '', m.status,
+        m.maintenanceCount, m.totalMaintenanceCost,
+        fmtDate(m.lastMaintenanceDate),
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4 }}>
           <SummaryCard label="Total Machinery" value={data?.totalMachinery ?? 0} isCount />
@@ -727,10 +988,34 @@ function VehicleReport({ fromDate, toDate }: { fromDate: string; toDate: string 
   const query = { fromDate: fromDate || undefined, toDate: toDate || undefined };
   const { data, isLoading } = useGetVehicleReportQuery(query);
 
+  const handleExport = (reportData: VehicleReportDto) => {
+    downloadCSV(
+      'vehicle-report.csv',
+      ['Registration', 'Make/Model', 'Status', 'Maintenance Count', 'Total Maintenance Cost', 'Last Maintenance'],
+      (reportData.vehicles ?? []).map((v) => [
+        v.name, v.type ?? '', v.status,
+        v.maintenanceCount, v.totalMaintenanceCost,
+        fmtDate(v.lastMaintenanceDate),
+      ]),
+    );
+  };
+
   if (isLoading) return <SectionLoader />;
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          onClick={() => data && handleExport(data)}
+          disabled={!data}
+        >
+          Export CSV
+        </Button>
+      </Box>
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4 }}>
           <SummaryCard label="Total Vehicles" value={data?.totalVehicles ?? 0} isCount />

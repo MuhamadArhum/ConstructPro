@@ -6,7 +6,6 @@ import {
   CardContent,
   Chip,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -24,10 +23,12 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BuildIcon from '@mui/icons-material/Build';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -50,6 +51,8 @@ const statusLabel: Record<MachineryStatus, string> = {
   Retired: 'Retired',
 };
 
+const isDue = (date?: string | null) => (date ? new Date(date) < new Date() : false);
+
 export default function MachineryListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -69,8 +72,31 @@ export default function MachineryListPage() {
   const { data: maintenanceDue } = useGetMaintenanceDueQuery();
   const [deleteMachinery] = useDeleteMachineryMutation();
 
+  const totalCount = data?.totalCount ?? 0;
   const activeCount = data?.items.filter((m) => m.status === 'Active').length ?? 0;
-  const underMaintenanceCount = data?.items.filter((m) => m.status === 'UnderMaintenance').length ?? 0;
+  const maintenanceDueCount = maintenanceDue?.length ?? 0;
+
+  const exportCSV = () => {
+    if (!data?.items.length) return;
+    const headers = ['Code', 'Name', 'Model', 'Serial No.', 'Status', 'Running Hours', 'Next Maintenance'];
+    const rows = data.items.map((r) => [
+      r.code ?? '',
+      r.name,
+      r.model ?? '',
+      r.serialNumber ?? '',
+      statusLabel[r.status],
+      r.totalRunningHours.toString(),
+      r.nextMaintenanceDate ? new Date(r.nextMaintenanceDate).toLocaleDateString() : '',
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'machinery.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -88,30 +114,37 @@ export default function MachineryListPage() {
     <Box>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">Machinery</Typography>
-        <PermissionGate permission={Perms.Machinery.Create}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/machinery/new')}>
-            Add Machinery
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportCSV} disabled={!data?.items.length}>
+            Export CSV
           </Button>
-        </PermissionGate>
+          <PermissionGate permission={Perms.Machinery.Create}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/machinery/new')}>
+              Add Machinery
+            </Button>
+          </PermissionGate>
+        </Stack>
       </Stack>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[
-          { label: 'Active', value: activeCount, color: 'success.main' },
-          { label: 'Under Maintenance', value: underMaintenanceCount, color: 'warning.main' },
-          { label: 'Maintenance Due', value: maintenanceDue?.length ?? 0, color: (maintenanceDue?.length ?? 0) > 0 ? 'error.main' : 'text.secondary' },
-        ].map((card) => (
-          <Grid key={card.label} size={{ xs: 12, sm: 4 }}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">{card.label}</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: card.color }}>
-                  {card.value}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'primary.main' }}>
+            <Typography variant="caption" color="text.secondary">Total</Typography>
+            <Typography variant="h4">{totalCount}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'success.main' }}>
+            <Typography variant="caption" color="text.secondary">Active</Typography>
+            <Typography variant="h4" sx={{ color: 'success.main' }}>{activeCount}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: maintenanceDueCount > 0 ? 'error.main' : 'text.secondary' }}>
+            <Typography variant="caption" color="text.secondary">Maintenance Due</Typography>
+            <Typography variant="h4" sx={{ color: maintenanceDueCount > 0 ? 'error.main' : 'text.primary' }}>{maintenanceDueCount}</Typography>
+          </Paper>
+        </Grid>
       </Grid>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -154,7 +187,11 @@ export default function MachineryListPage() {
             {isLoading ? <TableSkeleton cols={8} /> : (
               <>
                 {data?.items.map((row) => (
-                  <TableRow key={row.id} hover>
+                  <TableRow
+                    key={row.id}
+                    hover
+                    sx={isDue(row.nextMaintenanceDate) ? { bgcolor: 'warning.light', '&:hover': { bgcolor: 'warning.light' } } : {}}
+                  >
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
                     <TableCell>{row.model ?? '-'}</TableCell>

@@ -153,6 +153,15 @@ export default function MachineryMaintenancePage() {
                   <TableCell colSpan={7} align="center">No maintenance records</TableCell>
                 </TableRow>
               )}
+              {(history?.length ?? 0) > 0 && (
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell colSpan={3} sx={{ fontWeight: 700 }}>Total Maintenance Cost</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>
+                    {fmt(history?.reduce((sum, r) => sum + r.cost, 0) ?? 0)}
+                  </TableCell>
+                  <TableCell colSpan={3} />
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         )}

@@ -27,6 +27,7 @@ interface ExportOptions {
   rows: LedgerRow[];
   summary?: LedgerSummary;
   typeLabels?: Record<string, string>;
+  companyName?: string;
 }
 
 const BLUEPRINT = [14, 42, 71] as [number, number, number];
@@ -50,7 +51,7 @@ export function exportLedgerPdf(opts: ExportOptions) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('ConstructPro', 12, 9);
+  doc.text(opts.companyName || 'ConstructPro', 12, 9);
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
@@ -170,7 +171,7 @@ export function exportLedgerPdf(opts: ExportOptions) {
     doc.rect(0, pageH - 8, W, 8, 'F');
     doc.setFontSize(7);
     doc.setTextColor(154, 198, 232);
-    doc.text('ConstructPro — Confidential', 12, pageH - 2.5);
+    doc.text(`${opts.companyName || 'ConstructPro'} — Confidential`, 12, pageH - 2.5);
     doc.text(`Page ${i} of ${pages}`, W - 12, pageH - 2.5, { align: 'right' });
   }
 

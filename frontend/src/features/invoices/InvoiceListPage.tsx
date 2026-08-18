@@ -4,9 +4,11 @@ import {
   Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
   TablePagination, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -24,6 +26,27 @@ const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'war
   if (s === 'Paid') return 'success';
   if (s === 'Overdue') return 'error';
   return 'default';
+};
+
+const exportCSV = (rows: { invoiceNumber: string; customer?: { name: string } | null; project?: { name: string } | null; issueDate: string; dueDate: string; total: number; status: string }[]) => {
+  const header = ['Invoice Number', 'Customer', 'Project', 'Issue Date', 'Due Date', 'Total Amount', 'Status'];
+  const csvRows = rows.map((r) => [
+    r.invoiceNumber,
+    r.customer?.name ?? '',
+    r.project?.name ?? '',
+    fmtDate(r.issueDate),
+    fmtDate(r.dueDate),
+    r.total ?? 0,
+    r.status,
+  ]);
+  const content = [header, ...csvRows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'invoices.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 export default function InvoiceListPage() {
@@ -45,6 +68,10 @@ export default function InvoiceListPage() {
   });
   const [deleteInvoice] = useDeleteInvoiceMutation();
   const [updateStatus] = useUpdateInvoiceStatusMutation();
+
+  const items = data?.data ?? [];
+  const unpaid = items.filter((r) => r.status !== 'Paid' && r.status !== 'Cancelled').length;
+  const overdue = items.filter((r) => r.status === 'Overdue').length;
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -81,10 +108,36 @@ export default function InvoiceListPage() {
     <Box>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">INVOICES</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/invoices/new')}>
-          New Invoice
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={() => exportCSV(items)}>
+            Export CSV
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/invoices/new')}>
+            New Invoice
+          </Button>
+        </Stack>
       </Stack>
+
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'primary.main' }}>
+            <Typography variant="caption" color="text.secondary">Total Invoices</Typography>
+            <Typography variant="h4">{data?.total ?? 0}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'warning.main' }}>
+            <Typography variant="caption" color="text.secondary">Unpaid</Typography>
+            <Typography variant="h4">{unpaid}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'error.main' }}>
+            <Typography variant="caption" color="text.secondary">Overdue</Typography>
+            <Typography variant="h4">{overdue}</Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -126,8 +179,12 @@ export default function InvoiceListPage() {
           <TableBody>
             {isLoading ? <TableSkeleton cols={8} /> : (
               <>
-                {data?.data.map((row) => (
-                  <TableRow key={row.id} hover>
+                {items.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    hover={row.status !== 'Overdue'}
+                    sx={row.status === 'Overdue' ? { bgcolor: 'error.light', '&:hover': { bgcolor: 'error.light' } } : undefined}
+                  >
                     <TableCell>
                       <Typography
                         sx={{ fontWeight: 600, color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
@@ -168,7 +225,7 @@ export default function InvoiceListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.data.length && (
+                {!items.length && (
                   <TableRow><TableCell colSpan={8} align="center">No invoices found</TableCell></TableRow>
                 )}
               </>

@@ -166,9 +166,6 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
         })}
       </List>
 
-      <Box sx={{ px: '20px', py: '16px', borderTop: '1px solid rgba(154,198,232,0.18)', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', opacity: 0.5, color: '#9AC6E8' }}>
-        v4.2.0 — REV. 4
-      </Box>
     </>
   );
 }

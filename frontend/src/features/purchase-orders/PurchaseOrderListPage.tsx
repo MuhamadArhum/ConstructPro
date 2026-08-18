@@ -4,9 +4,11 @@ import {
   Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
   TablePagination, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -26,18 +28,47 @@ const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'war
   return 'default';
 };
 
+const isOverdue = (date?: string | null, status?: string) =>
+  date && status !== 'Received' && status !== 'Cancelled' ? new Date(date) < new Date() : false;
+
+const exportCSV = (rows: { poNumber: string; supplier?: { name: string } | null; project?: { name: string } | null; issueDate: string; expectedDelivery?: string | null; total: number; status: string }[]) => {
+  const header = ['PO Number', 'Supplier', 'Project', 'Issue Date', 'Expected Delivery', 'Total Amount', 'Status'];
+  const csvRows = rows.map((r) => [
+    r.poNumber,
+    r.supplier?.name ?? '',
+    r.project?.name ?? '',
+    fmtDate(r.issueDate),
+    r.expectedDelivery ? fmtDate(r.expectedDelivery) : '',
+    r.total ?? 0,
+    r.status,
+  ]);
+  const content = [header, ...csvRows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'purchase-orders.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function PurchaseOrderListPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useGetPurchaseOrdersQuery({ page: page + 1, pageSize: rowsPerPage, status: status || undefined });
+  const { data, isLoading } = useGetPurchaseOrdersQuery({ page: page + 1, pageSize: rowsPerPage, status: status || undefined, search: search || undefined });
   const [deletePO] = useDeletePurchaseOrderMutation();
   const [updateStatus] = useUpdatePurchaseOrderStatusMutation();
+
+  const items = data?.data ?? [];
+  const pending = items.filter((r) => r.status === 'Draft' || r.status === 'Sent').length;
+  const totalAmount = items.reduce((sum, r) => sum + (r.total ?? 0), 0);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -64,10 +95,36 @@ export default function PurchaseOrderListPage() {
     <Box>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">PURCHASE ORDERS</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/purchase-orders/new')}>
-          New PO
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={() => exportCSV(items)}>
+            Export CSV
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/purchase-orders/new')}>
+            New PO
+          </Button>
+        </Stack>
       </Stack>
+
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'primary.main' }}>
+            <Typography variant="caption" color="text.secondary">Total POs</Typography>
+            <Typography variant="h4">{data?.total ?? 0}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'warning.main' }}>
+            <Typography variant="caption" color="text.secondary">Pending</Typography>
+            <Typography variant="h4">{pending}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'success.main' }}>
+            <Typography variant="caption" color="text.secondary">Total Amount</Typography>
+            <Typography variant="h4">PKR {totalAmount.toLocaleString()}</Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -76,7 +133,8 @@ export default function PurchaseOrderListPage() {
             size="small"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0); } }}
+            onBlur={() => { setSearch(searchInput); setPage(0); }}
             sx={{ minWidth: { sm: 250 } }}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -106,8 +164,12 @@ export default function PurchaseOrderListPage() {
           <TableBody>
             {isLoading ? <TableSkeleton cols={8} /> : (
               <>
-                {data?.data.map((row) => (
-                  <TableRow key={row.id} hover>
+                {items.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    hover={!isOverdue(row.expectedDelivery, row.status)}
+                    sx={isOverdue(row.expectedDelivery, row.status) ? { bgcolor: 'error.light', '&:hover': { bgcolor: 'error.light' } } : undefined}
+                  >
                     <TableCell>
                       <Typography
                         sx={{ fontWeight: 600, color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
@@ -148,7 +210,7 @@ export default function PurchaseOrderListPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!data?.data.length && (
+                {!items.length && (
                   <TableRow><TableCell colSpan={8} align="center">No purchase orders found</TableCell></TableRow>
                 )}
               </>

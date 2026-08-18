@@ -19,6 +19,8 @@ export interface AuditLogQueryParams {
   entityType?: string;
   startDate?: string;
   endDate?: string;
+  fromDate?: string;
+  toDate?: string;
   pageNumber?: number;
   pageSize?: number;
 }

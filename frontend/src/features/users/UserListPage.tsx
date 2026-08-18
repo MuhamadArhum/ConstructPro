@@ -7,6 +7,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {
   Alert, Avatar, Box, Button, Chip, Dialog, DialogActions, DialogContent,
   DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody,
@@ -107,15 +108,44 @@ export default function UserListPage() {
   const getInitials = (name: string) =>
     name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 
+  const handleExportCSV = () => {
+    const users = data?.items ?? [];
+    const headers = ['Full Name', 'Email', 'Roles', 'Status', 'Last Login'];
+    const rows = users.map((u) => [
+      u.fullName,
+      u.email,
+      u.roles.join('; '),
+      u.isActive ? 'Active' : 'Inactive',
+      u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : '-',
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h1">User Management</Typography>
-        <PermissionGate permission={Perms.Users.Create}>
-          <Button component={RouterLink} to="/users/new" variant="contained" startIcon={<AddIcon />}>
-            Add User
-          </Button>
-        </PermissionGate>
+        <Stack direction="row" spacing={1}>
+          {data && (
+            <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+          )}
+          <PermissionGate permission={Perms.Users.Create}>
+            <Button component={RouterLink} to="/users/new" variant="contained" startIcon={<AddIcon />}>
+              Add User
+            </Button>
+          </PermissionGate>
+        </Stack>
       </Box>
 
       <Box sx={{ mb: 2 }}>
@@ -147,6 +177,7 @@ export default function UserListPage() {
               <TableRow>
                 <TableCell>User</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Last Login</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -169,6 +200,9 @@ export default function UserListPage() {
                     </Box>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : '-'}
+                  </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                       {user.roles.map((role) => (
@@ -231,7 +265,7 @@ export default function UserListPage() {
               ))}
               {data.items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                     {search ? 'No users match your search.' : 'No users found.'}
                   </TableCell>
                 </TableRow>

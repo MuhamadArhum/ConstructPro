@@ -14,6 +14,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetInvoiceQuery, useDeleteInvoiceMutation, useUpdateInvoiceStatusMutation } from './invoiceApi';
 import { INVOICE_STATUS_COLORS } from '../../utils/statusColors';
+import { useGetSettingsQuery } from '../settings/settingsApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -29,6 +30,7 @@ export default function InvoiceDetailPage() {
   const dispatch = useAppDispatch();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const { data: settings } = useGetSettingsQuery();
   const { data: invoice, isLoading } = useGetInvoiceQuery(id ?? '', { skip: !id });
   const [deleteInvoice] = useDeleteInvoiceMutation();
   const [updateStatus, { isLoading: updatingStatus }] = useUpdateInvoiceStatusMutation();
@@ -69,7 +71,7 @@ export default function InvoiceDetailPage() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('ConstructPro', 14, 10);
+    doc.text(settings?.companyName || 'ConstructPro', 14, 10);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(154, 198, 232);
@@ -154,7 +156,7 @@ export default function InvoiceDetailPage() {
       doc.rect(0, H - 8, W, 8, 'F');
       doc.setFontSize(7);
       doc.setTextColor(154, 198, 232);
-      doc.text('ConstructPro — Confidential', 14, H - 2.5);
+      doc.text(`${settings?.companyName || 'ConstructPro'} — Confidential`, 14, H - 2.5);
       doc.text(`Page ${i} of ${pages}`, W - 14, H - 2.5, { align: 'right' });
     }
 

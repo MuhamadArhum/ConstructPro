@@ -19,6 +19,7 @@ interface PrintOptions {
   totalDebit?: number;
   totalCredit?: number;
   closingBalance?: number;
+  companyName?: string;
 }
 
 const pkr = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
@@ -101,7 +102,7 @@ export function printLedger(opts: PrintOptions) {
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="brand">ConstructPro</div>
+      <div class="brand">${opts.companyName || 'ConstructPro'}</div>
       <div class="sub">CONSTRUCTION ERP</div>
     </div>
     <div class="header-right">
@@ -138,7 +139,7 @@ export function printLedger(opts: PrintOptions) {
     </tbody>
   </table>
   <div class="footer">
-    <span>ConstructPro — Confidential</span>
+    <span>${opts.companyName || 'ConstructPro'} — Confidential</span>
     <span>${opts.entityName} | ${opts.title}</span>
   </div>
   <script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
