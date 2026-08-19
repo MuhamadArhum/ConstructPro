@@ -53,7 +53,7 @@ export default function SalaryPage() {
   const [bonus, setBonus] = useState('0');
   const [deductions, setDeductions] = useState('0');
   const [daysPresent, setDaysPresent] = useState('');
-  const [totalDays, setTotalDays] = useState('26');
+  const [totalDays, setTotalDays] = useState('30');
   const [remarks, setRemarks] = useState('');
 
   const { data: employee, isLoading: empLoading } = useGetEmployeeByIdQuery(id ?? '', { skip: !id });
@@ -236,7 +236,18 @@ export default function SalaryPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleProcess} disabled={processing || !daysPresent || !basicSalary}>
+          <Button
+            variant="contained"
+            onClick={handleProcess}
+            disabled={
+              processing ||
+              !daysPresent ||
+              !basicSalary ||
+              parseFloat(basicSalary) <= 0 ||
+              parseInt(totalDays) <= 0 ||
+              isNaN(parseInt(daysPresent))
+            }
+          >
             Process
           </Button>
         </DialogActions>

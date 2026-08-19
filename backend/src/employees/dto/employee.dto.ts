@@ -150,7 +150,6 @@ export class ProcessSalaryDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @IsNotEmpty()
   @Min(0)
   daysPresent?: number;
 

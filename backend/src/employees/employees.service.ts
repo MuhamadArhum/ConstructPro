@@ -188,7 +188,10 @@ export class EmployeesService {
     const basicSalary = Number(dto.basicSalary);
     const bonus = Number(dto.bonus ?? 0);
     const deductions = Number(dto.deductions ?? 0);
-    const netSalary = basicSalary + bonus - deductions;
+    const totalDays = dto.totalDays ?? 30;
+    const daysPresent = dto.daysPresent ?? 0;
+    const earnedSalary = totalDays > 0 ? (basicSalary / totalDays) * daysPresent : 0;
+    const netSalary = Math.round((earnedSalary + bonus - deductions) * 100) / 100;
 
     const code = await generateCode(this.prisma, 'salaryPayment');
     const payment = await this.prisma.salaryPayment.create({
@@ -201,8 +204,8 @@ export class EmployeesService {
         bonus,
         deductions,
         netSalary,
-        daysPresent: dto.daysPresent ?? 0,
-        totalDays: dto.totalDays ?? 30,
+        daysPresent,
+        totalDays,
         remarks: dto.remarks,
       },
     });

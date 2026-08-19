@@ -52,6 +52,13 @@ export interface ProjectMachinery {
   machinery: { id: string; name: string; model?: string | null; status: string };
 }
 
+export interface ProjectEmployee {
+  id: string;
+  employeeId: string;
+  assignedAt: string;
+  employee: { id: string; fullName: string; designation?: string | null; basicSalary: number };
+}
+
 export interface ProjectStats {
   budget: number;
   spent: number;
@@ -61,6 +68,7 @@ export interface ProjectStats {
   completedMilestones: number;
   labourCount: number;
   machineryCount: number;
+  employeeCount: number;
   expenseCount: number;
 }
 
@@ -69,4 +77,5 @@ export interface ProjectDetail extends Project {
   expenses: ProjectExpense[];
   labours: ProjectLabour[];
   machinery: ProjectMachinery[];
+  employees: ProjectEmployee[];
 }

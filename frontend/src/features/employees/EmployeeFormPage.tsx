@@ -49,6 +49,7 @@ export default function EmployeeFormPage() {
       setDepartment(existing.department ?? '');
       setPhoneNumber(existing.phoneNumber ?? '');
       setCnic(existing.cnic ?? '');
+      setAddress(existing.address ?? '');
       setBasicSalary(String(existing.basicSalary));
       setJoinDate(existing.joinDate.split('T')[0]);
     }

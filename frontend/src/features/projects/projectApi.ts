@@ -1,5 +1,5 @@
 import { baseApi } from '../../api/baseApi';
-import type { Project, ProjectDetail, ProjectStats, ProjectMilestone, ProjectExpense, ProjectLabour, ProjectMachinery } from '../../types/project.types';
+import type { Project, ProjectDetail, ProjectStats, ProjectMilestone, ProjectExpense, ProjectLabour, ProjectMachinery, ProjectEmployee } from '../../types/project.types';
 
 export interface ProjectSummary {
   totalProjects: number;
@@ -78,6 +78,14 @@ export const projectApi = baseApi.injectEndpoints({
       query: ({ id, machineryId }) => ({ url: `/projects/${id}/machinery/${machineryId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
     }),
+    assignEmployee: builder.mutation<ProjectEmployee, { id: string; data: { employeeId: string } }>({
+      query: ({ id, data }) => ({ url: `/projects/${id}/employees`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    removeEmployee: builder.mutation<void, { id: string; employeeId: string }>({
+      query: ({ id, employeeId }) => ({ url: `/projects/${id}/employees/${employeeId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
     getNextProjectCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/projects/next-code' }),
     }),
@@ -101,6 +109,8 @@ export const {
   useRemoveLabourMutation,
   useAssignMachineryMutation,
   useRemoveMachineryMutation,
+  useAssignEmployeeMutation,
+  useRemoveEmployeeMutation,
   useGetNextProjectCodeQuery,
   useGetProjectSummaryQuery,
 } = projectApi;

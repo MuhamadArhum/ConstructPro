@@ -6,9 +6,11 @@ export interface EmployeeDto {
   department?: string;
   phoneNumber?: string;
   cnic?: string;
+  address?: string;
   basicSalary: number;
   joinDate: string;
   isActive: boolean;
+  createdAt?: string;
 }
 
 export interface SalaryPaymentDto {

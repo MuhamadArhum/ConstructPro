@@ -13,7 +13,7 @@ import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled'] as const;
-const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'] as const;
+const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Employee', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'] as const;
 
 export class CreateProjectDto {
   @IsOptional()
@@ -123,4 +123,10 @@ export class AssignMachineryDto {
   @IsString()
   @IsNotEmpty()
   machineryId: string;
+}
+
+export class AssignEmployeeDto {
+  @IsString()
+  @IsNotEmpty()
+  employeeId: string;
 }

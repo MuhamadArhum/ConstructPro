@@ -13,6 +13,7 @@ import {
   UpdateProjectExpenseDto,
   AssignLabourDto,
   AssignMachineryDto,
+  AssignEmployeeDto,
 } from './dto/project.dto';
 import { generateCode } from '../common/utils/generate-code';
 
@@ -85,6 +86,11 @@ export class ProjectsService {
             machinery: { select: { id: true, name: true, model: true } },
           },
         },
+        employees: {
+          include: {
+            employee: { select: { id: true, fullName: true, designation: true, basicSalary: true } },
+          },
+        },
         _count: { select: { invoices: true, purchaseOrders: true } },
       },
     });
@@ -109,6 +115,11 @@ export class ProjectsService {
         id: pm.id,
         assignedAt: pm.assignedAt,
         machinery: pm.machinery,
+      })),
+      employees: project.employees.map((pe) => ({
+        id: pe.id,
+        assignedAt: pe.assignedAt,
+        employee: pe.employee,
       })),
       invoicesCount: project._count.invoices,
       purchaseOrdersCount: project._count.purchaseOrders,
@@ -362,6 +373,35 @@ export class ProjectsService {
     return { message: 'Labour removed from project' };
   }
 
+  // ── Employees ───────────────────────────────────────────────────────────────
+
+  async assignEmployee(projectId: string, dto: AssignEmployeeDto) {
+    await this.findOne(projectId);
+
+    try {
+      const record = await this.prisma.projectEmployee.create({
+        data: { projectId, employeeId: dto.employeeId },
+        include: { employee: { select: { id: true, fullName: true } } },
+      });
+      return record;
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException('Employee already assigned to this project');
+      }
+      throw err;
+    }
+  }
+
+  async removeEmployee(projectId: string, employeeId: string) {
+    const record = await this.prisma.projectEmployee.findFirst({
+      where: { projectId, employeeId },
+    });
+    if (!record) throw new NotFoundException('Employee assignment not found');
+
+    await this.prisma.projectEmployee.delete({ where: { id: record.id } });
+    return { message: 'Employee removed from project' };
+  }
+
   // ── Machinery ───────────────────────────────────────────────────────────────
 
   async assignMachinery(projectId: string, dto: AssignMachineryDto) {
@@ -405,6 +445,7 @@ export class ProjectsService {
             expenses: true,
             labours: true,
             machinery: true,
+            employees: true,
           },
         },
         milestones: { select: { isCompleted: true } },
@@ -426,6 +467,7 @@ export class ProjectsService {
       completedMilestones,
       labourCount: project._count.labours,
       machineryCount: project._count.machinery,
+      employeeCount: project._count.employees,
       expenseCount: project._count.expenses,
     };
   }

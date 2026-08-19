@@ -91,20 +91,21 @@ model RefreshToken {
 }
 
 model Employee {
-  id             String          @id @default(uuid())
-  code           String?         @unique
-  fullName       String
-  designation    String?
-  department     String?
-  phoneNumber    String?
-  cnic           String?
-  address        String?
-  basicSalary    Decimal
-  joinDate       DateTime
-  isActive       Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  salaryPayments SalaryPayment[]
+  id                 String            @id @default(uuid())
+  code               String?           @unique
+  fullName           String
+  designation        String?
+  department         String?
+  phoneNumber        String?
+  cnic               String?
+  address            String?
+  basicSalary        Decimal
+  joinDate           DateTime
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  salaryPayments     SalaryPayment[]
+  projectAssignments ProjectEmployee[]
 
   @@index([isActive])
   @@map("employees")
@@ -692,6 +693,7 @@ model Project {
   expenses       ProjectExpense[]
   labours        ProjectLabour[]
   machinery      ProjectMachinery[]
+  employees      ProjectEmployee[]
   invoices       Invoice[]
   purchaseOrders PurchaseOrder[]
 
@@ -758,6 +760,19 @@ model ProjectMachinery {
 
   @@unique([projectId, machineryId])
   @@map("project_machineries")
+}
+
+model ProjectEmployee {
+  id         String   @id @default(uuid())
+  projectId  String
+  employeeId String
+  assignedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, employeeId])
+  @@map("project_employees")
 }
 
 model Invoice {

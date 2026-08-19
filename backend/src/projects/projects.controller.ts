@@ -28,6 +28,7 @@ import {
   UpdateProjectExpenseDto,
   AssignLabourDto,
   AssignMachineryDto,
+  AssignEmployeeDto,
 } from './dto/project.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -210,6 +211,26 @@ export class ProjectsController {
   @ApiParam({ name: 'labourId', description: 'Labour UUID' })
   removeLabour(@Param('id') id: string, @Param('labourId') labourId: string) {
     return this.projectsService.removeLabour(id, labourId);
+  }
+
+  // ── Employees ───────────────────────────────────────────────────────────────
+
+  @Post(':id/employees')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Assign employee to project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  assignEmployee(@Param('id') id: string, @Body() dto: AssignEmployeeDto) {
+    return this.projectsService.assignEmployee(id, dto);
+  }
+
+  @Delete(':id/employees/:employeeId')
+  @HasPermission('Project.Manage')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove employee from project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'employeeId', description: 'Employee UUID' })
+  removeEmployee(@Param('id') id: string, @Param('employeeId') employeeId: string) {
+    return this.projectsService.removeEmployee(id, employeeId);
   }
 
   // ── Machinery ───────────────────────────────────────────────────────────────

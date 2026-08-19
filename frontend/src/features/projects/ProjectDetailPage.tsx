@@ -33,9 +33,12 @@ import {
   useRemoveLabourMutation,
   useAssignMachineryMutation,
   useRemoveMachineryMutation,
+  useAssignEmployeeMutation,
+  useRemoveEmployeeMutation,
 } from './projectApi';
 import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
+import { useGetEmployeesQuery } from '../employees/employeesApi';
 import { useGetInvoicesQuery } from '../invoices/invoiceApi';
 import { useGetPurchaseOrdersQuery } from '../purchase-orders/purchaseOrderApi';
 import ProjectFormDialog from './ProjectFormDialog';
@@ -46,7 +49,7 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 const today = () => new Date().toISOString().split('T')[0];
 const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
 
-const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
+const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Employee', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
 
 const INV_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
   if (s === 'Sent') return 'info';
@@ -97,16 +100,22 @@ export default function ProjectDetailPage() {
   const [selectedMachineryId, setSelectedMachineryId] = useState('');
   const [removeMachineryId, setRemoveMachineryId] = useState<string | null>(null);
 
+  // Employee state
+  const [employeeOpen, setEmployeeOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [removeEmployeeId, setRemoveEmployeeId] = useState<string | null>(null);
+
   const { data: project, isLoading } = useGetProjectQuery(id ?? '', { skip: !id });
   const { data: laboursData } = useGetLaboursQuery({ pageSize: 1000 });
   const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 1000 });
+  const { data: employeesData } = useGetEmployeesQuery({ pageSize: 1000, isActive: true });
   const { data: invoicesData } = useGetInvoicesQuery(
     { projectId: id, pageSize: 100 },
-    { skip: !id || tab !== 5 },
+    { skip: !id || tab !== 6 },
   );
   const { data: posData } = useGetPurchaseOrdersQuery(
     { projectId: id, pageSize: 100 },
-    { skip: !id || tab !== 6 },
+    { skip: !id || tab !== 7 },
   );
 
   const [deleteProject] = useDeleteProjectMutation();
@@ -120,6 +129,8 @@ export default function ProjectDetailPage() {
   const [removeLabour] = useRemoveLabourMutation();
   const [assignMachinery, { isLoading: assigningMachinery }] = useAssignMachineryMutation();
   const [removeMachinery] = useRemoveMachineryMutation();
+  const [assignEmployee, { isLoading: assigningEmployee }] = useAssignEmployeeMutation();
+  const [removeEmployee] = useRemoveEmployeeMutation();
 
   const handleDeleteProject = async () => {
     try {
@@ -271,6 +282,28 @@ export default function ProjectDetailPage() {
     setRemoveMachineryId(null);
   };
 
+  const handleAssignEmployee = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await assignEmployee({ id: id!, data: { employeeId: selectedEmployeeId } }).unwrap();
+      dispatch(showSnackbar({ message: 'Employee assigned', severity: 'success' }));
+      setEmployeeOpen(false); setSelectedEmployeeId('');
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to assign employee', severity: 'error' }));
+    }
+  };
+
+  const handleRemoveEmployee = async () => {
+    if (!removeEmployeeId) return;
+    try {
+      await removeEmployee({ id: id!, employeeId: removeEmployeeId }).unwrap();
+      dispatch(showSnackbar({ message: 'Employee removed', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to remove employee', severity: 'error' }));
+    }
+    setRemoveEmployeeId(null);
+  };
+
   if (isLoading) return <Loader />;
   if (!project) return <Typography>Project not found</Typography>;
 
@@ -279,6 +312,7 @@ export default function ProjectDetailPage() {
   const totalExpenses = project.expenses?.reduce((s, e) => s + e.amount, 0) ?? 0;
   const laboursList = laboursData?.items ?? [];
   const machineriesList = machineriesData?.items ?? [];
+  const employeesList = employeesData?.items ?? [];
   const overdueMilestones = project.milestones?.filter((m) => !m.isCompleted && isOverdue(m.dueDate)).length ?? 0;
 
   return (
@@ -366,6 +400,7 @@ export default function ProjectDetailPage() {
           <Tab label="Expenses" />
           <Tab label="Labour" />
           <Tab label="Machinery" />
+          <Tab label="Employees" />
           <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
           <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
         </Tabs>
@@ -641,8 +676,52 @@ export default function ProjectDetailPage() {
             </>
           )}
 
-          {/* ── Invoices ── */}
+          {/* ── Employees ── */}
           {tab === 5 && (
+            <>
+              <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setEmployeeOpen(true)}>
+                  Assign Employee
+                </Button>
+              </Stack>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Designation</TableCell>
+                      <TableCell align="right">Basic Salary</TableCell>
+                      <TableCell>Assigned Date</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {project.employees?.map((pe) => (
+                      <TableRow key={pe.id} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{pe.employee.fullName}</TableCell>
+                        <TableCell>{pe.employee.designation ?? '-'}</TableCell>
+                        <TableCell align="right">{fmt(pe.employee.basicSalary)}</TableCell>
+                        <TableCell>{fmtDate(pe.assignedAt)}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Remove">
+                            <IconButton size="small" color="error" onClick={() => setRemoveEmployeeId(pe.id)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!project.employees?.length && (
+                      <TableRow><TableCell colSpan={5}><EmptyState message="No employees assigned yet" actionLabel="Assign Employee" onAction={() => setEmployeeOpen(true)} /></TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+
+          {/* ── Invoices ── */}
+          {tab === 6 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 {invoicesData?.data.length ? (() => {
@@ -702,7 +781,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Purchase Orders ── */}
-          {tab === 6 && (
+          {tab === 7 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 {posData?.data.length ? (() => {
@@ -899,6 +978,33 @@ export default function ProjectDetailPage() {
         </form>
       </Dialog>
 
+      {/* Assign Employee Dialog */}
+      <Dialog open={employeeOpen} onClose={() => setEmployeeOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleAssignEmployee}>
+          <DialogTitle>Assign Employee</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Employee</InputLabel>
+                <Select label="Employee" value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)} required>
+                  {employeesList.map((emp) => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.fullName}{emp.designation ? ` — ${emp.designation}` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEmployeeOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={assigningEmployee || !selectedEmployeeId}>
+              {assigningEmployee ? <CircularProgress size={20} /> : 'Assign'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
       <ConfirmDialog
         open={Boolean(deleteExpId)}
         title="Delete Expense"
@@ -925,6 +1031,15 @@ export default function ProjectDetailPage() {
         destructive
         onConfirm={handleRemoveMachinery}
         onCancel={() => setRemoveMachineryId(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(removeEmployeeId)}
+        title="Remove Employee"
+        message="Are you sure you want to remove this employee from the project?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={handleRemoveEmployee}
+        onCancel={() => setRemoveEmployeeId(null)}
       />
     </Box>
   );
