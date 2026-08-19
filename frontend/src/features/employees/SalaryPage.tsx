@@ -391,29 +391,29 @@ export default function SalaryPage() {
             {daysPresent && basicSalary && (
               <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
                 <Stack spacing={0.5}>
-                  <Stack direction="row" justifyContent="space-between">
+                  <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">Earned ({daysPresent}/{totalDays} days)</Typography>
                     <Typography variant="body2">{fmt(Math.round(earnedPreview))}</Typography>
                   </Stack>
                   {parseFloat(bonus) > 0 && (
-                    <Stack direction="row" justifyContent="space-between">
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="success.main">+ Bonus</Typography>
                       <Typography variant="body2" color="success.main">{fmt(parseFloat(bonus))}</Typography>
                     </Stack>
                   )}
                   {pendingTotal > 0 && (
-                    <Stack direction="row" justifyContent="space-between">
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="error.main">− Advances</Typography>
                       <Typography variant="body2" color="error.main">{fmt(pendingTotal)}</Typography>
                     </Stack>
                   )}
                   {parseFloat(manualDeductions) > 0 && (
-                    <Stack direction="row" justifyContent="space-between">
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="error.main">− Extra Deductions</Typography>
                       <Typography variant="body2" color="error.main">{fmt(parseFloat(manualDeductions))}</Typography>
                     </Stack>
                   )}
-                  <Stack direction="row" justifyContent="space-between" sx={{ borderTop: 1, borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
+                  <Stack direction="row" sx={{ justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>Net Salary</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: netPreview < 0 ? 'error.main' : 'primary.main' }}>
                       {fmt(Math.round(netPreview))}
