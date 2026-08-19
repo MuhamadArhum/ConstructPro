@@ -166,6 +166,23 @@ export class ProcessSalaryDto {
   remarks?: string;
 }
 
+export class CreateEmployeeAdvanceDto {
+  @ApiProperty({ example: 5000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  amount: number;
+
+  @ApiProperty({ example: '2024-07-15' })
+  @IsDateString()
+  date: string;
+
+  @ApiPropertyOptional({ example: 'Medical emergency' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
 export class EmployeeQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

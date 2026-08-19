@@ -5,6 +5,7 @@ import {
   UpdateEmployeeDto,
   ProcessSalaryDto,
   EmployeeQueryDto,
+  CreateEmployeeAdvanceDto,
 } from './dto/employee.dto';
 import { generateCode } from '../common/utils/generate-code';
 
@@ -187,10 +188,18 @@ export class EmployeesService {
 
     const basicSalary = Number(dto.basicSalary);
     const bonus = Number(dto.bonus ?? 0);
-    const deductions = Number(dto.deductions ?? 0);
     const totalDays = dto.totalDays ?? 30;
     const daysPresent = dto.daysPresent ?? 0;
     const earnedSalary = totalDays > 0 ? (basicSalary / totalDays) * daysPresent : 0;
+
+    // Auto-deduct pending advances
+    const pendingAdvances = await this.prisma.employeeAdvance.findMany({
+      where: { employeeId: id, isDeducted: false },
+    });
+    const advanceTotal = pendingAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
+    const manualDeductions = Number(dto.deductions ?? 0);
+    const deductions = manualDeductions + advanceTotal;
+
     const netSalary = Math.round((earnedSalary + bonus - deductions) * 100) / 100;
 
     const code = await generateCode(this.prisma, 'salaryPayment');
@@ -210,7 +219,53 @@ export class EmployeesService {
       },
     });
 
-    return this.mapSalaryPayment(payment);
+    // Mark pending advances as deducted
+    if (pendingAdvances.length > 0) {
+      await this.prisma.employeeAdvance.updateMany({
+        where: { id: { in: pendingAdvances.map((a) => a.id) } },
+        data: { isDeducted: true, deductedAt: new Date() },
+      });
+    }
+
+    return {
+      ...this.mapSalaryPayment(payment),
+      advanceDeducted: advanceTotal,
+      manualDeductions,
+    };
+  }
+
+  // ── Advances ────────────────────────────────────────────────────────────────
+
+  async addAdvance(employeeId: string, dto: CreateEmployeeAdvanceDto) {
+    await this.findById(employeeId);
+    const advance = await this.prisma.employeeAdvance.create({
+      data: {
+        employeeId,
+        amount: dto.amount,
+        date: new Date(dto.date),
+        reason: dto.reason,
+      },
+    });
+    return this.mapAdvance(advance);
+  }
+
+  async getAdvances(employeeId: string) {
+    await this.findById(employeeId);
+    const advances = await this.prisma.employeeAdvance.findMany({
+      where: { employeeId },
+      orderBy: { date: 'desc' },
+    });
+    return advances.map((a) => this.mapAdvance(a));
+  }
+
+  async deleteAdvance(employeeId: string, advanceId: string) {
+    const advance = await this.prisma.employeeAdvance.findFirst({
+      where: { id: advanceId, employeeId },
+    });
+    if (!advance) throw new NotFoundException('Advance not found');
+    if (advance.isDeducted) throw new ConflictException('Cannot delete an advance that has already been deducted from salary');
+    await this.prisma.employeeAdvance.delete({ where: { id: advanceId } });
+    return { message: 'Advance deleted' };
   }
 
   async getAllSalaries(month: number, year: number) {
@@ -228,6 +283,37 @@ export class EmployeesService {
       ...this.mapSalaryPayment(sp),
       employee: sp.employee,
     }));
+  }
+
+  async getPendingAdvancesTotal(employeeId: string) {
+    const advances = await this.prisma.employeeAdvance.findMany({
+      where: { employeeId, isDeducted: false },
+      orderBy: { date: 'desc' },
+    });
+    const total = advances.reduce((sum, a) => sum + Number(a.amount), 0);
+    return { advances: advances.map((a) => this.mapAdvance(a)), total };
+  }
+
+  private mapAdvance(a: {
+    id: string;
+    employeeId: string;
+    amount: any;
+    date: Date;
+    reason: string | null;
+    isDeducted: boolean;
+    deductedAt: Date | null;
+    createdAt: Date;
+  }) {
+    return {
+      id: a.id,
+      employeeId: a.employeeId,
+      amount: Number(a.amount),
+      date: a.date,
+      reason: a.reason,
+      isDeducted: a.isDeducted,
+      deductedAt: a.deductedAt,
+      createdAt: a.createdAt,
+    };
   }
 
   private mapEmployee(employee: {

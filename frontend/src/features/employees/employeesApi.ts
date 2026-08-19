@@ -3,6 +3,8 @@ import type { PaginatedList } from '../../types/common.types';
 import type {
   EmployeeDto,
   SalaryPaymentDto,
+  EmployeeAdvanceDto,
+  PendingAdvancesDto,
   CreateEmployeeRequest,
   UpdateEmployeeRequest,
   ProcessSalaryRequest,
@@ -55,6 +57,22 @@ export const employeesApi = baseApi.injectEndpoints({
     getNextEmployeeCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/employees/next-code' }),
     }),
+    getAdvances: builder.query<EmployeeAdvanceDto[], string>({
+      query: (id) => ({ url: `/employees/${id}/advances` }),
+      providesTags: (_r, _e, id) => [{ type: 'Employee' as const, id: `${id}-advances` }],
+    }),
+    getPendingAdvances: builder.query<PendingAdvancesDto, string>({
+      query: (id) => ({ url: `/employees/${id}/advances/pending` }),
+      providesTags: (_r, _e, id) => [{ type: 'Employee' as const, id: `${id}-advances` }],
+    }),
+    addAdvance: builder.mutation<EmployeeAdvanceDto, { id: string; data: { amount: number; date: string; reason?: string } }>({
+      query: ({ id, data }) => ({ url: `/employees/${id}/advances`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Employee' as const, id: `${id}-advances` }],
+    }),
+    deleteAdvance: builder.mutation<void, { id: string; advanceId: string }>({
+      query: ({ id, advanceId }) => ({ url: `/employees/${id}/advances/${advanceId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Employee' as const, id: `${id}-advances` }],
+    }),
   }),
 });
 
@@ -69,4 +87,8 @@ export const {
   useProcessSalaryMutation,
   useGetAllSalariesQuery,
   useGetNextEmployeeCodeQuery,
+  useGetAdvancesQuery,
+  useGetPendingAdvancesQuery,
+  useAddAdvanceMutation,
+  useDeleteAdvanceMutation,
 } = employeesApi;

@@ -105,10 +105,27 @@ model Employee {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   salaryPayments     SalaryPayment[]
+  advances           EmployeeAdvance[]
   projectAssignments ProjectEmployee[]
 
   @@index([isActive])
   @@map("employees")
+}
+
+model EmployeeAdvance {
+  id          String    @id @default(uuid())
+  employeeId  String
+  amount      Decimal
+  date        DateTime
+  reason      String?
+  isDeducted  Boolean   @default(false)
+  deductedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([isDeducted])
+  @@map("employee_advances")
 }
 
 model SalaryPayment {

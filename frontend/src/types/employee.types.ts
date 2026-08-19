@@ -29,6 +29,22 @@ export interface SalaryPaymentDto {
   paidAt: string;
 }
 
+export interface EmployeeAdvanceDto {
+  id: string;
+  employeeId: string;
+  amount: number;
+  date: string;
+  reason?: string | null;
+  isDeducted: boolean;
+  deductedAt?: string | null;
+  createdAt: string;
+}
+
+export interface PendingAdvancesDto {
+  advances: EmployeeAdvanceDto[];
+  total: number;
+}
+
 export interface CreateEmployeeRequest {
   fullName: string;
   designation?: string;

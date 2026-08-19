@@ -26,6 +26,7 @@ import {
   UpdateEmployeeDto,
   ProcessSalaryDto,
   EmployeeQueryDto,
+  CreateEmployeeAdvanceDto,
 } from './dto/employee.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -133,9 +134,43 @@ export class EmployeesController {
   @HasPermission('Employees.Edit')
   @ApiOperation({ summary: 'Process salary payment for an employee' })
   @ApiParam({ name: 'id', description: 'Employee UUID' })
-  @ApiResponse({ status: 201, description: 'Salary payment recorded successfully' })
-  @ApiResponse({ status: 404, description: 'Employee not found' })
   processSalary(@Param('id') id: string, @Body() dto: ProcessSalaryDto) {
     return this.employeesService.processSalary(id, dto);
+  }
+
+  // ── Advances ────────────────────────────────────────────────────────────────
+
+  @Get(':id/advances')
+  @HasPermission('Employees.View')
+  @ApiOperation({ summary: 'Get all advances for an employee' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  getAdvances(@Param('id') id: string) {
+    return this.employeesService.getAdvances(id);
+  }
+
+  @Get(':id/advances/pending')
+  @HasPermission('Employees.View')
+  @ApiOperation({ summary: 'Get pending (not yet deducted) advances total' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  getPendingAdvancesTotal(@Param('id') id: string) {
+    return this.employeesService.getPendingAdvancesTotal(id);
+  }
+
+  @Post(':id/advances')
+  @HasPermission('Employees.Edit')
+  @ApiOperation({ summary: 'Add an advance for an employee' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  addAdvance(@Param('id') id: string, @Body() dto: CreateEmployeeAdvanceDto) {
+    return this.employeesService.addAdvance(id, dto);
+  }
+
+  @Delete(':id/advances/:advanceId')
+  @HasPermission('Employees.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a pending advance' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiParam({ name: 'advanceId', description: 'Advance UUID' })
+  deleteAdvance(@Param('id') id: string, @Param('advanceId') advanceId: string) {
+    return this.employeesService.deleteAdvance(id, advanceId);
   }
 }
