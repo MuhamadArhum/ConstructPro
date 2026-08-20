@@ -9,6 +9,37 @@ export interface ProjectSummary {
   overdueMilestones: number;
 }
 
+export interface ProjectEmployeeSalaryItem {
+  id: string;
+  fullName: string;
+  designation: string | null;
+  basicSalary: number;
+  assignedAt: string;
+  monthsCount: number;
+  totalSalary: number;
+  payments: { month: number; year: number; netSalary: number; daysPresent: number; totalDays: number; paidAt: string }[];
+}
+
+export interface ProjectLabourWageItem {
+  id: string;
+  name: string;
+  trade: string | null;
+  dailyWage: number;
+  assignedAt: string;
+  presentDays: number;
+  totalOvertimeHours: number;
+  wagesEarned: number;
+  overtimePay: number;
+  totalWages: number;
+}
+
+export interface ProjectSalaryExpense {
+  period: { from: string; to: string };
+  employees: ProjectEmployeeSalaryItem[];
+  labours: ProjectLabourWageItem[];
+  summary: { totalEmployeeSalary: number; totalLabourWages: number; grandTotal: number };
+}
+
 export const projectApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getProjects: builder.query<{ data: Project[]; total: number }, { page?: number; pageSize?: number; search?: string; status?: string; clientId?: string; startDateFrom?: string; startDateTo?: string }>({
@@ -89,6 +120,10 @@ export const projectApi = baseApi.injectEndpoints({
     getNextProjectCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/projects/next-code' }),
     }),
+    getProjectSalaryExpense: builder.query<ProjectSalaryExpense, string>({
+      query: (id) => ({ url: `/projects/${id}/salary-expense` }),
+      providesTags: (_r, _e, id) => [{ type: 'Project' as const, id }],
+    }),
   }),
 });
 
@@ -113,4 +148,5 @@ export const {
   useRemoveEmployeeMutation,
   useGetNextProjectCodeQuery,
   useGetProjectSummaryQuery,
+  useGetProjectSalaryExpenseQuery,
 } = projectApi;

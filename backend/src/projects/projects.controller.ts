@@ -233,6 +233,16 @@ export class ProjectsController {
     return this.projectsService.removeEmployee(id, employeeId);
   }
 
+  // ── Salary Expense ──────────────────────────────────────────────────────────
+
+  @Get(':id/salary-expense')
+  @HasPermission('Project.View')
+  @ApiOperation({ summary: 'Get employee salary + labour wage expenses for a project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  getProjectSalaryExpense(@Param('id') id: string) {
+    return this.projectsService.getProjectSalaryExpense(id);
+  }
+
   // ── Machinery ───────────────────────────────────────────────────────────────
 
   @Post(':id/machinery')

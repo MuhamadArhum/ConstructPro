@@ -433,6 +433,110 @@ export class ProjectsService {
     return { message: 'Machinery removed from project' };
   }
 
+  // ── Salary Expense ──────────────────────────────────────────────────────────
+
+  async getProjectSalaryExpense(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        employees: {
+          include: {
+            employee: { select: { id: true, fullName: true, designation: true, basicSalary: true } },
+          },
+        },
+        labours: {
+          include: {
+            labour: { select: { id: true, name: true, trade: true, dailyWage: true, overtimeRatePerHour: true } },
+          },
+        },
+      },
+    });
+
+    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+
+    const from = project.startDate;
+    const to = project.endDate ?? new Date();
+
+    // Employee salary payments within project dates
+    const employeeResults = await Promise.all(
+      project.employees.map(async (pe) => {
+        const payments = await this.prisma.salaryPayment.findMany({
+          where: {
+            employeeId: pe.employee.id,
+            paidAt: { gte: from, lte: to },
+          },
+          orderBy: [{ year: 'asc' }, { month: 'asc' }],
+        });
+        const totalSalary = payments.reduce((sum, p) => sum + Number(p.netSalary), 0);
+        return {
+          id: pe.employee.id,
+          fullName: pe.employee.fullName,
+          designation: pe.employee.designation,
+          basicSalary: Number(pe.employee.basicSalary),
+          assignedAt: pe.assignedAt,
+          monthsCount: payments.length,
+          totalSalary,
+          payments: payments.map((p) => ({
+            month: p.month,
+            year: p.year,
+            netSalary: Number(p.netSalary),
+            daysPresent: p.daysPresent,
+            totalDays: p.totalDays,
+            paidAt: p.paidAt,
+          })),
+        };
+      }),
+    );
+
+    // Labour wages from attendance within project dates
+    const labourResults = await Promise.all(
+      project.labours.map(async (pl) => {
+        const dailyWage = Number(pl.labour.dailyWage);
+        const overtimeRate = Number(pl.labour.overtimeRatePerHour);
+
+        const attendances = await this.prisma.labourAttendance.findMany({
+          where: {
+            labourId: pl.labour.id,
+            date: { gte: from, lte: to },
+          },
+        });
+
+        const presentDays = attendances.filter((a) => a.isPresent).length;
+        const totalOvertimeHours = attendances.reduce((sum, a) => sum + Number(a.overtimeHours), 0);
+        const wagesEarned = presentDays * dailyWage;
+        const overtimePay = totalOvertimeHours * overtimeRate;
+        const totalWages = wagesEarned + overtimePay;
+
+        return {
+          id: pl.labour.id,
+          name: pl.labour.name,
+          trade: pl.labour.trade,
+          dailyWage,
+          assignedAt: pl.assignedAt,
+          presentDays,
+          totalOvertimeHours,
+          wagesEarned,
+          overtimePay,
+          totalWages,
+        };
+      }),
+    );
+
+    const totalEmployeeSalary = employeeResults.reduce((s, e) => s + e.totalSalary, 0);
+    const totalLabourWages = labourResults.reduce((s, l) => s + l.totalWages, 0);
+
+    return {
+      period: { from, to },
+      employees: employeeResults,
+      labours: labourResults,
+      summary: {
+        totalEmployeeSalary,
+        totalLabourWages,
+        grandTotal: totalEmployeeSalary + totalLabourWages,
+      },
+    };
+  }
+
   // ── Stats ───────────────────────────────────────────────────────────────────
 
   async getStats(id: string) {
