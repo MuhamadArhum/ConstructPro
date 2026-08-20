@@ -19,6 +19,7 @@ dist-electron/
 backend-bundle/
 backend/public/
 backend/constructpro.db
+backend/dev.db
 
 # Claude
 .claude/
