@@ -141,6 +141,15 @@ export class LabourController {
     return this.labourService.getAttendance(id, Number(month), Number(year));
   }
 
+  @Get(':id/advances/pending')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get pending (non-deducted) advances for a labour worker' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 200, description: 'Returns pending advances and total' })
+  getPendingAdvances(@Param('id') id: string) {
+    return this.labourService.getPendingAdvances(id);
+  }
+
   @Get(':id/advances')
   @HasPermission('Labour.View')
   @ApiOperation({ summary: 'Get all advance payments for a labour worker' })
@@ -159,6 +168,17 @@ export class LabourController {
   @ApiResponse({ status: 404, description: 'Labour not found' })
   addAdvance(@Param('id') id: string, @Body() dto: AddAdvanceDto) {
     return this.labourService.addAdvance(id, dto);
+  }
+
+  @Delete(':id/advances/:advanceId')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a pending advance for a labour worker' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiParam({ name: 'advanceId', description: 'Advance UUID' })
+  @ApiResponse({ status: 200, description: 'Advance deleted' })
+  deleteAdvance(@Param('id') id: string, @Param('advanceId') advanceId: string) {
+    return this.labourService.deleteAdvance(id, advanceId);
   }
 
   @Get(':id/ledger')

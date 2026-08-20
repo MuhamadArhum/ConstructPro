@@ -188,14 +188,18 @@ model LabourAttendance {
 }
 
 model LabourAdvance {
-  id       String   @id @default(uuid())
-  labourId String
-  amount   Decimal
-  date     DateTime
-  reason   String?
-  labour   Labour   @relation(fields: [labourId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  labourId    String
+  amount      Decimal
+  date        DateTime
+  reason      String?
+  isDeducted  Boolean   @default(false)
+  deductedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  labour      Labour    @relation(fields: [labourId], references: [id], onDelete: Cascade)
 
   @@index([labourId])
+  @@index([isDeducted])
   @@map("labour_advances")
 }
 

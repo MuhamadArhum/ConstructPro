@@ -28,17 +28,32 @@ export interface LabourAttendanceDto {
 export interface LabourAdvanceDto {
   id: string;
   labourId: string;
-  labourName: string;
   amount: number;
   date: string;
   reason?: string;
+  isDeducted: boolean;
+  deductedAt?: string | null;
+  createdAt: string;
+}
+
+export interface PendingLabourAdvancesDto {
+  advances: LabourAdvanceDto[];
+  total: number;
+}
+
+export interface LabourLedgerSummary {
+  presentDays: number;
+  totalOvertimeHours: number;
+  wagesEarned: number;
+  overtimePay: number;
+  totalAdvances: number;
+  netPayable: number;
 }
 
 export interface LabourLedgerDto {
   labour: LabourDto;
-  totalEarnings: number;
-  totalAdvances: number;
-  netPayable: number;
+  period: { month: number; year: number };
+  summary: LabourLedgerSummary;
   attendances: LabourAttendanceDto[];
   advances: LabourAdvanceDto[];
 }

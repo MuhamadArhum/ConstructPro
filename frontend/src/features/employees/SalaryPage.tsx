@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent } from 'react';
 import {
   Alert,
   Box,
@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   IconButton,
   InputAdornment,
@@ -32,6 +33,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PrintIcon from '@mui/icons-material/Print';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -48,6 +50,7 @@ import {
   useDeleteAdvanceMutation,
   useGetPendingAdvancesQuery,
 } from './employeesApi';
+import type { SalaryPaymentDto } from '../../types/employee.types';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-GB');
@@ -63,8 +66,10 @@ export default function SalaryPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const now = new Date();
+  const slipRef = useRef<HTMLDivElement>(null);
 
   const [tab, setTab] = useState(0);
+  const [selectedSlip, setSelectedSlip] = useState<SalaryPaymentDto | null>(null);
 
   // Salary dialog state
   const [salaryOpen, setSalaryOpen] = useState(false);
@@ -157,6 +162,27 @@ export default function SalaryPage() {
     setDeleteAdvId(null);
   };
 
+  const handlePrintSlip = () => {
+    const printContent = slipRef.current;
+    if (!printContent) return;
+    const win = window.open('', '_blank', 'width=800,height=600');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Salary Slip</title><style>
+        body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; color: #000; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+        th { background: #f0f0f0; }
+        .net { font-size: 15px; font-weight: bold; }
+        @media print { body { margin: 10px; } }
+      </style></head><body>${printContent.innerHTML}</body></html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
   const earnedPreview = (() => {
     const bs = parseFloat(basicSalary) || 0;
     const td = parseInt(totalDays) || 30;
@@ -217,6 +243,7 @@ export default function SalaryPage() {
                       <TableCell>Days</TableCell>
                       <TableCell>Remarks</TableCell>
                       <TableCell>Paid At</TableCell>
+                      <TableCell align="right">Slip</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -231,10 +258,17 @@ export default function SalaryPage() {
                         <TableCell>{row.daysPresent}/{row.totalDays}</TableCell>
                         <TableCell>{row.remarks ?? '-'}</TableCell>
                         <TableCell>{fmtDate(row.paidAt)}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="View Salary Slip">
+                            <IconButton size="small" color="primary" onClick={() => setSelectedSlip(row)}>
+                              <PrintIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {!salaryHistory?.length && (
-                      <TableRow><TableCell colSpan={9} align="center">No salary records</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={10} align="center">No salary records</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -509,6 +543,135 @@ export default function SalaryPage() {
         onConfirm={handleDeleteAdvance}
         onCancel={() => setDeleteAdvId(null)}
       />
+
+      {/* Salary Slip Dialog */}
+      <Dialog open={Boolean(selectedSlip)} onClose={() => setSelectedSlip(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Salary Slip — {selectedSlip ? `${monthNames[selectedSlip.month - 1]} ${selectedSlip.year}` : ''}
+        </DialogTitle>
+        <DialogContent dividers>
+          <div ref={slipRef}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>SALARY SLIP</h2>
+              <p style={{ margin: '4px 0', color: '#555', fontSize: 12 }}>
+                {selectedSlip ? `${monthNames[selectedSlip.month - 1]} ${selectedSlip.year}` : ''}
+              </p>
+            </div>
+            <Divider sx={{ mb: 1.5 }} />
+
+            {/* Employee Info */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '4px 0', color: '#555', width: '35%' }}>Employee Name</td>
+                  <td style={{ padding: '4px 0', fontWeight: 600 }}>{employee?.fullName}</td>
+                  <td style={{ padding: '4px 0', color: '#555', width: '20%' }}>Code</td>
+                  <td style={{ padding: '4px 0' }}>{employee?.code ?? '-'}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '4px 0', color: '#555' }}>Designation</td>
+                  <td style={{ padding: '4px 0' }}>{employee?.designation ?? '-'}</td>
+                  <td style={{ padding: '4px 0', color: '#555' }}>Department</td>
+                  <td style={{ padding: '4px 0' }}>{employee?.department ?? '-'}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '4px 0', color: '#555' }}>CNIC</td>
+                  <td style={{ padding: '4px 0' }}>{employee?.cnic ?? '-'}</td>
+                  <td style={{ padding: '4px 0', color: '#555' }}>Paid At</td>
+                  <td style={{ padding: '4px 0' }}>{selectedSlip ? fmtDate(selectedSlip.paidAt) : '-'}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <Divider sx={{ mb: 1.5 }} />
+
+            {/* Earnings */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Earnings</Typography>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8 }}>
+              <thead>
+                <tr style={{ background: '#f5f5f5' }}>
+                  <th style={{ padding: '5px 8px', textAlign: 'left', border: '1px solid #ddd', fontSize: 12 }}>Description</th>
+                  <th style={{ padding: '5px 8px', textAlign: 'right', border: '1px solid #ddd', fontSize: 12 }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '4px 8px', border: '1px solid #ddd', fontSize: 12 }}>
+                    Basic Salary ({selectedSlip?.daysPresent}/{selectedSlip?.totalDays} days)
+                  </td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right', border: '1px solid #ddd', fontSize: 12 }}>
+                    {fmt(selectedSlip ? Math.round((selectedSlip.basicSalary / selectedSlip.totalDays) * selectedSlip.daysPresent) : 0)}
+                  </td>
+                </tr>
+                {(selectedSlip?.bonus ?? 0) > 0 && (
+                  <tr>
+                    <td style={{ padding: '4px 8px', border: '1px solid #ddd', fontSize: 12 }}>Bonus</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', border: '1px solid #ddd', fontSize: 12, color: '#2e7d32' }}>
+                      {fmt(selectedSlip?.bonus ?? 0)}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            {/* Deductions */}
+            {(selectedSlip?.deductions ?? 0) > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Deductions</Typography>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8 }}>
+                  <thead>
+                    <tr style={{ background: '#f5f5f5' }}>
+                      <th style={{ padding: '5px 8px', textAlign: 'left', border: '1px solid #ddd', fontSize: 12 }}>Description</th>
+                      <th style={{ padding: '5px 8px', textAlign: 'right', border: '1px solid #ddd', fontSize: 12 }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '4px 8px', border: '1px solid #ddd', fontSize: 12 }}>Total Deductions (Advance + Other)</td>
+                      <td style={{ padding: '4px 8px', textAlign: 'right', border: '1px solid #ddd', fontSize: 12, color: '#d32f2f' }}>
+                        -{fmt(selectedSlip?.deductions ?? 0)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* Net Salary */}
+            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover', mt: 1 }}>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Net Salary</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {fmt(selectedSlip?.netSalary ?? 0)}
+                </Typography>
+              </Stack>
+            </Paper>
+
+            {selectedSlip?.remarks && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Remarks: {selectedSlip.remarks}
+              </Typography>
+            )}
+
+            <Stack direction="row" sx={{ justifyContent: 'space-between', mt: 4 }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Divider sx={{ width: 150, mb: 0.5 }} />
+                <Typography variant="caption" color="text.secondary">Employee Signature</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Divider sx={{ width: 150, mb: 0.5 }} />
+                <Typography variant="caption" color="text.secondary">Authorized Signature</Typography>
+              </Box>
+            </Stack>
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedSlip(null)}>Close</Button>
+          <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrintSlip}>
+            Print
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

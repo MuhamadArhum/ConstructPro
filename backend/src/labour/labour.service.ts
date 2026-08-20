@@ -271,6 +271,16 @@ export class LabourService {
     return advances.map((a) => this.mapAdvance(a));
   }
 
+  async getPendingAdvances(id: string) {
+    await this.findById(id);
+    const advances = await this.prisma.labourAdvance.findMany({
+      where: { labourId: id, isDeducted: false },
+      orderBy: { date: 'desc' },
+    });
+    const total = advances.reduce((sum, a) => sum + Number(a.amount), 0);
+    return { advances: advances.map((a) => this.mapAdvance(a)), total };
+  }
+
   async addAdvance(id: string, dto: AddAdvanceDto) {
     await this.findById(id);
 
@@ -288,6 +298,16 @@ export class LabourService {
     });
 
     return this.mapAdvance(advance);
+  }
+
+  async deleteAdvance(labourId: string, advanceId: string) {
+    const advance = await this.prisma.labourAdvance.findFirst({
+      where: { id: advanceId, labourId },
+    });
+    if (!advance) throw new NotFoundException('Advance not found');
+    if (advance.isDeducted) throw new ConflictException('Cannot delete an advance that has already been deducted');
+    await this.prisma.labourAdvance.delete({ where: { id: advanceId } });
+    return { message: 'Advance deleted' };
   }
 
   async getLedger(id: string, month: number, year: number) {
@@ -312,15 +332,12 @@ export class LabourService {
         orderBy: { date: 'asc' },
       }),
       this.prisma.labourAdvance.findMany({
-        where: {
-          labourId: id,
-          date: { gte: firstDay, lte: lastDay },
-        },
+        where: { labourId: id, isDeducted: false },
         orderBy: { date: 'desc' },
       }),
       this.prisma.labourAdvance.aggregate({
         _sum: { amount: true },
-        where: { labourId: id, date: { gte: firstDay, lte: lastDay } },
+        where: { labourId: id, isDeducted: false },
       }),
     ]);
 
@@ -331,7 +348,7 @@ export class LabourService {
     );
     const wagesEarned = presentDays * dailyWage;
     const overtimePay = totalOvertimeHours * overtimeRatePerHour;
-    const totalAdvances = Number(advanceSum._sum.amount ?? 0);
+    const totalAdvances = Number(advanceSum._sum?.amount ?? 0);
     const netPayable = wagesEarned + overtimePay - totalAdvances;
 
     return {
@@ -404,6 +421,9 @@ export class LabourService {
     amount: any;
     date: Date;
     reason: string | null;
+    isDeducted: boolean;
+    deductedAt: Date | null;
+    createdAt: Date;
   }) {
     return {
       id: a.id,
@@ -411,6 +431,9 @@ export class LabourService {
       amount: Number(a.amount),
       date: a.date,
       reason: a.reason,
+      isDeducted: a.isDeducted,
+      deductedAt: a.deductedAt,
+      createdAt: a.createdAt,
     };
   }
 }

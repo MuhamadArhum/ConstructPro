@@ -4,6 +4,7 @@ import type {
   LabourDto,
   LabourAttendanceDto,
   LabourAdvanceDto,
+  PendingLabourAdvancesDto,
   LabourLedgerDto,
   CreateLabourRequest,
   UpdateLabourRequest,
@@ -56,11 +57,19 @@ export const labourApi = baseApi.injectEndpoints({
     }),
     getLabourAdvances: builder.query<LabourAdvanceDto[], string>({
       query: (id) => ({ url: `/labour/${id}/advances` }),
-      providesTags: ['Labour'],
+      providesTags: (_r, _e, id) => [{ type: 'Labour' as const, id: `${id}-advances` }],
+    }),
+    getLabourPendingAdvances: builder.query<PendingLabourAdvancesDto, string>({
+      query: (id) => ({ url: `/labour/${id}/advances/pending` }),
+      providesTags: (_r, _e, id) => [{ type: 'Labour' as const, id: `${id}-advances` }],
     }),
     addLabourAdvance: builder.mutation<LabourAdvanceDto, { id: string; data: AddAdvanceRequest }>({
       query: ({ id, data }) => ({ url: `/labour/${id}/advances`, method: 'POST', data }),
-      invalidatesTags: ['Labour'],
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Labour' as const, id: `${id}-advances` }],
+    }),
+    deleteLabourAdvance: builder.mutation<void, { id: string; advanceId: string }>({
+      query: ({ id, advanceId }) => ({ url: `/labour/${id}/advances/${advanceId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Labour' as const, id: `${id}-advances` }],
     }),
     getLabourLedger: builder.query<LabourLedgerDto, { id: string; month: number; year: number }>({
       query: ({ id, month, year }) => ({
@@ -85,7 +94,9 @@ export const {
   useGetLabourAttendanceQuery,
   useUpsertAttendanceMutation,
   useGetLabourAdvancesQuery,
+  useGetLabourPendingAdvancesQuery,
   useAddLabourAdvanceMutation,
+  useDeleteLabourAdvanceMutation,
   useGetLabourLedgerQuery,
   useGetNextLabourCodeQuery,
 } = labourApi;
