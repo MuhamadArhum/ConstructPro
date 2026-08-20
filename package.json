@@ -1,6 +1,6 @@
 {
   "name": "constructpro",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "ConstructPro - Construction ERP Management System",
   "main": "electron/main.js",
   "author": "ConstructPro",
