@@ -537,6 +537,99 @@ export class ProjectsService {
     };
   }
 
+  // ── Project Payroll ─────────────────────────────────────────────────────────
+
+  async getProjectPayroll(projectId: string, month: number, year: number) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        employees: {
+          include: {
+            employee: { select: { id: true, fullName: true, designation: true, basicSalary: true } },
+          },
+        },
+        labours: {
+          include: {
+            labour: { select: { id: true, name: true, trade: true, dailyWage: true, overtimeRatePerHour: true } },
+          },
+        },
+      },
+    });
+
+    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+
+    const employeeIds = project.employees.map((pe) => pe.employee.id);
+    const salaryRecords = employeeIds.length > 0
+      ? await this.prisma.salaryPayment.findMany({
+          where: { employeeId: { in: employeeIds }, month, year },
+        })
+      : [];
+    const salaryMap = new Map(salaryRecords.map((s) => [s.employeeId, s]));
+
+    const employees = project.employees.map((pe) => {
+      const sp = salaryMap.get(pe.employee.id);
+      return {
+        employeeId: pe.employee.id,
+        fullName: pe.employee.fullName,
+        designation: pe.employee.designation,
+        basicSalary: Number(pe.employee.basicSalary),
+        salary: sp
+          ? {
+              id: sp.id,
+              code: sp.code ?? null,
+              employeeId: sp.employeeId,
+              month: sp.month,
+              year: sp.year,
+              basicSalary: Number(sp.basicSalary),
+              bonus: Number(sp.bonus),
+              deductions: Number(sp.deductions),
+              netSalary: Number(sp.netSalary),
+              daysPresent: sp.daysPresent,
+              totalDays: sp.totalDays,
+              status: sp.status,
+              generatedAt: sp.paidAt,
+              paidDate: sp.paidDate,
+              remarks: sp.remarks,
+            }
+          : null,
+      };
+    });
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const labours = await Promise.all(
+      project.labours.map(async (pl) => {
+        const lab = pl.labour;
+        const dailyWage = Number(lab.dailyWage);
+        const overtimeRate = Number(lab.overtimeRatePerHour);
+
+        const attendances = await this.prisma.labourAttendance.findMany({
+          where: { labourId: lab.id, date: { gte: startDate, lte: endDate } },
+        });
+
+        const daysPresent = attendances.filter((a) => a.isPresent).length;
+        const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
+        const wagesEarned = daysPresent * dailyWage;
+        const overtimePay = overtimeHours * overtimeRate;
+
+        return {
+          labourId: lab.id,
+          name: lab.name,
+          trade: lab.trade,
+          dailyWage,
+          daysPresent,
+          overtimeHours: Math.round(overtimeHours * 100) / 100,
+          wagesEarned: Math.round(wagesEarned * 100) / 100,
+          overtimePay: Math.round(overtimePay * 100) / 100,
+          totalWages: Math.round((wagesEarned + overtimePay) * 100) / 100,
+        };
+      }),
+    );
+
+    return { month, year, employees, labours };
+  }
+
   // ── Stats ───────────────────────────────────────────────────────────────────
 
   async getStats(id: string) {

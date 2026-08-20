@@ -13,6 +13,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PaymentIcon from '@mui/icons-material/Payment';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -35,7 +36,13 @@ import {
   useRemoveMachineryMutation,
   useAssignEmployeeMutation,
   useRemoveEmployeeMutation,
+  useGetProjectPayrollQuery,
 } from './projectApi';
+import {
+  useProcessSalaryMutation,
+  useMarkSalaryAsPaidMutation,
+  useDeleteSalaryMutation,
+} from '../employees/employeesApi';
 import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
 import { useGetEmployeesQuery } from '../employees/employeesApi';
@@ -105,6 +112,20 @@ export default function ProjectDetailPage() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [removeEmployeeId, setRemoveEmployeeId] = useState<string | null>(null);
 
+  // Payroll state
+  const now = new Date();
+  const [payrollMonth, setPayrollMonth] = useState(now.getMonth() + 1);
+  const [payrollYear, setPayrollYear] = useState(now.getFullYear());
+  const [genSalaryEmp, setGenSalaryEmp] = useState<{ employeeId: string; fullName: string; basicSalary: number } | null>(null);
+  const [genBonus, setGenBonus] = useState('0');
+  const [genDeductions, setGenDeductions] = useState('0');
+  const [genDaysPresent, setGenDaysPresent] = useState('26');
+  const [genTotalDays, setGenTotalDays] = useState('30');
+  const [genRemarks, setGenRemarks] = useState('');
+  const [payDialogSalary, setPayDialogSalary] = useState<{ employeeId: string; salaryId: string } | null>(null);
+  const [paidDate, setPaidDate] = useState(today());
+  const [deleteSalaryInfo, setDeleteSalaryInfo] = useState<{ employeeId: string; salaryId: string } | null>(null);
+
   const { data: project, isLoading } = useGetProjectQuery(id ?? '', { skip: !id });
   const { data: laboursData } = useGetLaboursQuery({ pageSize: 1000 });
   const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 1000 });
@@ -117,6 +138,13 @@ export default function ProjectDetailPage() {
     { projectId: id, pageSize: 100 },
     { skip: !id || tab !== 7 },
   );
+  const { data: payrollData, refetch: refetchPayroll } = useGetProjectPayrollQuery(
+    { id: id ?? '', month: payrollMonth, year: payrollYear },
+    { skip: !id || tab !== 8 },
+  );
+  const [processSalary, { isLoading: generatingSalary }] = useProcessSalaryMutation();
+  const [markSalaryAsPaid, { isLoading: payingSalary }] = useMarkSalaryAsPaidMutation();
+  const [deleteSalary] = useDeleteSalaryMutation();
   const [deleteProject] = useDeleteProjectMutation();
   const [addMilestone, { isLoading: addingMs }] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
@@ -402,6 +430,7 @@ export default function ProjectDetailPage() {
           <Tab label="Employees" />
           <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
           <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
+          <Tab label="Payroll" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -838,6 +867,194 @@ export default function ProjectDetailPage() {
               </TableContainer>
             </>
           )}
+
+          {/* ── Payroll ── */}
+          {tab === 8 && (
+            <>
+              {/* Month/Year selector */}
+              <Stack direction="row" spacing={2} sx={{ mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mr: 1 }}>Payroll Month:</Typography>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>Month</InputLabel>
+                  <Select label="Month" value={payrollMonth} onChange={(e) => setPayrollMonth(Number(e.target.value))}>
+                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                      <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>Year</InputLabel>
+                  <Select label="Year" value={payrollYear} onChange={(e) => setPayrollYear(Number(e.target.value))}>
+                    {[2023, 2024, 2025, 2026, 2027].map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              {/* ── Employee Salaries ── */}
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Employee Salaries</Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Employee</TableCell>
+                      <TableCell>Designation</TableCell>
+                      <TableCell align="right">Basic Salary</TableCell>
+                      <TableCell align="right">Net Salary</TableCell>
+                      <TableCell align="center">Days</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Paid Date</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {payrollData?.employees.map((emp) => (
+                      <TableRow key={emp.employeeId} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{emp.fullName}</TableCell>
+                        <TableCell>{emp.designation ?? '-'}</TableCell>
+                        <TableCell align="right">{fmt(emp.basicSalary)}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {emp.salary ? fmt(emp.salary.netSalary) : '—'}
+                        </TableCell>
+                        <TableCell align="center">
+                          {emp.salary ? `${emp.salary.daysPresent}/${emp.salary.totalDays}` : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {emp.salary ? (
+                            <Chip
+                              label={emp.salary.status}
+                              size="small"
+                              color={emp.salary.status === 'Paid' ? 'success' : 'warning'}
+                            />
+                          ) : (
+                            <Chip label="Not Generated" size="small" color="default" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {emp.salary?.paidDate ? fmtDate(emp.salary.paidDate) : '—'}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
+                            {!emp.salary && (
+                              <Tooltip title="Generate Salary">
+                                <IconButton size="small" color="primary" onClick={() => {
+                                  setGenSalaryEmp({ employeeId: emp.employeeId, fullName: emp.fullName, basicSalary: emp.basicSalary });
+                                  setGenBonus('0');
+                                  setGenDeductions('0');
+                                  setGenDaysPresent('26');
+                                  setGenTotalDays('30');
+                                  setGenRemarks('');
+                                }}>
+                                  <AddIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {emp.salary?.status === 'Generated' && (
+                              <Tooltip title="Mark as Paid">
+                                <IconButton size="small" color="success" onClick={() => {
+                                  setPayDialogSalary({ employeeId: emp.employeeId, salaryId: emp.salary!.id });
+                                  setPaidDate(today());
+                                }}>
+                                  <PaymentIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {emp.salary && (
+                              <Tooltip title="Delete">
+                                <IconButton size="small" color="error" onClick={() =>
+                                  setDeleteSalaryInfo({ employeeId: emp.employeeId, salaryId: emp.salary!.id })
+                                }>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!payrollData?.employees.length && (
+                      <TableRow>
+                        <TableCell colSpan={8} align="center" sx={{ color: 'text.secondary', py: 3 }}>
+                          No employees assigned to this project
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {(payrollData?.employees.length ?? 0) > 0 && (
+                      <TableRow sx={{ bgcolor: 'action.hover' }}>
+                        <TableCell colSpan={3} sx={{ fontWeight: 700 }}>Total Employee Cost</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          {fmt(payrollData?.employees.reduce((s, e) => s + (e.salary?.netSalary ?? 0), 0) ?? 0)}
+                        </TableCell>
+                        <TableCell colSpan={4} />
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* ── Labour Wages ── */}
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Labour Wages</Typography>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Trade</TableCell>
+                      <TableCell align="right">Daily Wage</TableCell>
+                      <TableCell align="center">Days Present</TableCell>
+                      <TableCell align="right">Wages Earned</TableCell>
+                      <TableCell align="right">OT Pay</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {payrollData?.labours.map((lab) => (
+                      <TableRow key={lab.labourId} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{lab.name}</TableCell>
+                        <TableCell>{lab.trade ?? '-'}</TableCell>
+                        <TableCell align="right">{fmt(lab.dailyWage)}</TableCell>
+                        <TableCell align="center">
+                          <Chip label={lab.daysPresent} size="small" color={lab.daysPresent > 0 ? 'info' : 'default'} />
+                        </TableCell>
+                        <TableCell align="right">{fmt(lab.wagesEarned)}</TableCell>
+                        <TableCell align="right">{lab.overtimePay > 0 ? fmt(lab.overtimePay) : '—'}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'info.main' }}>{fmt(lab.totalWages)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!payrollData?.labours.length && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ color: 'text.secondary', py: 3 }}>
+                          No labour assigned to this project
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {(payrollData?.labours.length ?? 0) > 0 && (
+                      <TableRow sx={{ bgcolor: 'action.hover' }}>
+                        <TableCell colSpan={6} sx={{ fontWeight: 700 }}>Total Labour Cost</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'info.main' }}>
+                          {fmt(payrollData?.labours.reduce((s, l) => s + l.totalWages, 0) ?? 0)}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Grand Total */}
+              {((payrollData?.employees.length ?? 0) > 0 || (payrollData?.labours.length ?? 0) > 0) && (
+                <Paper variant="outlined" sx={{ mt: 2, p: 2, borderColor: 'warning.main' }}>
+                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Grand Total Payroll Cost</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'warning.dark' }}>
+                      {fmt(
+                        (payrollData?.employees.reduce((s, e) => s + (e.salary?.netSalary ?? 0), 0) ?? 0) +
+                        (payrollData?.labours.reduce((s, l) => s + l.totalWages, 0) ?? 0)
+                      )}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              )}
+            </>
+          )}
         </Box>
       </Paper>
 
@@ -1039,6 +1256,111 @@ export default function ProjectDetailPage() {
         destructive
         onConfirm={handleRemoveEmployee}
         onCancel={() => setRemoveEmployeeId(null)}
+      />
+
+      {/* Generate Salary Dialog */}
+      <Dialog open={Boolean(genSalaryEmp)} onClose={() => setGenSalaryEmp(null)} maxWidth="sm" fullWidth>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!genSalaryEmp) return;
+          try {
+            await processSalary({
+              id: genSalaryEmp.employeeId,
+              data: {
+                month: payrollMonth,
+                year: payrollYear,
+                basicSalary: genSalaryEmp.basicSalary,
+                bonus: Number(genBonus),
+                deductions: Number(genDeductions),
+                daysPresent: Number(genDaysPresent),
+                totalDays: Number(genTotalDays),
+                remarks: genRemarks || undefined,
+              },
+            }).unwrap();
+            dispatch(showSnackbar({ message: 'Salary generated', severity: 'success' }));
+            setGenSalaryEmp(null);
+            refetchPayroll();
+          } catch (err: any) {
+            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to generate', severity: 'error' }));
+          }
+        }}>
+          <DialogTitle>Generate Salary — {genSalaryEmp?.fullName}</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Stack direction="row" spacing={2}>
+                <TextField label="Month" value={String(payrollMonth)} size="small" fullWidth disabled />
+                <TextField label="Year" value={String(payrollYear)} size="small" fullWidth disabled />
+              </Stack>
+              <TextField label="Basic Salary (PKR)" value={String(genSalaryEmp?.basicSalary ?? '')} size="small" fullWidth disabled />
+              <Stack direction="row" spacing={2}>
+                <TextField label="Days Present" type="number" value={genDaysPresent} onChange={e => setGenDaysPresent(e.target.value)} size="small" required fullWidth />
+                <TextField label="Total Days" type="number" value={genTotalDays} onChange={e => setGenTotalDays(e.target.value)} size="small" required fullWidth />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <TextField label="Bonus (PKR)" type="number" value={genBonus} onChange={e => setGenBonus(e.target.value)} size="small" fullWidth />
+                <TextField label="Deductions (PKR)" type="number" value={genDeductions} onChange={e => setGenDeductions(e.target.value)} size="small" fullWidth />
+              </Stack>
+              <TextField label="Remarks" value={genRemarks} onChange={e => setGenRemarks(e.target.value)} size="small" fullWidth multiline rows={2} />
+              <Alert severity="info" sx={{ py: 0 }}>
+                Net = (Basic / Total Days × Days Present) + Bonus − Deductions
+              </Alert>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setGenSalaryEmp(null)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={generatingSalary}>
+              {generatingSalary ? <CircularProgress size={18} /> : 'Generate'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Mark as Paid Dialog */}
+      <Dialog open={Boolean(payDialogSalary)} onClose={() => setPayDialogSalary(null)} maxWidth="xs" fullWidth>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!payDialogSalary) return;
+          try {
+            await markSalaryAsPaid({ id: payDialogSalary.employeeId, salaryId: payDialogSalary.salaryId, data: { paidDate } }).unwrap();
+            dispatch(showSnackbar({ message: 'Salary marked as paid', severity: 'success' }));
+            setPayDialogSalary(null);
+            refetchPayroll();
+          } catch (err: any) {
+            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed', severity: 'error' }));
+          }
+        }}>
+          <DialogTitle>Mark Salary as Paid</DialogTitle>
+          <DialogContent dividers>
+            <TextField label="Payment Date" type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} size="small" fullWidth required slotProps={{ inputLabel: { shrink: true } }} sx={{ mt: 1 }} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPayDialogSalary(null)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success" disabled={payingSalary}>
+              {payingSalary ? <CircularProgress size={18} /> : 'Mark as Paid'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Delete Salary Confirm */}
+      <ConfirmDialog
+        open={Boolean(deleteSalaryInfo)}
+        title="Delete Salary Record"
+        message="This will permanently delete this salary record. If not yet paid, any deducted advances will be restored."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!deleteSalaryInfo) return;
+          try {
+            await deleteSalary({ id: deleteSalaryInfo.employeeId, salaryId: deleteSalaryInfo.salaryId }).unwrap();
+            dispatch(showSnackbar({ message: 'Salary deleted', severity: 'success' }));
+            refetchPayroll();
+          } catch (err: any) {
+            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed', severity: 'error' }));
+          }
+          setDeleteSalaryInfo(null);
+        }}
+        onCancel={() => setDeleteSalaryInfo(null)}
       />
     </Box>
   );

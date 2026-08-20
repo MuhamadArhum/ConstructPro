@@ -33,6 +33,51 @@ export interface ProjectLabourWageItem {
   totalWages: number;
 }
 
+export interface ProjectPayrollSalary {
+  id: string;
+  code: string | null;
+  employeeId: string;
+  month: number;
+  year: number;
+  basicSalary: number;
+  bonus: number;
+  deductions: number;
+  netSalary: number;
+  daysPresent: number;
+  totalDays: number;
+  status: 'Generated' | 'Paid';
+  generatedAt: string;
+  paidDate?: string | null;
+  remarks?: string | null;
+}
+
+export interface ProjectPayrollEmployee {
+  employeeId: string;
+  fullName: string;
+  designation: string | null;
+  basicSalary: number;
+  salary: ProjectPayrollSalary | null;
+}
+
+export interface ProjectPayrollLabour {
+  labourId: string;
+  name: string;
+  trade: string | null;
+  dailyWage: number;
+  daysPresent: number;
+  overtimeHours: number;
+  wagesEarned: number;
+  overtimePay: number;
+  totalWages: number;
+}
+
+export interface ProjectPayroll {
+  month: number;
+  year: number;
+  employees: ProjectPayrollEmployee[];
+  labours: ProjectPayrollLabour[];
+}
+
 export interface ProjectSalaryExpense {
   period: { from: string; to: string };
   employees: ProjectEmployeeSalaryItem[];
@@ -124,6 +169,10 @@ export const projectApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/projects/${id}/salary-expense` }),
       providesTags: (_r, _e, id) => [{ type: 'Project' as const, id }],
     }),
+    getProjectPayroll: builder.query<ProjectPayroll, { id: string; month: number; year: number }>({
+      query: ({ id, month, year }) => ({ url: `/projects/${id}/payroll`, params: { month, year } }),
+      providesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }, 'Employee'],
+    }),
   }),
 });
 
@@ -149,4 +198,5 @@ export const {
   useGetNextProjectCodeQuery,
   useGetProjectSummaryQuery,
   useGetProjectSalaryExpenseQuery,
+  useGetProjectPayrollQuery,
 } = projectApi;

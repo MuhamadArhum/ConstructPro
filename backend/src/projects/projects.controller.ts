@@ -243,6 +243,20 @@ export class ProjectsController {
     return this.projectsService.getProjectSalaryExpense(id);
   }
 
+  @Get(':id/payroll')
+  @HasPermission('Projects.View')
+  @ApiOperation({ summary: 'Get project payroll — employee salaries and labour wages for a specific month/year' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiQuery({ name: 'month', required: true, type: Number })
+  @ApiQuery({ name: 'year', required: true, type: Number })
+  getProjectPayroll(
+    @Param('id') id: string,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.projectsService.getProjectPayroll(id, Number(month), Number(year));
+  }
+
   // ── Machinery ───────────────────────────────────────────────────────────────
 
   @Post(':id/machinery')
