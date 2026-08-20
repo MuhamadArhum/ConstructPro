@@ -35,7 +35,6 @@ import {
   useRemoveMachineryMutation,
   useAssignEmployeeMutation,
   useRemoveEmployeeMutation,
-  useGetProjectSalaryExpenseQuery,
 } from './projectApi';
 import { useGetLaboursQuery } from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
@@ -118,10 +117,6 @@ export default function ProjectDetailPage() {
     { projectId: id, pageSize: 100 },
     { skip: !id || tab !== 7 },
   );
-  const { data: salaryExpense } = useGetProjectSalaryExpenseQuery(id ?? '', {
-    skip: !id || tab !== 8,
-  });
-
   const [deleteProject] = useDeleteProjectMutation();
   const [addMilestone, { isLoading: addingMs }] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
@@ -407,7 +402,6 @@ export default function ProjectDetailPage() {
           <Tab label="Employees" />
           <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
           <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
-          <Tab label="Salary Expense" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -782,168 +776,6 @@ export default function ProjectDetailPage() {
                   </TableBody>
                 </Table>
               </TableContainer>
-            </>
-          )}
-
-          {/* ── Salary Expense ── */}
-          {tab === 8 && (
-            <>
-              {/* Summary Cards */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">Employee Salaries</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                        {fmt(salaryExpense?.summary.totalEmployeeSalary ?? 0)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {salaryExpense?.employees.length ?? 0} employee{(salaryExpense?.employees.length ?? 0) !== 1 ? 's' : ''}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">Labour Wages</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'info.main' }}>
-                        {fmt(salaryExpense?.summary.totalLabourWages ?? 0)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {salaryExpense?.labours.length ?? 0} labour worker{(salaryExpense?.labours.length ?? 0) !== 1 ? 's' : ''}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <Card variant="outlined" sx={{ borderColor: 'warning.main' }}>
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">Total HR Expense</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.dark' }}>
-                        {fmt(salaryExpense?.summary.grandTotal ?? 0)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {salaryExpense ? `${fmtDate(salaryExpense.period.from)} – ${fmtDate(salaryExpense.period.to)}` : '—'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-
-              {/* Employee Salaries Table */}
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                Employee Salaries
-              </Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Designation</TableCell>
-                      <TableCell align="right">Basic Rate</TableCell>
-                      <TableCell align="center">Months Paid</TableCell>
-                      <TableCell align="right">Total Salary</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {salaryExpense?.employees.map((emp) => (
-                      <TableRow key={emp.id} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{emp.fullName}</TableCell>
-                        <TableCell>{emp.designation ?? '-'}</TableCell>
-                        <TableCell align="right">{fmt(emp.basicSalary)}</TableCell>
-                        <TableCell align="center">
-                          <Chip label={emp.monthsCount} size="small" color={emp.monthsCount > 0 ? 'primary' : 'default'} />
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          {fmt(emp.totalSalary)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!salaryExpense?.employees.length && (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary', py: 3 }}>
-                          No employees assigned or no salary records in project period
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {(salaryExpense?.employees.length ?? 0) > 0 && (
-                      <TableRow sx={{ bgcolor: 'action.hover' }}>
-                        <TableCell colSpan={4} sx={{ fontWeight: 700 }}>Total Employee Cost</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          {fmt(salaryExpense?.summary.totalEmployeeSalary ?? 0)}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* Labour Wages Table */}
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                Labour Wages
-              </Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Trade</TableCell>
-                      <TableCell align="right">Daily Wage</TableCell>
-                      <TableCell align="center">Days Present</TableCell>
-                      <TableCell align="right">Wages Earned</TableCell>
-                      <TableCell align="right">OT Pay</TableCell>
-                      <TableCell align="right">Total</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {salaryExpense?.labours.map((lab) => (
-                      <TableRow key={lab.id} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{lab.name}</TableCell>
-                        <TableCell>{lab.trade ?? '-'}</TableCell>
-                        <TableCell align="right">{fmt(lab.dailyWage)}</TableCell>
-                        <TableCell align="center">
-                          <Chip label={lab.presentDays} size="small" color={lab.presentDays > 0 ? 'info' : 'default'} />
-                        </TableCell>
-                        <TableCell align="right">{fmt(lab.wagesEarned)}</TableCell>
-                        <TableCell align="right">{lab.overtimePay > 0 ? fmt(lab.overtimePay) : '-'}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'info.main' }}>
-                          {fmt(lab.totalWages)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!salaryExpense?.labours.length && (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ color: 'text.secondary', py: 3 }}>
-                          No labour assigned or no attendance recorded in project period
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {(salaryExpense?.labours.length ?? 0) > 0 && (
-                      <TableRow sx={{ bgcolor: 'action.hover' }}>
-                        <TableCell colSpan={6} sx={{ fontWeight: 700 }}>Total Labour Cost</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'info.main' }}>
-                          {fmt(salaryExpense?.summary.totalLabourWages ?? 0)}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* Grand Total */}
-              {((salaryExpense?.employees.length ?? 0) > 0 || (salaryExpense?.labours.length ?? 0) > 0) && (
-                <Paper variant="outlined" sx={{ mt: 2, p: 2, bgcolor: 'warning.50', borderColor: 'warning.main' }}>
-                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Grand Total HR Expense
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'warning.dark' }}>
-                      {fmt(salaryExpense?.summary.grandTotal ?? 0)}
-                    </Typography>
-                  </Stack>
-                </Paper>
-              )}
             </>
           )}
 
