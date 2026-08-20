@@ -204,7 +204,8 @@ function startBackend(dbPath) {
     STATIC_PATH: staticPath,
   };
 
-  const nodeExe = process.execPath;
+  // In dev mode use system node (avoids native module ABI mismatch with Electron's node)
+  const nodeExe = app.isPackaged ? process.execPath : (process.env.NODE_EXE || 'node');
   // Use esbuild bundle in production (single file, no node_modules traversal)
   // Fall back to dist/main.js in development
   const bundlePath = path.join(backendPath, 'bundle.js');

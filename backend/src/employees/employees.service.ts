@@ -8,6 +8,8 @@ import {
   MarkSalaryAsPaidDto,
   EmployeeQueryDto,
   CreateEmployeeAdvanceDto,
+  UpsertEmployeeAttendanceDto,
+  BulkUpsertEmployeeAttendanceDto,
 } from './dto/employee.dto';
 import { generateCode } from '../common/utils/generate-code';
 
@@ -211,6 +213,8 @@ export class EmployeesService {
         year: dto.year,
         basicSalary,
         bonus,
+        advanceDeductions: advanceTotal,
+        manualDeductions,
         deductions,
         netSalary,
         daysPresent,
@@ -256,7 +260,10 @@ export class EmployeesService {
 
     const basicSalary = dto.basicSalary !== undefined ? Number(dto.basicSalary) : Number(payment.basicSalary);
     const bonus = dto.bonus !== undefined ? Number(dto.bonus) : Number(payment.bonus);
-    const deductions = dto.deductions !== undefined ? Number(dto.deductions) : Number(payment.deductions);
+    // advanceDeductions are locked — they were processed at generation time
+    const advanceDeductions = Number(payment.advanceDeductions);
+    const manualDeductions = dto.deductions !== undefined ? Number(dto.deductions) : Number(payment.manualDeductions);
+    const deductions = advanceDeductions + manualDeductions;
     const daysPresent = dto.daysPresent !== undefined ? dto.daysPresent : payment.daysPresent;
     const totalDays = dto.totalDays !== undefined ? dto.totalDays : payment.totalDays;
     const earnedSalary = totalDays > 0 ? (basicSalary / totalDays) * daysPresent : 0;
@@ -267,7 +274,8 @@ export class EmployeesService {
       data: {
         ...(dto.basicSalary !== undefined && { basicSalary }),
         ...(dto.bonus !== undefined && { bonus }),
-        ...(dto.deductions !== undefined && { deductions }),
+        manualDeductions,
+        deductions,
         ...(dto.daysPresent !== undefined && { daysPresent }),
         ...(dto.totalDays !== undefined && { totalDays }),
         ...(dto.remarks !== undefined && { remarks: dto.remarks }),
@@ -359,6 +367,98 @@ export class EmployeesService {
     return { advances: advances.map((a) => this.mapAdvance(a)), total };
   }
 
+  // ── Attendance ──────────────────────────────────────────────────────────────
+
+  async getAttendance(id: string, month: number, year: number) {
+    const employee = await this.prisma.employee.findUnique({ where: { id } });
+    if (!employee) throw new NotFoundException(`Employee with id ${id} not found`);
+
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const attendances = await this.prisma.employeeAttendance.findMany({
+      where: { employeeId: id, date: { gte: firstDay, lte: lastDay } },
+      orderBy: { date: 'asc' },
+    });
+
+    const dailyRate = Number(employee.basicSalary) / 30;
+
+    return attendances.map((a) => ({
+      ...this.mapAttendance(a),
+      employeeName: employee.fullName,
+      dailyRate,
+      totalPay: a.isPresent ? dailyRate : 0,
+    }));
+  }
+
+  async upsertAttendance(dto: UpsertEmployeeAttendanceDto) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: dto.employeeId } });
+    if (!employee) throw new NotFoundException(`Employee with id ${dto.employeeId} not found`);
+
+    const dateValue = new Date(dto.date);
+    const attendance = await this.prisma.employeeAttendance.upsert({
+      where: { employeeId_date: { employeeId: dto.employeeId, date: dateValue } },
+      update: { isPresent: dto.isPresent, overtimeHours: Number(dto.overtimeHours ?? 0), notes: dto.notes },
+      create: {
+        employeeId: dto.employeeId,
+        date: dateValue,
+        isPresent: dto.isPresent,
+        overtimeHours: Number(dto.overtimeHours ?? 0),
+        notes: dto.notes,
+      },
+    });
+    return this.mapAttendance(attendance);
+  }
+
+  async bulkUpsertAttendance(dto: BulkUpsertEmployeeAttendanceDto) {
+    if (!dto.records || dto.records.length === 0) return { saved: 0 };
+
+    const employeeIds = [...new Set(dto.records.map((r) => r.employeeId))];
+    const existing = await this.prisma.employee.findMany({
+      where: { id: { in: employeeIds } },
+      select: { id: true },
+    });
+    const foundIds = new Set(existing.map((e) => e.id));
+    const missing = employeeIds.find((id) => !foundIds.has(id));
+    if (missing) throw new NotFoundException(`Employee with id ${missing} not found`);
+
+    await this.prisma.$transaction(
+      dto.records.map((r) =>
+        this.prisma.employeeAttendance.upsert({
+          where: { employeeId_date: { employeeId: r.employeeId, date: new Date(r.date) } },
+          update: { isPresent: r.isPresent, overtimeHours: Number(r.overtimeHours ?? 0), notes: r.notes },
+          create: {
+            employeeId: r.employeeId,
+            date: new Date(r.date),
+            isPresent: r.isPresent,
+            overtimeHours: Number(r.overtimeHours ?? 0),
+            notes: r.notes,
+          },
+        }),
+      ),
+    );
+
+    return { saved: dto.records.length };
+  }
+
+  private mapAttendance(a: {
+    id: string;
+    employeeId: string;
+    date: Date;
+    isPresent: boolean;
+    overtimeHours: any;
+    notes: string | null;
+  }) {
+    return {
+      id: a.id,
+      employeeId: a.employeeId,
+      date: a.date.toISOString(),
+      isPresent: a.isPresent,
+      overtimeHours: Number(a.overtimeHours),
+      notes: a.notes,
+    };
+  }
+
   private mapAdvance(a: {
     id: string;
     employeeId: string;
@@ -419,6 +519,8 @@ export class EmployeesService {
     year: number;
     basicSalary: any;
     bonus: any;
+    advanceDeductions: any;
+    manualDeductions: any;
     deductions: any;
     netSalary: any;
     daysPresent: number;
@@ -437,6 +539,8 @@ export class EmployeesService {
       year: sp.year,
       basicSalary: Number(sp.basicSalary),
       bonus: Number(sp.bonus),
+      advanceDeductions: Number(sp.advanceDeductions),
+      manualDeductions: Number(sp.manualDeductions),
       deductions: Number(sp.deductions),
       netSalary: Number(sp.netSalary),
       daysPresent: sp.daysPresent,

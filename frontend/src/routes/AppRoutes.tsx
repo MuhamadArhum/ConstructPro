@@ -46,6 +46,7 @@ const PlantMaintenancePage     = lazy(() => import('../features/plants/PlantMain
 // Projects
 const ProjectListPage   = lazy(() => import('../features/projects/ProjectListPage'));
 const ProjectDetailPage = lazy(() => import('../features/projects/ProjectDetailPage'));
+const BoqPage           = lazy(() => import('../features/boq/BoqPage'));
 
 // Customers & Suppliers
 const CustomerListPage   = lazy(() => import('../features/customers/CustomerListPage'));
@@ -160,8 +161,9 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Projects.View} />}>
-            <Route path="/projects"     element={<S><ProjectListPage /></S>} />
-            <Route path="/projects/:id" element={<S><ProjectDetailPage /></S>} />
+            <Route path="/projects"          element={<S><ProjectListPage /></S>} />
+            <Route path="/projects/:id"      element={<S><ProjectDetailPage /></S>} />
+            <Route path="/projects/:id/boq"  element={<S><BoqPage /></S>} />
           </Route>
 
           <Route element={<PermissionRoute permission={Perms.Customers.View} />}>

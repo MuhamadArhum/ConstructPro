@@ -7,6 +7,8 @@ import {
   Min,
   Max,
   IsDateString,
+  ValidateNested,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -229,6 +231,41 @@ export class CreateEmployeeAdvanceDto {
   @IsOptional()
   @IsString()
   reason?: string;
+}
+
+export class UpsertEmployeeAttendanceDto {
+  @ApiProperty({ example: 'uuid-of-employee' })
+  @IsString()
+  @IsNotEmpty()
+  employeeId: string;
+
+  @ApiProperty({ example: '2024-08-15' })
+  @IsDateString()
+  date: string;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  isPresent: boolean;
+
+  @ApiPropertyOptional({ example: 2, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  overtimeHours?: number;
+
+  @ApiPropertyOptional({ example: 'Present on site' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class BulkUpsertEmployeeAttendanceDto {
+  @ApiProperty({ type: [UpsertEmployeeAttendanceDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpsertEmployeeAttendanceDto)
+  records: UpsertEmployeeAttendanceDto[];
 }
 
 export class EmployeeQueryDto {

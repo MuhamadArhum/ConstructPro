@@ -28,6 +28,8 @@ import {
   BulkUpsertAttendanceDto,
   AddAdvanceDto,
   LabourQueryDto,
+  SettleWagesDto,
+  MarkWagePaidDto,
 } from './dto/labour.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -72,6 +74,45 @@ export class LabourController {
   @ApiResponse({ status: 201, description: 'Attendance records saved' })
   bulkUpsertAttendance(@Body() dto: BulkUpsertAttendanceDto) {
     return this.labourService.bulkUpsertAttendance(dto);
+  }
+
+  @Get(':id/wages')
+  @HasPermission('Labour.View')
+  @ApiOperation({ summary: 'Get all wage payment records for a labour worker' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 200, description: 'Returns list of wage payments' })
+  getWagePayments(@Param('id') id: string) {
+    return this.labourService.getWagePayments(id);
+  }
+
+  @Post(':id/wages')
+  @HasPermission('Labour.Edit')
+  @ApiOperation({ summary: 'Settle wages for a labour worker (deducts pending advances)' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiResponse({ status: 201, description: 'Wage settlement created' })
+  @ApiResponse({ status: 409, description: 'Wages for this month already settled' })
+  settleWages(@Param('id') id: string, @Body() dto: SettleWagesDto) {
+    return this.labourService.settleWages(id, dto.month, dto.year, dto.remarks);
+  }
+
+  @Patch(':id/wages/:paymentId/pay')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark a wage payment as paid' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiParam({ name: 'paymentId', description: 'Wage payment UUID' })
+  markWageAsPaid(@Param('id') id: string, @Param('paymentId') paymentId: string, @Body() dto: MarkWagePaidDto) {
+    return this.labourService.markWageAsPaid(id, paymentId, dto.paidDate);
+  }
+
+  @Delete(':id/wages/:paymentId')
+  @HasPermission('Labour.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a wage payment (restores advances if Generated)' })
+  @ApiParam({ name: 'id', description: 'Labour UUID' })
+  @ApiParam({ name: 'paymentId', description: 'Wage payment UUID' })
+  deleteWagePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
+    return this.labourService.deleteWagePayment(id, paymentId);
   }
 
   @Get(':id')

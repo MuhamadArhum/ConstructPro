@@ -10,6 +10,9 @@ import type {
   ProcessSalaryRequest,
   UpdateSalaryRequest,
   MarkSalaryAsPaidRequest,
+  EmployeeAttendanceDto,
+  UpsertEmployeeAttendanceRequest,
+  BulkUpsertEmployeeAttendanceRequest,
 } from '../../types/employee.types';
 
 export const employeesApi = baseApi.injectEndpoints({
@@ -87,6 +90,21 @@ export const employeesApi = baseApi.injectEndpoints({
       query: ({ id, advanceId }) => ({ url: `/employees/${id}/advances/${advanceId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Employee' as const, id: `${id}-advances` }],
     }),
+    getEmployeeAttendance: builder.query<
+      EmployeeAttendanceDto[],
+      { id: string; month: number; year: number }
+    >({
+      query: ({ id, month, year }) => ({ url: `/employees/${id}/attendance`, params: { month, year } }),
+      providesTags: ['Employee'],
+    }),
+    upsertEmployeeAttendance: builder.mutation<EmployeeAttendanceDto, UpsertEmployeeAttendanceRequest>({
+      query: (data) => ({ url: '/employees/attendance', method: 'POST', data }),
+      invalidatesTags: ['Employee'],
+    }),
+    bulkUpsertEmployeeAttendance: builder.mutation<{ saved: number }, BulkUpsertEmployeeAttendanceRequest>({
+      query: (data) => ({ url: '/employees/attendance/bulk', method: 'POST', data }),
+      invalidatesTags: ['Employee'],
+    }),
   }),
 });
 
@@ -108,4 +126,7 @@ export const {
   useGetPendingAdvancesQuery,
   useAddAdvanceMutation,
   useDeleteAdvanceMutation,
+  useGetEmployeeAttendanceQuery,
+  useUpsertEmployeeAttendanceMutation,
+  useBulkUpsertEmployeeAttendanceMutation,
 } = employeesApi;

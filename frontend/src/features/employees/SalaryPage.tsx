@@ -160,7 +160,7 @@ export default function SalaryPage() {
     setEditSalary(row);
     setEditBasic(String(row.basicSalary));
     setEditBonus(String(row.bonus));
-    setEditDeductions(String(row.deductions));
+    setEditDeductions(String(row.manualDeductions ?? row.deductions));
     setEditDaysPresent(String(row.daysPresent));
     setEditTotalDays(String(row.totalDays));
     setEditRemarks(row.remarks ?? '');
@@ -266,7 +266,8 @@ export default function SalaryPage() {
     const dp = parseInt(editDaysPresent) || 0;
     return td > 0 ? (bs / td) * dp : 0;
   })();
-  const editNet = editEarned + (parseFloat(editBonus) || 0) - (parseFloat(editDeductions) || 0);
+  const editAdvanceDeductions = editSalary?.advanceDeductions ?? 0;
+  const editNet = editEarned + (parseFloat(editBonus) || 0) - editAdvanceDeductions - (parseFloat(editDeductions) || 0);
 
   if (empLoading) return <Loader />;
 
@@ -541,9 +542,13 @@ export default function SalaryPage() {
               <Stack direction="row" spacing={2}>
                 <TextField label="Bonus" type="number" value={editBonus} onChange={(e) => setEditBonus(e.target.value)} fullWidth
                   slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
-                <TextField label="Total Deductions" type="number" value={editDeductions} onChange={(e) => setEditDeductions(e.target.value)} fullWidth
+                <TextField label="Extra Deductions" type="number" value={editDeductions} onChange={(e) => setEditDeductions(e.target.value)} fullWidth
                   slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }} />
               </Stack>
+              {editAdvanceDeductions > 0 && (
+                <TextField label="Advance Deductions (locked)" value={fmt(editAdvanceDeductions)} fullWidth disabled size="small"
+                  helperText="Advances were deducted when this salary was generated and cannot be changed here." />
+              )}
               {editBasic && editDaysPresent && (
                 <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
                   <Stack spacing={0.5}>
@@ -557,9 +562,15 @@ export default function SalaryPage() {
                         <Typography variant="body2" color="success.main">{fmt(parseFloat(editBonus))}</Typography>
                       </Stack>
                     )}
+                    {editAdvanceDeductions > 0 && (
+                      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="error.main">− Advances</Typography>
+                        <Typography variant="body2" color="error.main">{fmt(editAdvanceDeductions)}</Typography>
+                      </Stack>
+                    )}
                     {parseFloat(editDeductions) > 0 && (
                       <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="error.main">− Deductions</Typography>
+                        <Typography variant="body2" color="error.main">− Extra Deductions</Typography>
                         <Typography variant="body2" color="error.main">{fmt(parseFloat(editDeductions))}</Typography>
                       </Stack>
                     )}

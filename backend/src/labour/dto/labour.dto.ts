@@ -8,6 +8,7 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -168,6 +169,32 @@ export class AddAdvanceDto {
   @IsOptional()
   @IsString()
   reason?: string;
+}
+
+export class SettleWagesDto {
+  @ApiProperty({ example: 7 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(12)
+  month: number;
+
+  @ApiProperty({ example: 2024 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(2000)
+  year: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class MarkWagePaidDto {
+  @ApiProperty({ example: '2024-07-31' })
+  @IsDateString()
+  paidDate: string;
 }
 
 export class LabourQueryDto {

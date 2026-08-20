@@ -49,6 +49,10 @@ import {
   useAddLabourAdvanceMutation,
   useDeleteLabourAdvanceMutation,
   useGetLabourLedgerQuery,
+  useGetLabourWagePaymentsQuery,
+  useSettleLabourWagesMutation,
+  useMarkLabourWageAsPaidMutation,
+  useDeleteLabourWagePaymentMutation,
 } from './labourApi';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
@@ -84,6 +88,13 @@ export default function LabourAttendancePage() {
   const [deleteAdvId, setDeleteAdvId] = useState<string | null>(null);
   const [slipOpen, setSlipOpen] = useState(false);
 
+  // Wage settlement state
+  const [settleOpen, setSettleOpen] = useState(false);
+  const [settleRemarks, setSettleRemarks] = useState('');
+  const [payWageId, setPayWageId] = useState<string | null>(null);
+  const [payWageDate, setPayWageDate] = useState(new Date().toISOString().split('T')[0]);
+  const [deleteWageId, setDeleteWageId] = useState<string | null>(null);
+
   const { data: labour, isLoading: labourLoading } = useGetLabourByIdQuery(id ?? '', { skip: !id });
   const { data: attendance, isLoading: attLoading } = useGetLabourAttendanceQuery(
     { id: id!, month, year },
@@ -92,9 +103,13 @@ export default function LabourAttendancePage() {
   const { data: advances, isLoading: advLoading } = useGetLabourAdvancesQuery(id ?? '', { skip: !id });
   const { data: pendingData } = useGetLabourPendingAdvancesQuery(id ?? '', { skip: !id });
   const { data: ledger } = useGetLabourLedgerQuery({ id: id!, month, year }, { skip: !id });
+  const { data: wagePayments = [] } = useGetLabourWagePaymentsQuery(id ?? '', { skip: !id });
   const [upsertAttendance, { isLoading: saving }] = useUpsertAttendanceMutation();
   const [addAdvance, { isLoading: addingAdv }] = useAddLabourAdvanceMutation();
   const [deleteAdvance] = useDeleteLabourAdvanceMutation();
+  const [settleWages, { isLoading: settling }] = useSettleLabourWagesMutation();
+  const [markWageAsPaid, { isLoading: payingWage }] = useMarkLabourWageAsPaidMutation();
+  const [deleteWagePayment] = useDeleteLabourWagePaymentMutation();
 
   const pendingTotal = pendingData?.total ?? 0;
   const pendingCount = pendingData?.advances.length ?? 0;
@@ -293,15 +308,26 @@ export default function LabourAttendancePage() {
               Attendance
             </Button>
             <Button
-              sx={{ borderBottom: tab === 1 ? 2 : 0, borderColor: 'primary.main', borderRadius: 0, pb: 1, color: tab === 1 ? 'primary.main' : 'text.secondary' }}
+              sx={{ borderBottom: tab === 1 ? 2 : 0, borderColor: 'primary.main', borderRadius: 0, mr: 2, pb: 1, color: tab === 1 ? 'primary.main' : 'text.secondary' }}
               onClick={() => setTab(1)}
             >
               Advances{pendingCount > 0 ? ` (${pendingCount} pending)` : ''}
+            </Button>
+            <Button
+              sx={{ borderBottom: tab === 2 ? 2 : 0, borderColor: 'primary.main', borderRadius: 0, pb: 1, color: tab === 2 ? 'primary.main' : 'text.secondary' }}
+              onClick={() => setTab(2)}
+            >
+              Wages
             </Button>
           </Stack>
           {tab === 1 && (
             <Button size="small" startIcon={<AddIcon />} onClick={() => setAdvanceOpen(true)}>
               Add Advance
+            </Button>
+          )}
+          {tab === 2 && (
+            <Button size="small" startIcon={<AddIcon />} variant="contained" onClick={() => { setSettleRemarks(''); setSettleOpen(true); }}>
+              Settle Wages
             </Button>
           )}
         </Stack>
@@ -426,6 +452,74 @@ export default function LabourAttendancePage() {
                     </TableBody>
                   </Table>
                 )}
+              </TableContainer>
+            </>
+          )}
+          {/* Wages Tab */}
+          {tab === 2 && (
+            <>
+              {pendingCount > 0 && (
+                <Alert severity="info" sx={{ mb: 2, py: 0.5 }}>
+                  <strong>{pendingCount} pending advance{pendingCount > 1 ? 's' : ''} ({fmt(pendingTotal)})</strong> will be automatically deducted when you settle wages.
+                </Alert>
+              )}
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'grey.50' }}>
+                      <TableCell sx={{ fontWeight: 600 }}>Period</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="right">Days</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="right">Wages</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="right">OT Pay</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="right">Advances</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="right">Net Payable</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Paid Date</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {wagePayments.map((wp) => (
+                      <TableRow key={wp.id} hover>
+                        <TableCell>{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][wp.month - 1]} {wp.year}</TableCell>
+                        <TableCell align="right">{wp.daysPresent}</TableCell>
+                        <TableCell align="right">{fmt(wp.wagesEarned)}</TableCell>
+                        <TableCell align="right">{wp.overtimePay > 0 ? fmt(wp.overtimePay) : '—'}</TableCell>
+                        <TableCell align="right" sx={{ color: wp.advanceDeductions > 0 ? 'error.main' : 'text.secondary' }}>
+                          {wp.advanceDeductions > 0 ? `-${fmt(wp.advanceDeductions)}` : '—'}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>{fmt(wp.netPayable)}</TableCell>
+                        <TableCell>
+                          <Chip label={wp.status} size="small" color={wp.status === 'Paid' ? 'success' : 'warning'} />
+                        </TableCell>
+                        <TableCell>{wp.paidDate ? fmtDate(wp.paidDate) : '—'}</TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
+                            {wp.status === 'Generated' && (
+                              <Tooltip title="Mark as Paid">
+                                <IconButton size="small" color="success" onClick={() => { setPayWageId(wp.id); setPayWageDate(new Date().toISOString().split('T')[0]); }}>
+                                  <PrintIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Tooltip title="Delete">
+                              <IconButton size="small" color="error" onClick={() => setDeleteWageId(wp.id)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {wagePayments.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9}>
+                          <EmptyState message="No wage settlements yet" actionLabel="Settle Wages" onAction={() => { setSettleRemarks(''); setSettleOpen(true); }} />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </TableContainer>
             </>
           )}
@@ -606,6 +700,117 @@ export default function LabourAttendancePage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Settle Wages Dialog */}
+      <Dialog open={settleOpen} onClose={() => setSettleOpen(false)} maxWidth="sm" fullWidth>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!id) return;
+          try {
+            await settleWages({ id, data: { month, year, remarks: settleRemarks || undefined } }).unwrap();
+            dispatch(showSnackbar({ message: 'Wages settled successfully', severity: 'success' }));
+            setSettleOpen(false);
+            setTab(2);
+          } catch (err: any) {
+            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to settle wages', severity: 'error' }));
+          }
+        }}>
+          <DialogTitle>Settle Wages — {months[month - 1]} {year}</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              {ledger && (
+                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
+                  <Stack spacing={0.5}>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Days Present</Typography>
+                      <Typography variant="body2">{ledger.summary.presentDays}</Typography>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Wages Earned</Typography>
+                      <Typography variant="body2">{fmt(ledger.summary.wagesEarned)}</Typography>
+                    </Stack>
+                    {ledger.summary.overtimePay > 0 && (
+                      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="info.main">+ OT Pay</Typography>
+                        <Typography variant="body2" color="info.main">{fmt(ledger.summary.overtimePay)}</Typography>
+                      </Stack>
+                    )}
+                    {ledger.summary.totalAdvances > 0 && (
+                      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="error.main">− Advances</Typography>
+                        <Typography variant="body2" color="error.main">{fmt(ledger.summary.totalAdvances)}</Typography>
+                      </Stack>
+                    )}
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>Net Payable</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: ledger.summary.netPayable < 0 ? 'error.main' : 'primary.main' }}>
+                        {fmt(ledger.summary.netPayable)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              )}
+              {pendingCount > 0 && (
+                <Alert severity="warning" sx={{ py: 0.5 }}>
+                  <strong>{pendingCount} advance{pendingCount > 1 ? 's' : ''} ({fmt(pendingTotal)})</strong> will be marked as deducted.
+                </Alert>
+              )}
+              <TextField label="Remarks" value={settleRemarks} onChange={(e) => setSettleRemarks(e.target.value)} fullWidth multiline rows={2} size="small" />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSettleOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={settling}>
+              {settling ? <CircularProgress size={18} /> : 'Settle Wages'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Mark Wage as Paid Dialog */}
+      <Dialog open={Boolean(payWageId)} onClose={() => setPayWageId(null)} maxWidth="xs" fullWidth>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!id || !payWageId) return;
+          try {
+            await markWageAsPaid({ id, paymentId: payWageId, data: { paidDate: payWageDate } }).unwrap();
+            dispatch(showSnackbar({ message: 'Wages marked as paid', severity: 'success' }));
+            setPayWageId(null);
+          } catch (err: any) {
+            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed', severity: 'error' }));
+          }
+        }}>
+          <DialogTitle>Mark Wages as Paid</DialogTitle>
+          <DialogContent dividers>
+            <TextField label="Payment Date" type="date" value={payWageDate} onChange={e => setPayWageDate(e.target.value)}
+              fullWidth required slotProps={{ inputLabel: { shrink: true } }} sx={{ mt: 1 }} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPayWageId(null)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success" disabled={payingWage}>
+              {payingWage ? <CircularProgress size={18} /> : 'Mark as Paid'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteWageId)}
+        title="Delete Wage Settlement"
+        message="This will delete the wage settlement. If it was Generated (not Paid), pending advances will be restored."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!id || !deleteWageId) return;
+          try {
+            await deleteWagePayment({ id, paymentId: deleteWageId }).unwrap();
+            dispatch(showSnackbar({ message: 'Wage settlement deleted', severity: 'success' }));
+          } catch {
+            dispatch(showSnackbar({ message: 'Failed to delete', severity: 'error' }));
+          }
+          setDeleteWageId(null);
+        }}
+        onCancel={() => setDeleteWageId(null)}
+      />
     </Box>
   );
 }

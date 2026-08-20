@@ -29,6 +29,8 @@ import {
   MarkSalaryAsPaidDto,
   EmployeeQueryDto,
   CreateEmployeeAdvanceDto,
+  UpsertEmployeeAttendanceDto,
+  BulkUpsertEmployeeAttendanceDto,
 } from './dto/employee.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -55,6 +57,22 @@ export class EmployeesController {
   @ApiResponse({ status: 200, description: 'Returns next code' })
   getNextCode() {
     return this.employeesService.getNextCode().then((code) => ({ code }));
+  }
+
+  // NOTE: These attendance routes MUST be before /:id routes to avoid route conflicts
+
+  @Post('attendance')
+  @HasPermission('Employees.Edit')
+  @ApiOperation({ summary: 'Upsert a single attendance record for an employee' })
+  upsertAttendance(@Body() dto: UpsertEmployeeAttendanceDto) {
+    return this.employeesService.upsertAttendance(dto);
+  }
+
+  @Post('attendance/bulk')
+  @HasPermission('Employees.Edit')
+  @ApiOperation({ summary: 'Bulk upsert attendance records for employees' })
+  bulkUpsertAttendance(@Body() dto: BulkUpsertEmployeeAttendanceDto) {
+    return this.employeesService.bulkUpsertAttendance(dto);
   }
 
   // NOTE: GET /salaries MUST be before GET /:id to avoid route conflict
@@ -175,6 +193,20 @@ export class EmployeesController {
   @ApiParam({ name: 'salaryId', description: 'SalaryPayment UUID' })
   deleteSalary(@Param('id') id: string, @Param('salaryId') salaryId: string) {
     return this.employeesService.deleteSalary(id, salaryId);
+  }
+
+  @Get(':id/attendance')
+  @HasPermission('Employees.View')
+  @ApiOperation({ summary: 'Get attendance records for an employee by month/year' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiQuery({ name: 'month', required: true, type: Number })
+  @ApiQuery({ name: 'year', required: true, type: Number })
+  getAttendance(
+    @Param('id') id: string,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.employeesService.getAttendance(id, Number(month), Number(year));
   }
 
   // ── Advances ────────────────────────────────────────────────────────────────

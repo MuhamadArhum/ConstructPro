@@ -91,8 +91,8 @@ model RefreshToken {
 }
 
 model Employee {
-  id                 String            @id @default(uuid())
-  code               String?           @unique
+  id                 String               @id @default(uuid())
+  code               String?              @unique
   fullName           String
   designation        String?
   department         String?
@@ -101,15 +101,31 @@ model Employee {
   address            String?
   basicSalary        Decimal
   joinDate           DateTime
-  isActive           Boolean           @default(true)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   salaryPayments     SalaryPayment[]
   advances           EmployeeAdvance[]
+  attendances        EmployeeAttendance[]
   projectAssignments ProjectEmployee[]
 
   @@index([isActive])
   @@map("employees")
+}
+
+model EmployeeAttendance {
+  id            String   @id @default(uuid())
+  employeeId    String
+  date          DateTime
+  isPresent     Boolean  @default(true)
+  overtimeHours Decimal  @default(0)
+  notes         String?
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@map("employee_attendances")
 }
 
 model EmployeeAdvance {
@@ -129,23 +145,25 @@ model EmployeeAdvance {
 }
 
 model SalaryPayment {
-  id          String    @id @default(uuid())
-  code        String?   @unique
-  employeeId  String
-  month       Int
-  year        Int
-  basicSalary Decimal
-  bonus       Decimal   @default(0)
-  deductions  Decimal   @default(0)
-  netSalary   Decimal
-  daysPresent Int       @default(0)
-  totalDays   Int       @default(30)
-  status      String    @default("Generated")
-  paidAt      DateTime  @default(now())
-  paidDate    DateTime?
-  remarks     String?
-  createdAt   DateTime  @default(now())
-  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid())
+  code              String?   @unique
+  employeeId        String
+  month             Int
+  year              Int
+  basicSalary       Decimal
+  bonus             Decimal   @default(0)
+  advanceDeductions Decimal   @default(0)
+  manualDeductions  Decimal   @default(0)
+  deductions        Decimal   @default(0)
+  netSalary         Decimal
+  daysPresent       Int       @default(0)
+  totalDays         Int       @default(30)
+  status            String    @default("Generated")
+  paidAt            DateTime  @default(now())
+  paidDate          DateTime?
+  remarks           String?
+  createdAt         DateTime  @default(now())
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@index([year, month])
@@ -154,21 +172,22 @@ model SalaryPayment {
 }
 
 model Labour {
-  id                  String             @id @default(uuid())
-  code                String?            @unique
+  id                  String               @id @default(uuid())
+  code                String?              @unique
   name                String
   phoneNumber         String?
   cnic                String?
   address             String?
   trade               String?
   dailyWage           Decimal
-  overtimeRatePerHour Decimal            @default(0)
+  overtimeRatePerHour Decimal              @default(0)
   joinDate            DateTime
-  isActive            Boolean            @default(true)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   attendances         LabourAttendance[]
   advances            LabourAdvance[]
+  wagePayments        LabourWagePayment[]
   projectAssignments  ProjectLabour[]
 
   @@index([isActive])
@@ -204,6 +223,28 @@ model LabourAdvance {
   @@index([labourId])
   @@index([isDeducted])
   @@map("labour_advances")
+}
+
+model LabourWagePayment {
+  id                String    @id @default(uuid())
+  labourId          String
+  month             Int
+  year              Int
+  daysPresent       Int       @default(0)
+  wagesEarned       Decimal   @default(0)
+  overtimePay       Decimal   @default(0)
+  advanceDeductions Decimal   @default(0)
+  netPayable        Decimal
+  status            String    @default("Generated")
+  paidDate          DateTime?
+  remarks           String?
+  createdAt         DateTime  @default(now())
+  labour            Labour    @relation(fields: [labourId], references: [id], onDelete: Cascade)
+
+  @@unique([labourId, month, year])
+  @@index([labourId])
+  @@index([year, month])
+  @@map("labour_wage_payments")
 }
 
 model Customer {
@@ -720,6 +761,7 @@ model Project {
   employees      ProjectEmployee[]
   invoices       Invoice[]
   purchaseOrders PurchaseOrder[]
+  boq            Boq?
 
   @@index([status])
   @@index([clientId])
@@ -879,4 +921,45 @@ model PurchaseOrderItem {
 
   @@index([purchaseOrderId])
   @@map("purchase_order_items")
+}
+
+model Boq {
+  id        String       @id @default(uuid())
+  projectId String       @unique
+  title     String       @default("Bill of Quantities")
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections  BoqSection[]
+
+  @@map("boqs")
+}
+
+model BoqSection {
+  id    String    @id @default(uuid())
+  boqId String
+  title String
+  order Int       @default(0)
+  boq   Boq       @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  items BoqItem[]
+
+  @@index([boqId])
+  @@map("boq_sections")
+}
+
+model BoqItem {
+  id          String     @id @default(uuid())
+  sectionId   String
+  description String
+  unit        String     @default("nos")
+  quantity    Decimal    @default(0)
+  unitRate    Decimal    @default(0)
+  amount      Decimal    @default(0)
+  notes       String?
+  order       Int        @default(0)
+  section     BoqSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@map("boq_items")
 }

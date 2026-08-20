@@ -14,8 +14,10 @@ export class DashboardService {
     const [
       totalIncomeResult,
       totalExpenseResult,
+      totalSalaryResult,
       thisMonthIncomeResult,
       thisMonthExpenseResult,
+      thisMonthSalaryResult,
       pendingPaymentsResult,
       activeEmployeeCount,
       activeLabourCount,
@@ -28,6 +30,7 @@ export class DashboardService {
     ] = await Promise.all([
       this.prisma.income.aggregate({ _sum: { amount: true } }),
       this.prisma.expense.aggregate({ _sum: { amount: true } }),
+      this.prisma.salaryPayment.aggregate({ _sum: { netSalary: true }, where: { status: 'Paid' } }).catch(() => ({ _sum: { netSalary: 0 } })),
       this.prisma.income.aggregate({
         _sum: { amount: true },
         where: { date: { gte: startOfMonth } },
@@ -36,6 +39,10 @@ export class DashboardService {
         _sum: { amount: true },
         where: { date: { gte: startOfMonth } },
       }),
+      this.prisma.salaryPayment.aggregate({
+        _sum: { netSalary: true },
+        where: { status: 'Paid', paidDate: { gte: startOfMonth } },
+      }).catch(() => ({ _sum: { netSalary: 0 } })),
       this.prisma.income.aggregate({
         _sum: { amount: true },
         where: { isPaid: false },
@@ -82,12 +89,10 @@ export class DashboardService {
     ]);
 
     const totalIncomeAllTime = Number(totalIncomeResult._sum.amount ?? 0);
-    const totalExpenseAllTime = Number(totalExpenseResult._sum.amount ?? 0);
+    const totalExpenseAllTime = Number(totalExpenseResult._sum.amount ?? 0) + Number((totalSalaryResult as any)._sum?.netSalary ?? 0);
     const profitLossAllTime = totalIncomeAllTime - totalExpenseAllTime;
     const totalIncomeThisMonth = Number(thisMonthIncomeResult._sum.amount ?? 0);
-    const totalExpenseThisMonth = Number(
-      thisMonthExpenseResult._sum.amount ?? 0,
-    );
+    const totalExpenseThisMonth = Number(thisMonthExpenseResult._sum.amount ?? 0) + Number((thisMonthSalaryResult as any)._sum?.netSalary ?? 0);
     const profitLossThisMonth = totalIncomeThisMonth - totalExpenseThisMonth;
     const pendingPayments = Number(pendingPaymentsResult._sum.amount ?? 0);
 
@@ -161,6 +166,7 @@ export class DashboardService {
     const [
       incomeThisMonthResult,
       expenseThisMonthResult,
+      salaryThisMonthResult,
       customerAgg,
       supplierAgg,
       recentIncomes,
@@ -168,6 +174,7 @@ export class DashboardService {
     ] = await Promise.all([
       this.prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
       this.prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
+      this.prisma.salaryPayment.aggregate({ _sum: { netSalary: true }, where: { status: 'Paid', paidDate: { gte: monthStart, lte: monthEnd } } }).catch(() => ({ _sum: { netSalary: 0 } })),
       this.prisma.customer.aggregate({ _sum: { totalBilled: true, totalPaid: true } }),
       this.prisma.supplier.aggregate({ _sum: { totalPurchased: true, totalPaid: true } }),
       this.prisma.income.findMany({ take: 10, orderBy: { date: 'desc' }, select: { id: true, category: true, amount: true, date: true, description: true } }),
@@ -192,7 +199,7 @@ export class DashboardService {
     ]);
 
     const totalIncomeThisMonth = Number(incomeThisMonthResult._sum.amount ?? 0);
-    const totalExpenseThisMonth = Number(expenseThisMonthResult._sum.amount ?? 0);
+    const totalExpenseThisMonth = Number(expenseThisMonthResult._sum.amount ?? 0) + Number((salaryThisMonthResult as any)._sum?.netSalary ?? 0);
     const customerOutstanding = Number(customerAgg._sum.totalBilled ?? 0) - Number(customerAgg._sum.totalPaid ?? 0);
     const supplierOutstanding = Number(supplierAgg._sum.totalPurchased ?? 0) - Number(supplierAgg._sum.totalPaid ?? 0);
 
@@ -249,15 +256,24 @@ export class DashboardService {
           _sum: { amount: true },
           where: { date: { gte: monthStart, lte: monthEnd } },
         }),
+        this.prisma.salaryPayment.aggregate({
+          _sum: { netSalary: true },
+          where: { status: 'Paid', paidDate: { gte: monthStart, lte: monthEnd } },
+        }).catch(() => ({ _sum: { netSalary: 0 } })),
       ]),
     );
 
-    return months.map(({ year, month, monthName }, i) => ({
-      monthName,
-      year,
-      month: month + 1,
-      income: Number(results[i * 2]._sum.amount ?? 0),
-      expense: Number(results[i * 2 + 1]._sum.amount ?? 0),
-    }));
+    return months.map(({ year, month, monthName }, i) => {
+      const incR = results[i * 3] as any;
+      const expR = results[i * 3 + 1] as any;
+      const salR = results[i * 3 + 2] as any;
+      return {
+        monthName,
+        year,
+        month: month + 1,
+        income: Number(incR._sum?.amount ?? 0),
+        expense: Number(expR._sum?.amount ?? 0) + Number(salR._sum?.netSalary ?? 0),
+      };
+    });
   }
 }

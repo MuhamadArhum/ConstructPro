@@ -33,6 +33,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { BoqModule } from './boq/boq.module';
 
 @Module({
   controllers: [AppController],
@@ -70,6 +71,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     NotificationsModule,
     SettingsModule,
     AuditLogsModule,
+    BoqModule,
   ],
   providers: [
     AppService,

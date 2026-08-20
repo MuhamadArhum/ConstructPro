@@ -5,6 +5,7 @@ import {
   InputLabel, LinearProgress, MenuItem, Paper, Select, Stack, Tab, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -42,12 +43,22 @@ import {
   useProcessSalaryMutation,
   useMarkSalaryAsPaidMutation,
   useDeleteSalaryMutation,
+  useGetPendingAdvancesQuery,
 } from '../employees/employeesApi';
-import { useGetLaboursQuery } from '../labour/labourApi';
+import {
+  useGetLabourAttendanceQuery,
+  useBulkUpsertLabourAttendanceMutation,
+  useGetLaboursQuery,
+} from '../labour/labourApi';
 import { useGetMachineriesQuery } from '../machinery/machineryApi';
-import { useGetEmployeesQuery } from '../employees/employeesApi';
+import {
+  useGetEmployeesQuery,
+  useGetEmployeeAttendanceQuery,
+  useBulkUpsertEmployeeAttendanceMutation,
+} from '../employees/employeesApi';
 import { useGetInvoicesQuery } from '../invoices/invoiceApi';
 import { useGetPurchaseOrdersQuery } from '../purchase-orders/purchaseOrderApi';
+import AttendanceSheet from '../../components/AttendanceSheet';
 import ProjectFormDialog from './ProjectFormDialog';
 import { PROJECT_STATUS_COLORS } from '../../utils/statusColors';
 
@@ -112,14 +123,22 @@ export default function ProjectDetailPage() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [removeEmployeeId, setRemoveEmployeeId] = useState<string | null>(null);
 
+  // Attendance state
+  const [attSubTab, setAttSubTab] = useState(0);        // 0=Labour, 1=Employee
+  const [attMonth, setAttMonth] = useState(new Date().getMonth() + 1);
+  const [attYear, setAttYear] = useState(new Date().getFullYear());
+  const [selectedAttLabourId, setSelectedAttLabourId] = useState('');
+  const [selectedAttEmployeeId, setSelectedAttEmployeeId] = useState('');
+
   // Payroll state
   const now = new Date();
   const [payrollMonth, setPayrollMonth] = useState(now.getMonth() + 1);
   const [payrollYear, setPayrollYear] = useState(now.getFullYear());
   const [genSalaryEmp, setGenSalaryEmp] = useState<{ employeeId: string; fullName: string; basicSalary: number } | null>(null);
+  const [genBasicSalary, setGenBasicSalary] = useState('');
   const [genBonus, setGenBonus] = useState('0');
   const [genDeductions, setGenDeductions] = useState('0');
-  const [genDaysPresent, setGenDaysPresent] = useState('26');
+  const [genDaysPresent, setGenDaysPresent] = useState('');
   const [genTotalDays, setGenTotalDays] = useState('30');
   const [genRemarks, setGenRemarks] = useState('');
   const [payDialogSalary, setPayDialogSalary] = useState<{ employeeId: string; salaryId: string } | null>(null);
@@ -142,6 +161,24 @@ export default function ProjectDetailPage() {
     { id: id ?? '', month: payrollMonth, year: payrollYear },
     { skip: !id || tab !== 8 },
   );
+
+  const { data: attLabourRecords = [] } = useGetLabourAttendanceQuery(
+    { id: selectedAttLabourId, month: attMonth, year: attYear },
+    { skip: !selectedAttLabourId || tab !== 9 || attSubTab !== 0 },
+  );
+  const { data: attEmployeeRecords = [] } = useGetEmployeeAttendanceQuery(
+    { id: selectedAttEmployeeId, month: attMonth, year: attYear },
+    { skip: !selectedAttEmployeeId || tab !== 9 || attSubTab !== 1 },
+  );
+  const [bulkUpsertLabourAttendance, { isLoading: savingLabourAtt }] = useBulkUpsertLabourAttendanceMutation();
+  const [bulkUpsertEmpAttendance, { isLoading: savingEmpAtt }] = useBulkUpsertEmployeeAttendanceMutation();
+  const { data: genPendingData } = useGetPendingAdvancesQuery(
+    genSalaryEmp?.employeeId ?? '',
+    { skip: !genSalaryEmp },
+  );
+  const genPendingTotal = genPendingData?.total ?? 0;
+  const genPendingCount = genPendingData?.advances.length ?? 0;
+
   const [processSalary, { isLoading: generatingSalary }] = useProcessSalaryMutation();
   const [markSalaryAsPaid, { isLoading: payingSalary }] = useMarkSalaryAsPaidMutation();
   const [deleteSalary] = useDeleteSalaryMutation();
@@ -351,6 +388,7 @@ export default function ProjectDetailPage() {
         </Tooltip>
         <Typography variant="h1" sx={{ flex: 1 }}>{project.name}</Typography>
         <Chip label={project.status} color={PROJECT_STATUS_COLORS[project.status] ?? 'default'} />
+        <Button variant="outlined" color="info" onClick={() => navigate(`/projects/${id}/boq`)}>BOQ</Button>
         <Button startIcon={<EditIcon />} variant="outlined" onClick={() => setEditOpen(true)}>Edit</Button>
         <Button startIcon={<DeleteIcon />} variant="outlined" color="error" onClick={() => setDeleteOpen(true)}>Delete</Button>
       </Stack>
@@ -431,6 +469,7 @@ export default function ProjectDetailPage() {
           <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
           <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
           <Tab label="Payroll" />
+          <Tab label="Attendance" icon={<EventNoteIcon fontSize="small" />} iconPosition="start" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -938,9 +977,10 @@ export default function ProjectDetailPage() {
                               <Tooltip title="Generate Salary">
                                 <IconButton size="small" color="primary" onClick={() => {
                                   setGenSalaryEmp({ employeeId: emp.employeeId, fullName: emp.fullName, basicSalary: emp.basicSalary });
+                                  setGenBasicSalary(String(emp.basicSalary));
                                   setGenBonus('0');
                                   setGenDeductions('0');
-                                  setGenDaysPresent('26');
+                                  setGenDaysPresent('');
                                   setGenTotalDays('30');
                                   setGenRemarks('');
                                 }}>
@@ -1055,6 +1095,163 @@ export default function ProjectDetailPage() {
               )}
             </>
           )}
+
+          {/* ── Attendance ── */}
+          {tab === 9 && (() => {
+            const assignedLabours = project.labours ?? [];
+            const assignedEmployees = project.employees ?? [];
+            const selectedLabour = assignedLabours.find((l) => l.labour?.id === selectedAttLabourId)?.labour;
+            const selectedEmployee = assignedEmployees.find((e) => e.employee?.id === selectedAttEmployeeId)?.employee;
+
+            const MONTHS_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+
+            return (
+              <>
+                {/* Month / Year Selector */}
+                <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Attendance Month:</Typography>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Month</InputLabel>
+                    <Select label="Month" value={attMonth} onChange={(e) => setAttMonth(Number(e.target.value))}>
+                      {MONTHS_LIST.map((m, i) => (
+                        <MenuItem key={i} value={i + 1}>{m}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 100 }}>
+                    <InputLabel>Year</InputLabel>
+                    <Select label="Year" value={attYear} onChange={(e) => setAttYear(Number(e.target.value))}>
+                      {years.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </Stack>
+
+                {/* Sub-tabs: Labour | Employees */}
+                <Tabs value={attSubTab} onChange={(_, v) => setAttSubTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
+                  <Tab label={`Labour (${assignedLabours.length})`} />
+                  <Tab label={`Employees (${assignedEmployees.length})`} />
+                </Tabs>
+
+                {/* ── Labour Attendance ── */}
+                {attSubTab === 0 && (
+                  <>
+                    {assignedLabours.length === 0 ? (
+                      <Alert severity="info">No labour assigned to this project. Assign labour from the Labour tab first.</Alert>
+                    ) : (
+                      <>
+                        <FormControl size="small" sx={{ minWidth: 260, mb: 2 }}>
+                          <InputLabel>Select Labour</InputLabel>
+                          <Select
+                            label="Select Labour"
+                            value={selectedAttLabourId}
+                            onChange={(e) => setSelectedAttLabourId(e.target.value)}
+                          >
+                            {assignedLabours.map((pl) => (
+                              <MenuItem key={pl.labour?.id} value={pl.labour?.id ?? ''}>
+                                {pl.labour?.name} {pl.labour?.trade ? `(${pl.labour.trade})` : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+
+                        {!selectedAttLabourId && (
+                          <Alert severity="info">Select a labour worker above to view and mark attendance.</Alert>
+                        )}
+
+                        {selectedLabour && (
+                          <AttendanceSheet
+                            workerId={selectedLabour.id}
+                            workerName={selectedLabour.name}
+                            dailyRate={selectedLabour.dailyWage}
+                            overtimeRate={0}
+                            showOvertimeHours
+                            month={attMonth}
+                            year={attYear}
+                            existingRecords={attLabourRecords.map((r: any) => ({
+                              date: r.date,
+                              isPresent: r.isPresent,
+                              overtimeHours: r.overtimeHours,
+                            }))}
+                            saving={savingLabourAtt}
+                            onSave={async (records) => {
+                              await bulkUpsertLabourAttendance({
+                                records: records.map((r) => ({
+                                  labourId: r.workerId,
+                                  date: r.date,
+                                  isPresent: r.isPresent,
+                                  overtimeHours: r.overtimeHours,
+                                })),
+                              }).unwrap();
+                              dispatch(showSnackbar({ message: 'Attendance saved', severity: 'success' }));
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* ── Employee Attendance ── */}
+                {attSubTab === 1 && (
+                  <>
+                    {assignedEmployees.length === 0 ? (
+                      <Alert severity="info">No employees assigned to this project. Assign employees from the Employees tab first.</Alert>
+                    ) : (
+                      <>
+                        <FormControl size="small" sx={{ minWidth: 260, mb: 2 }}>
+                          <InputLabel>Select Employee</InputLabel>
+                          <Select
+                            label="Select Employee"
+                            value={selectedAttEmployeeId}
+                            onChange={(e) => setSelectedAttEmployeeId(e.target.value)}
+                          >
+                            {assignedEmployees.map((pe) => (
+                              <MenuItem key={pe.employee?.id} value={pe.employee?.id ?? ''}>
+                                {pe.employee?.fullName} {pe.employee?.designation ? `(${pe.employee.designation})` : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+
+                        {!selectedAttEmployeeId && (
+                          <Alert severity="info">Select an employee above to view and mark attendance.</Alert>
+                        )}
+
+                        {selectedEmployee && (
+                          <AttendanceSheet
+                            workerId={selectedEmployee.id}
+                            workerName={selectedEmployee.fullName}
+                            dailyRate={selectedEmployee.basicSalary / 30}
+                            showOvertimeHours={false}
+                            month={attMonth}
+                            year={attYear}
+                            existingRecords={attEmployeeRecords.map((r: any) => ({
+                              date: r.date,
+                              isPresent: r.isPresent,
+                              overtimeHours: r.overtimeHours ?? 0,
+                            }))}
+                            saving={savingEmpAtt}
+                            onSave={async (records) => {
+                              await bulkUpsertEmpAttendance({
+                                records: records.map((r) => ({
+                                  employeeId: r.workerId,
+                                  date: r.date,
+                                  isPresent: r.isPresent,
+                                  overtimeHours: r.overtimeHours,
+                                })),
+                              }).unwrap();
+                              dispatch(showSnackbar({ message: 'Attendance saved', severity: 'success' }));
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            );
+          })()}
         </Box>
       </Paper>
 
@@ -1259,61 +1456,118 @@ export default function ProjectDetailPage() {
       />
 
       {/* Generate Salary Dialog */}
-      <Dialog open={Boolean(genSalaryEmp)} onClose={() => setGenSalaryEmp(null)} maxWidth="sm" fullWidth>
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          if (!genSalaryEmp) return;
-          try {
-            await processSalary({
-              id: genSalaryEmp.employeeId,
-              data: {
-                month: payrollMonth,
-                year: payrollYear,
-                basicSalary: genSalaryEmp.basicSalary,
-                bonus: Number(genBonus),
-                deductions: Number(genDeductions),
-                daysPresent: Number(genDaysPresent),
-                totalDays: Number(genTotalDays),
-                remarks: genRemarks || undefined,
-              },
-            }).unwrap();
-            dispatch(showSnackbar({ message: 'Salary generated', severity: 'success' }));
-            setGenSalaryEmp(null);
-            refetchPayroll();
-          } catch (err: any) {
-            dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to generate', severity: 'error' }));
-          }
-        }}>
-          <DialogTitle>Generate Salary — {genSalaryEmp?.fullName}</DialogTitle>
-          <DialogContent dividers>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <Stack direction="row" spacing={2}>
-                <TextField label="Month" value={String(payrollMonth)} size="small" fullWidth disabled />
-                <TextField label="Year" value={String(payrollYear)} size="small" fullWidth disabled />
-              </Stack>
-              <TextField label="Basic Salary (PKR)" value={String(genSalaryEmp?.basicSalary ?? '')} size="small" fullWidth disabled />
-              <Stack direction="row" spacing={2}>
-                <TextField label="Days Present" type="number" value={genDaysPresent} onChange={e => setGenDaysPresent(e.target.value)} size="small" required fullWidth />
-                <TextField label="Total Days" type="number" value={genTotalDays} onChange={e => setGenTotalDays(e.target.value)} size="small" required fullWidth />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <TextField label="Bonus (PKR)" type="number" value={genBonus} onChange={e => setGenBonus(e.target.value)} size="small" fullWidth />
-                <TextField label="Deductions (PKR)" type="number" value={genDeductions} onChange={e => setGenDeductions(e.target.value)} size="small" fullWidth />
-              </Stack>
-              <TextField label="Remarks" value={genRemarks} onChange={e => setGenRemarks(e.target.value)} size="small" fullWidth multiline rows={2} />
-              <Alert severity="info" sx={{ py: 0 }}>
-                Net = (Basic / Total Days × Days Present) + Bonus − Deductions
-              </Alert>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setGenSalaryEmp(null)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={generatingSalary}>
-              {generatingSalary ? <CircularProgress size={18} /> : 'Generate'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {(() => {
+        const basicNum = parseFloat(genBasicSalary) || 0;
+        const totalDaysNum = parseInt(genTotalDays) || 30;
+        const daysNum = parseInt(genDaysPresent) || 0;
+        const earnedPreview = basicNum > 0 && totalDaysNum > 0 ? (basicNum / totalDaysNum) * daysNum : 0;
+        const netPreview = earnedPreview + (parseFloat(genBonus) || 0) - genPendingTotal - (parseFloat(genDeductions) || 0);
+        const canGenerate = !generatingSalary && !!genDaysPresent && basicNum > 0 && totalDaysNum > 0 && !isNaN(daysNum);
+
+        return (
+          <Dialog open={Boolean(genSalaryEmp)} onClose={() => setGenSalaryEmp(null)} maxWidth="sm" fullWidth>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!genSalaryEmp) return;
+              try {
+                await processSalary({
+                  id: genSalaryEmp.employeeId,
+                  data: {
+                    month: payrollMonth,
+                    year: payrollYear,
+                    basicSalary: basicNum,
+                    bonus: parseFloat(genBonus) || 0,
+                    deductions: (parseFloat(genDeductions) || 0),
+                    daysPresent: daysNum,
+                    totalDays: totalDaysNum,
+                    remarks: genRemarks || undefined,
+                  },
+                }).unwrap();
+                dispatch(showSnackbar({ message: 'Salary generated', severity: 'success' }));
+                setGenSalaryEmp(null);
+                refetchPayroll();
+              } catch (err: any) {
+                dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to generate', severity: 'error' }));
+              }
+            }}>
+              <DialogTitle>Generate Salary — {genSalaryEmp?.fullName}</DialogTitle>
+              <DialogContent dividers>
+                <Stack spacing={2} sx={{ pt: 1 }}>
+                  <Stack direction="row" spacing={2}>
+                    <TextField label="Month" value={String(payrollMonth)} size="small" fullWidth disabled />
+                    <TextField label="Year" value={String(payrollYear)} size="small" fullWidth disabled />
+                  </Stack>
+                  <TextField
+                    label="Basic Salary (PKR)" type="number" value={genBasicSalary}
+                    onChange={e => setGenBasicSalary(e.target.value)} size="small" fullWidth required
+                    slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                  />
+                  <Stack direction="row" spacing={2}>
+                    <TextField label="Days Present" type="number" value={genDaysPresent} onChange={e => setGenDaysPresent(e.target.value)} size="small" required fullWidth />
+                    <TextField label="Total Working Days" type="number" value={genTotalDays} onChange={e => setGenTotalDays(e.target.value)} size="small" required fullWidth />
+                  </Stack>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      label="Bonus (PKR)" type="number" value={genBonus} onChange={e => setGenBonus(e.target.value)} size="small" fullWidth
+                      slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                    />
+                    <TextField
+                      label="Extra Deductions (PKR)" type="number" value={genDeductions} onChange={e => setGenDeductions(e.target.value)} size="small" fullWidth
+                      slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                    />
+                  </Stack>
+                  {genPendingCount > 0 && (
+                    <Alert severity="warning" sx={{ py: 0.5 }}>
+                      <strong>{genPendingCount} advance{genPendingCount > 1 ? 's' : ''} ({fmt(genPendingTotal)})</strong> will be automatically deducted.
+                    </Alert>
+                  )}
+                  {genDaysPresent && basicNum > 0 && (
+                    <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
+                      <Stack spacing={0.5}>
+                        <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">Earned ({genDaysPresent}/{genTotalDays} days)</Typography>
+                          <Typography variant="body2">{fmt(Math.round(earnedPreview))}</Typography>
+                        </Stack>
+                        {(parseFloat(genBonus) || 0) > 0 && (
+                          <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="success.main">+ Bonus</Typography>
+                            <Typography variant="body2" color="success.main">{fmt(parseFloat(genBonus))}</Typography>
+                          </Stack>
+                        )}
+                        {genPendingTotal > 0 && (
+                          <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="error.main">− Advances</Typography>
+                            <Typography variant="body2" color="error.main">{fmt(genPendingTotal)}</Typography>
+                          </Stack>
+                        )}
+                        {(parseFloat(genDeductions) || 0) > 0 && (
+                          <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="error.main">− Extra Deductions</Typography>
+                            <Typography variant="body2" color="error.main">{fmt(parseFloat(genDeductions))}</Typography>
+                          </Stack>
+                        )}
+                        <Stack direction="row" sx={{ justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>Net Salary</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: netPreview < 0 ? 'error.main' : 'primary.main' }}>
+                            {fmt(Math.round(netPreview))}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  )}
+                  <TextField label="Remarks" value={genRemarks} onChange={e => setGenRemarks(e.target.value)} size="small" fullWidth multiline rows={2} />
+                </Stack>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setGenSalaryEmp(null)}>Cancel</Button>
+                <Button type="submit" variant="contained" disabled={!canGenerate}>
+                  {generatingSalary ? <CircularProgress size={18} /> : 'Generate'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+        );
+      })()}
 
       {/* Mark as Paid Dialog */}
       <Dialog open={Boolean(payDialogSalary)} onClose={() => setPayDialogSalary(null)} maxWidth="xs" fullWidth>

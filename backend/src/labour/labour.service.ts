@@ -367,6 +367,140 @@ export class LabourService {
     };
   }
 
+  async getWagePayments(labourId: string) {
+    await this.findById(labourId);
+    const payments = await this.prisma.labourWagePayment.findMany({
+      where: { labourId },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    });
+    return payments.map((p) => this.mapWagePayment(p));
+  }
+
+  async settleWages(labourId: string, month: number, year: number, remarks?: string) {
+    const labour = await this.prisma.labour.findUnique({ where: { id: labourId } });
+    if (!labour) throw new NotFoundException(`Labour with id ${labourId} not found`);
+
+    const existing = await this.prisma.labourWagePayment.findUnique({
+      where: { labourId_month_year: { labourId, month, year } },
+    });
+    if (existing) throw new ConflictException(`Wages for ${month}/${year} already settled`);
+
+    const dailyWage = Number(labour.dailyWage);
+    const overtimeRatePerHour = Number(labour.overtimeRatePerHour);
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const [attendances, pendingAdvances] = await Promise.all([
+      this.prisma.labourAttendance.findMany({
+        where: { labourId, date: { gte: firstDay, lte: lastDay } },
+      }),
+      this.prisma.labourAdvance.findMany({
+        where: { labourId, isDeducted: false },
+      }),
+    ]);
+
+    const daysPresent = attendances.filter((a) => a.isPresent).length;
+    const totalOT = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
+    const wagesEarned = daysPresent * dailyWage;
+    const overtimePay = totalOT * overtimeRatePerHour;
+    const advanceDeductions = pendingAdvances.reduce((s, a) => s + Number(a.amount), 0);
+    const netPayable = Math.round((wagesEarned + overtimePay - advanceDeductions) * 100) / 100;
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.labourWagePayment.create({
+        data: {
+          labourId,
+          month,
+          year,
+          daysPresent,
+          wagesEarned,
+          overtimePay,
+          advanceDeductions,
+          netPayable,
+          status: 'Generated',
+          remarks: remarks ?? null,
+        },
+      });
+      if (pendingAdvances.length > 0) {
+        await tx.labourAdvance.updateMany({
+          where: { id: { in: pendingAdvances.map((a) => a.id) } },
+          data: { isDeducted: true, deductedAt: new Date() },
+        });
+      }
+      return p;
+    });
+
+    return this.mapWagePayment(payment);
+  }
+
+  async markWageAsPaid(labourId: string, paymentId: string, paidDate: string) {
+    const payment = await this.prisma.labourWagePayment.findFirst({
+      where: { id: paymentId, labourId },
+    });
+    if (!payment) throw new NotFoundException('Wage payment not found');
+    if (payment.status === 'Paid') throw new ConflictException('Already marked as paid');
+
+    const updated = await this.prisma.labourWagePayment.update({
+      where: { id: paymentId },
+      data: { status: 'Paid', paidDate: new Date(paidDate) },
+    });
+    return this.mapWagePayment(updated);
+  }
+
+  async deleteWagePayment(labourId: string, paymentId: string) {
+    const payment = await this.prisma.labourWagePayment.findFirst({
+      where: { id: paymentId, labourId },
+    });
+    if (!payment) throw new NotFoundException('Wage payment not found');
+
+    if (payment.status === 'Generated') {
+      // Restore advances that were deducted when this settlement was created
+      await this.prisma.labourAdvance.updateMany({
+        where: {
+          labourId,
+          isDeducted: true,
+          deductedAt: { gte: payment.createdAt },
+        },
+        data: { isDeducted: false, deductedAt: null },
+      });
+    }
+
+    await this.prisma.labourWagePayment.delete({ where: { id: paymentId } });
+    return { message: 'Wage payment deleted' };
+  }
+
+  private mapWagePayment(p: {
+    id: string;
+    labourId: string;
+    month: number;
+    year: number;
+    daysPresent: number;
+    wagesEarned: any;
+    overtimePay: any;
+    advanceDeductions: any;
+    netPayable: any;
+    status: string;
+    paidDate: Date | null;
+    remarks: string | null;
+    createdAt: Date;
+  }) {
+    return {
+      id: p.id,
+      labourId: p.labourId,
+      month: p.month,
+      year: p.year,
+      daysPresent: p.daysPresent,
+      wagesEarned: Number(p.wagesEarned),
+      overtimePay: Number(p.overtimePay),
+      advanceDeductions: Number(p.advanceDeductions),
+      netPayable: Number(p.netPayable),
+      status: p.status,
+      paidDate: p.paidDate,
+      remarks: p.remarks,
+      createdAt: p.createdAt,
+    };
+  }
+
   private mapLabour(labour: {
     id: string;
     code?: string | null;

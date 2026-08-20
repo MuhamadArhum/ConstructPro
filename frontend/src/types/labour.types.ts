@@ -83,3 +83,29 @@ export interface AddAdvanceRequest {
   date: string;
   reason?: string;
 }
+
+export interface LabourWagePaymentDto {
+  id: string;
+  labourId: string;
+  month: number;
+  year: number;
+  daysPresent: number;
+  wagesEarned: number;
+  overtimePay: number;
+  advanceDeductions: number;
+  netPayable: number;
+  status: 'Generated' | 'Paid';
+  paidDate?: string | null;
+  remarks?: string | null;
+  createdAt: string;
+}
+
+export interface SettleWagesRequest {
+  month: number;
+  year: number;
+  remarks?: string;
+}
+
+export interface MarkWagePaidRequest {
+  paidDate: string;
+}

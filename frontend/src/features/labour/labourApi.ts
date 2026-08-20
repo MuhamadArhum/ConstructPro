@@ -6,10 +6,13 @@ import type {
   LabourAdvanceDto,
   PendingLabourAdvancesDto,
   LabourLedgerDto,
+  LabourWagePaymentDto,
   CreateLabourRequest,
   UpdateLabourRequest,
   UpsertAttendanceRequest,
   AddAdvanceRequest,
+  SettleWagesRequest,
+  MarkWagePaidRequest,
 } from '../../types/labour.types';
 
 export const labourApi = baseApi.injectEndpoints({
@@ -55,6 +58,10 @@ export const labourApi = baseApi.injectEndpoints({
       query: (data) => ({ url: '/labour/attendance', method: 'POST', data }),
       invalidatesTags: ['Labour'],
     }),
+    bulkUpsertLabourAttendance: builder.mutation<{ saved: number }, { records: UpsertAttendanceRequest[] }>({
+      query: (data) => ({ url: '/labour/attendance/bulk', method: 'POST', data }),
+      invalidatesTags: ['Labour'],
+    }),
     getLabourAdvances: builder.query<LabourAdvanceDto[], string>({
       query: (id) => ({ url: `/labour/${id}/advances` }),
       providesTags: (_r, _e, id) => [{ type: 'Labour' as const, id: `${id}-advances` }],
@@ -81,6 +88,22 @@ export const labourApi = baseApi.injectEndpoints({
     getNextLabourCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/labour/next-code' }),
     }),
+    getLabourWagePayments: builder.query<LabourWagePaymentDto[], string>({
+      query: (id) => ({ url: `/labour/${id}/wages` }),
+      providesTags: (_r, _e, id) => [{ type: 'Labour' as const, id: `${id}-wages` }],
+    }),
+    settleLabourWages: builder.mutation<LabourWagePaymentDto, { id: string; data: SettleWagesRequest }>({
+      query: ({ id, data }) => ({ url: `/labour/${id}/wages`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Labour' as const, id: `${id}-wages` }, { type: 'Labour' as const, id: `${id}-advances` }],
+    }),
+    markLabourWageAsPaid: builder.mutation<LabourWagePaymentDto, { id: string; paymentId: string; data: MarkWagePaidRequest }>({
+      query: ({ id, paymentId, data }) => ({ url: `/labour/${id}/wages/${paymentId}/pay`, method: 'PATCH', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Labour' as const, id: `${id}-wages` }],
+    }),
+    deleteLabourWagePayment: builder.mutation<void, { id: string; paymentId: string }>({
+      query: ({ id, paymentId }) => ({ url: `/labour/${id}/wages/${paymentId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Labour' as const, id: `${id}-wages` }, { type: 'Labour' as const, id: `${id}-advances` }],
+    }),
   }),
 });
 
@@ -99,4 +122,9 @@ export const {
   useDeleteLabourAdvanceMutation,
   useGetLabourLedgerQuery,
   useGetNextLabourCodeQuery,
+  useBulkUpsertLabourAttendanceMutation,
+  useGetLabourWagePaymentsQuery,
+  useSettleLabourWagesMutation,
+  useMarkLabourWageAsPaidMutation,
+  useDeleteLabourWagePaymentMutation,
 } = labourApi;

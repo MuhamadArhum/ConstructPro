@@ -22,6 +22,8 @@ export interface SalaryPaymentDto {
   year: number;
   basicSalary: number;
   bonus: number;
+  advanceDeductions: number;
+  manualDeductions: number;
   deductions: number;
   netSalary: number;
   daysPresent: number;
@@ -83,4 +85,28 @@ export interface UpdateSalaryRequest {
 
 export interface MarkSalaryAsPaidRequest {
   paidDate: string;
+}
+
+export interface EmployeeAttendanceDto {
+  id: string;
+  employeeId: string;
+  employeeName?: string;
+  date: string;
+  isPresent: boolean;
+  overtimeHours: number;
+  notes?: string | null;
+  dailyRate?: number;
+  totalPay?: number;
+}
+
+export interface UpsertEmployeeAttendanceRequest {
+  employeeId: string;
+  date: string;
+  isPresent: boolean;
+  overtimeHours?: number;
+  notes?: string;
+}
+
+export interface BulkUpsertEmployeeAttendanceRequest {
+  records: UpsertEmployeeAttendanceRequest[];
 }
