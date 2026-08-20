@@ -166,6 +166,54 @@ export class ProcessSalaryDto {
   remarks?: string;
 }
 
+export class UpdateSalaryDto {
+  @ApiPropertyOptional({ example: 50000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  basicSalary?: number;
+
+  @ApiPropertyOptional({ example: 5000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  bonus?: number;
+
+  @ApiPropertyOptional({ example: 2000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  deductions?: number;
+
+  @ApiPropertyOptional({ example: 26 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  daysPresent?: number;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  totalDays?: number;
+
+  @ApiPropertyOptional({ example: 'Corrected entry' })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class MarkSalaryAsPaidDto {
+  @ApiProperty({ example: '2026-08-25' })
+  @IsDateString()
+  paidDate: string;
+}
+
 export class CreateEmployeeAdvanceDto {
   @ApiProperty({ example: 5000 })
   @Type(() => Number)

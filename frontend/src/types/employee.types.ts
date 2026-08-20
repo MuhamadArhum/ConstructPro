@@ -15,8 +15,9 @@ export interface EmployeeDto {
 
 export interface SalaryPaymentDto {
   id: string;
+  code?: string;
   employeeId: string;
-  employeeName: string;
+  employeeName?: string;
   month: number;
   year: number;
   basicSalary: number;
@@ -25,8 +26,10 @@ export interface SalaryPaymentDto {
   netSalary: number;
   daysPresent: number;
   totalDays: number;
+  status: 'Generated' | 'Paid';
+  generatedAt: string;
+  paidDate?: string | null;
   remarks?: string;
-  paidAt: string;
 }
 
 export interface EmployeeAdvanceDto {
@@ -67,4 +70,17 @@ export interface ProcessSalaryRequest {
   daysPresent: number;
   totalDays: number;
   remarks?: string;
+}
+
+export interface UpdateSalaryRequest {
+  basicSalary?: number;
+  bonus?: number;
+  deductions?: number;
+  daysPresent?: number;
+  totalDays?: number;
+  remarks?: string;
+}
+
+export interface MarkSalaryAsPaidRequest {
+  paidDate: string;
 }

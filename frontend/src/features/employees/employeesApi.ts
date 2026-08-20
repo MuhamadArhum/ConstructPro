@@ -8,6 +8,8 @@ import type {
   CreateEmployeeRequest,
   UpdateEmployeeRequest,
   ProcessSalaryRequest,
+  UpdateSalaryRequest,
+  MarkSalaryAsPaidRequest,
 } from '../../types/employee.types';
 
 export const employeesApi = baseApi.injectEndpoints({
@@ -54,6 +56,18 @@ export const employeesApi = baseApi.injectEndpoints({
       query: ({ month, year }) => ({ url: '/employees/salaries', params: { month, year } }),
       providesTags: ['Employee'],
     }),
+    markSalaryAsPaid: builder.mutation<SalaryPaymentDto, { id: string; salaryId: string; data: MarkSalaryAsPaidRequest }>({
+      query: ({ id, salaryId, data }) => ({ url: `/employees/${id}/salary/${salaryId}/pay`, method: 'PATCH', data }),
+      invalidatesTags: ['Employee'],
+    }),
+    updateSalary: builder.mutation<SalaryPaymentDto, { id: string; salaryId: string; data: UpdateSalaryRequest }>({
+      query: ({ id, salaryId, data }) => ({ url: `/employees/${id}/salary/${salaryId}`, method: 'PUT', data }),
+      invalidatesTags: ['Employee'],
+    }),
+    deleteSalary: builder.mutation<void, { id: string; salaryId: string }>({
+      query: ({ id, salaryId }) => ({ url: `/employees/${id}/salary/${salaryId}`, method: 'DELETE' }),
+      invalidatesTags: ['Employee'],
+    }),
     getNextEmployeeCode: builder.query<{ code: string }, void>({
       query: () => ({ url: '/employees/next-code' }),
     }),
@@ -85,6 +99,9 @@ export const {
   useActivateEmployeeMutation,
   useGetSalaryHistoryQuery,
   useProcessSalaryMutation,
+  useMarkSalaryAsPaidMutation,
+  useUpdateSalaryMutation,
+  useDeleteSalaryMutation,
   useGetAllSalariesQuery,
   useGetNextEmployeeCodeQuery,
   useGetAdvancesQuery,

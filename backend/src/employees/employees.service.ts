@@ -4,6 +4,8 @@ import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
   ProcessSalaryDto,
+  UpdateSalaryDto,
+  MarkSalaryAsPaidDto,
   EmployeeQueryDto,
   CreateEmployeeAdvanceDto,
 } from './dto/employee.dto';
@@ -183,7 +185,7 @@ export class EmployeesService {
       where: { employeeId: id, month: dto.month, year: dto.year },
     });
     if (existing) {
-      throw new ConflictException(`Salary for ${dto.month}/${dto.year} already processed`);
+      throw new ConflictException(`Salary for ${dto.month}/${dto.year} already generated`);
     }
 
     const basicSalary = Number(dto.basicSalary);
@@ -192,14 +194,12 @@ export class EmployeesService {
     const daysPresent = dto.daysPresent ?? 0;
     const earnedSalary = totalDays > 0 ? (basicSalary / totalDays) * daysPresent : 0;
 
-    // Auto-deduct pending advances
     const pendingAdvances = await this.prisma.employeeAdvance.findMany({
       where: { employeeId: id, isDeducted: false },
     });
     const advanceTotal = pendingAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
     const manualDeductions = Number(dto.deductions ?? 0);
     const deductions = manualDeductions + advanceTotal;
-
     const netSalary = Math.round((earnedSalary + bonus - deductions) * 100) / 100;
 
     const code = await generateCode(this.prisma, 'salaryPayment');
@@ -215,11 +215,11 @@ export class EmployeesService {
         netSalary,
         daysPresent,
         totalDays,
+        status: 'Generated',
         remarks: dto.remarks,
       },
     });
 
-    // Mark pending advances as deducted
     if (pendingAdvances.length > 0) {
       await this.prisma.employeeAdvance.updateMany({
         where: { id: { in: pendingAdvances.map((a) => a.id) } },
@@ -232,6 +232,71 @@ export class EmployeesService {
       advanceDeducted: advanceTotal,
       manualDeductions,
     };
+  }
+
+  async markSalaryAsPaid(employeeId: string, salaryId: string, dto: MarkSalaryAsPaidDto) {
+    const payment = await this.prisma.salaryPayment.findFirst({
+      where: { id: salaryId, employeeId },
+    });
+    if (!payment) throw new NotFoundException('Salary record not found');
+    if (payment.status === 'Paid') throw new ConflictException('Salary already marked as paid');
+
+    const updated = await this.prisma.salaryPayment.update({
+      where: { id: salaryId },
+      data: { status: 'Paid', paidDate: new Date(dto.paidDate) },
+    });
+    return this.mapSalaryPayment(updated);
+  }
+
+  async updateSalary(employeeId: string, salaryId: string, dto: UpdateSalaryDto) {
+    const payment = await this.prisma.salaryPayment.findFirst({
+      where: { id: salaryId, employeeId },
+    });
+    if (!payment) throw new NotFoundException('Salary record not found');
+
+    const basicSalary = dto.basicSalary !== undefined ? Number(dto.basicSalary) : Number(payment.basicSalary);
+    const bonus = dto.bonus !== undefined ? Number(dto.bonus) : Number(payment.bonus);
+    const deductions = dto.deductions !== undefined ? Number(dto.deductions) : Number(payment.deductions);
+    const daysPresent = dto.daysPresent !== undefined ? dto.daysPresent : payment.daysPresent;
+    const totalDays = dto.totalDays !== undefined ? dto.totalDays : payment.totalDays;
+    const earnedSalary = totalDays > 0 ? (basicSalary / totalDays) * daysPresent : 0;
+    const netSalary = Math.round((earnedSalary + bonus - deductions) * 100) / 100;
+
+    const updated = await this.prisma.salaryPayment.update({
+      where: { id: salaryId },
+      data: {
+        ...(dto.basicSalary !== undefined && { basicSalary }),
+        ...(dto.bonus !== undefined && { bonus }),
+        ...(dto.deductions !== undefined && { deductions }),
+        ...(dto.daysPresent !== undefined && { daysPresent }),
+        ...(dto.totalDays !== undefined && { totalDays }),
+        ...(dto.remarks !== undefined && { remarks: dto.remarks }),
+        netSalary,
+      },
+    });
+    return this.mapSalaryPayment(updated);
+  }
+
+  async deleteSalary(employeeId: string, salaryId: string) {
+    const payment = await this.prisma.salaryPayment.findFirst({
+      where: { id: salaryId, employeeId },
+    });
+    if (!payment) throw new NotFoundException('Salary record not found');
+
+    // If Generated (not yet paid), restore advances that were deducted when this salary was generated
+    if (payment.status === 'Generated') {
+      await this.prisma.employeeAdvance.updateMany({
+        where: {
+          employeeId,
+          isDeducted: true,
+          deductedAt: { gte: payment.paidAt },
+        },
+        data: { isDeducted: false, deductedAt: null },
+      });
+    }
+
+    await this.prisma.salaryPayment.delete({ where: { id: salaryId } });
+    return { message: 'Salary record deleted' };
   }
 
   // ── Advances ────────────────────────────────────────────────────────────────
@@ -358,7 +423,9 @@ export class EmployeesService {
     netSalary: any;
     daysPresent: number;
     totalDays: number;
+    status: string;
     paidAt: Date;
+    paidDate: Date | null;
     remarks: string | null;
     createdAt: Date;
   }) {
@@ -374,7 +441,9 @@ export class EmployeesService {
       netSalary: Number(sp.netSalary),
       daysPresent: sp.daysPresent,
       totalDays: sp.totalDays,
-      paidAt: sp.paidAt,
+      status: sp.status,
+      generatedAt: sp.paidAt,
+      paidDate: sp.paidDate,
       remarks: sp.remarks,
       createdAt: sp.createdAt,
     };

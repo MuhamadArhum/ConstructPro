@@ -129,24 +129,27 @@ model EmployeeAdvance {
 }
 
 model SalaryPayment {
-  id          String   @id @default(uuid())
-  code        String?  @unique
+  id          String    @id @default(uuid())
+  code        String?   @unique
   employeeId  String
   month       Int
   year        Int
   basicSalary Decimal
-  bonus       Decimal  @default(0)
-  deductions  Decimal  @default(0)
+  bonus       Decimal   @default(0)
+  deductions  Decimal   @default(0)
   netSalary   Decimal
-  daysPresent Int      @default(0)
-  totalDays   Int      @default(30)
-  paidAt      DateTime @default(now())
+  daysPresent Int       @default(0)
+  totalDays   Int       @default(30)
+  status      String    @default("Generated")
+  paidAt      DateTime  @default(now())
+  paidDate    DateTime?
   remarks     String?
-  createdAt   DateTime @default(now())
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@index([year, month])
+  @@index([status])
   @@map("salary_payments")
 }
 

@@ -25,6 +25,8 @@ import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
   ProcessSalaryDto,
+  UpdateSalaryDto,
+  MarkSalaryAsPaidDto,
   EmployeeQueryDto,
   CreateEmployeeAdvanceDto,
 } from './dto/employee.dto';
@@ -132,10 +134,47 @@ export class EmployeesController {
 
   @Post(':id/salary')
   @HasPermission('Employees.Edit')
-  @ApiOperation({ summary: 'Process salary payment for an employee' })
+  @ApiOperation({ summary: 'Generate salary for an employee (status: Generated)' })
   @ApiParam({ name: 'id', description: 'Employee UUID' })
   processSalary(@Param('id') id: string, @Body() dto: ProcessSalaryDto) {
     return this.employeesService.processSalary(id, dto);
+  }
+
+  @Patch(':id/salary/:salaryId/pay')
+  @HasPermission('Employees.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark a generated salary as paid' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiParam({ name: 'salaryId', description: 'SalaryPayment UUID' })
+  markSalaryAsPaid(
+    @Param('id') id: string,
+    @Param('salaryId') salaryId: string,
+    @Body() dto: MarkSalaryAsPaidDto,
+  ) {
+    return this.employeesService.markSalaryAsPaid(id, salaryId, dto);
+  }
+
+  @Put(':id/salary/:salaryId')
+  @HasPermission('Employees.Edit')
+  @ApiOperation({ summary: 'Edit a salary record' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiParam({ name: 'salaryId', description: 'SalaryPayment UUID' })
+  updateSalary(
+    @Param('id') id: string,
+    @Param('salaryId') salaryId: string,
+    @Body() dto: UpdateSalaryDto,
+  ) {
+    return this.employeesService.updateSalary(id, salaryId, dto);
+  }
+
+  @Delete(':id/salary/:salaryId')
+  @HasPermission('Employees.Edit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a salary record' })
+  @ApiParam({ name: 'id', description: 'Employee UUID' })
+  @ApiParam({ name: 'salaryId', description: 'SalaryPayment UUID' })
+  deleteSalary(@Param('id') id: string, @Param('salaryId') salaryId: string) {
+    return this.employeesService.deleteSalary(id, salaryId);
   }
 
   // ── Advances ────────────────────────────────────────────────────────────────
