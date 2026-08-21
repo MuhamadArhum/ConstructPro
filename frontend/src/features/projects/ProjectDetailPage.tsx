@@ -1163,7 +1163,7 @@ export default function ProjectDetailPage() {
                           <AttendanceSheet
                             workerId={selectedLabour.id}
                             workerName={selectedLabour.name}
-                            dailyRate={selectedLabour.dailyWage}
+                            dailyRate={selectedLabour.dailyWage ?? 0}
                             overtimeRate={0}
                             showOvertimeHours
                             month={attMonth}
@@ -1222,7 +1222,7 @@ export default function ProjectDetailPage() {
                           <AttendanceSheet
                             workerId={selectedEmployee.id}
                             workerName={selectedEmployee.fullName}
-                            dailyRate={selectedEmployee.basicSalary / 30}
+                            dailyRate={(selectedEmployee.basicSalary ?? 0) / 30}
                             showOvertimeHours={false}
                             month={attMonth}
                             year={attYear}
