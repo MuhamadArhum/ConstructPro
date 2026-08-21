@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
-  Box, Button, Card, CardContent, Chip, FormControl, Grid, IconButton,
+  Box, Button, Card, CardContent, Chip, Dialog, DialogContent, DialogTitle,
+  Divider, FormControl, Grid, IconButton,
   InputAdornment, InputLabel, MenuItem, Paper, Select, Stack, Table,
   TableBody, TableCell, TableContainer, TableHead, TablePagination,
   TableRow, TextField, Tooltip, Typography,
@@ -10,6 +11,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import CategoryIcon from '@mui/icons-material/Category';
+import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
@@ -17,7 +20,11 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetExpensesQuery, useGetExpenseSummaryQuery, useDeleteExpenseMutation } from './expenseApi';
-import { useGetExpenseCategoriesQuery } from './categoryApi';
+import {
+  useGetExpenseCategoriesQuery,
+  useCreateExpenseCategoryMutation,
+  useDeleteCategoryMutation,
+} from './categoryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -61,6 +68,8 @@ export default function ExpenseListPage() {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
 
   const query = {
     pageNumber: page + 1,
@@ -77,6 +86,28 @@ export default function ExpenseListPage() {
   const { data: summary } = useGetExpenseSummaryQuery();
   const { data: categoriesData = [] } = useGetExpenseCategoriesQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
+  const [createCategory, { isLoading: creatingCat }] = useCreateExpenseCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
+
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      await createCategory({ name: newCatName.trim() }).unwrap();
+      setNewCatName('');
+      dispatch(showSnackbar({ message: 'Category added', severity: 'success' }));
+    } catch (err: any) {
+      dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to add category', severity: 'error' }));
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await deleteCategory(id).unwrap();
+      dispatch(showSnackbar({ message: 'Category deleted', severity: 'success' }));
+    } catch (err: any) {
+      dispatch(showSnackbar({ message: err?.data?.message ?? 'Cannot delete system category', severity: 'error' }));
+    }
+  };
 
   const hasFilters = !!(search || category || fromDate !== todayStr || toDate !== todayStr || amountMin || amountMax);
 
@@ -108,6 +139,9 @@ export default function ExpenseListPage() {
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleExport}>
             Export CSV
+          </Button>
+          <Button variant="outlined" startIcon={<CategoryIcon />} onClick={() => setCatDialogOpen(true)}>
+            Categories
           </Button>
           <PermissionGate permission={Perms.Expense.Create}>
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/expense/new')}>
@@ -253,6 +287,56 @@ export default function ExpenseListPage() {
           rowsPerPageOptions={[10, 20, 50]}
         />
       </TableContainer>
+
+      {/* ── Categories Dialog ── */}
+      <Dialog open={catDialogOpen} onClose={() => { setCatDialogOpen(false); setNewCatName(''); }} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" sx={{ alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ flex: 1 }}>Manage Expense Categories</Typography>
+            <IconButton size="small" onClick={() => { setCatDialogOpen(false); setNewCatName(''); }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+            {(categoriesData as any[]).map((cat: any) => (
+              <Chip
+                key={cat.id}
+                label={cat.name}
+                size="small"
+                color={cat.isSystem ? 'default' : 'primary'}
+                variant={cat.isSystem ? 'outlined' : 'filled'}
+                onDelete={cat.isSystem ? undefined : () => handleDeleteCategory(cat.id)}
+                deleteIcon={<DeleteIcon />}
+                sx={{ mb: 0.5 }}
+              />
+            ))}
+          </Stack>
+          <Divider sx={{ mb: 2 }} />
+          <Stack direction="row" spacing={1}>
+            <TextField
+              size="small"
+              label="New Category"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
+              fullWidth
+              autoFocus
+            />
+            <Tooltip title="Add">
+              <span>
+                <IconButton onClick={handleAddCategory} disabled={!newCatName.trim() || creatingCat} color="primary">
+                  <AddIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Outlined categories are system defaults and cannot be deleted.
+          </Typography>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={Boolean(deleteId)}

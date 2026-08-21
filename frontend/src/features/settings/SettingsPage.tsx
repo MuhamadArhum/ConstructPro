@@ -1,19 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Box, Button, Chip, Divider, IconButton, Paper, Stack, TextField, Tooltip, Typography,
+  Box, Button, Chip, Divider, Paper, Stack, TextField, Typography,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from './settingsApi';
-import {
-  useGetExpenseCategoriesQuery,
-  useGetIncomeCategoriesQuery,
-  useCreateExpenseCategoryMutation,
-  useCreateIncomeCategoryMutation,
-  useDeleteCategoryMutation,
-} from '../expense/categoryApi';
 import Loader from '../../components/common/Loader';
 
 declare global { interface Window { electronAPI?: { getVersion: () => Promise<string> } } }
@@ -22,12 +13,6 @@ export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const { data: settings, isLoading } = useGetSettingsQuery();
   const [updateSettings, { isLoading: isUpdating }] = useUpdateSettingsMutation();
-
-  const { data: expCats = [] } = useGetExpenseCategoriesQuery();
-  const { data: incCats = [] } = useGetIncomeCategoriesQuery();
-  const [createExpCat, { isLoading: creatingExpCat }] = useCreateExpenseCategoryMutation();
-  const [createIncCat, { isLoading: creatingIncCat }] = useCreateIncomeCategoryMutation();
-  const [deleteCat] = useDeleteCategoryMutation();
 
   const [appVersion, setAppVersion] = useState<string>('');
   const [companyName, setCompanyName] = useState('');
@@ -39,9 +24,6 @@ export default function SettingsPage() {
   const [strn, setStrn] = useState('');
   const [currency, setCurrency] = useState('PKR');
   const [financialYearStart, setFinancialYearStart] = useState('');
-
-  const [newExpCat, setNewExpCat] = useState('');
-  const [newIncCat, setNewIncCat] = useState('');
 
   useEffect(() => {
     window.electronAPI?.getVersion().then(setAppVersion).catch(() => {});
@@ -63,37 +45,6 @@ export default function SettingsPage() {
     } catch (err) {
       const apiError = err as { data?: { message?: string } };
       dispatch(showSnackbar({ message: apiError.data?.message ?? 'Failed to save settings.', severity: 'error' }));
-    }
-  };
-
-  const handleAddExpCat = async () => {
-    if (!newExpCat.trim()) return;
-    try {
-      await createExpCat({ name: newExpCat.trim() }).unwrap();
-      setNewExpCat('');
-      dispatch(showSnackbar({ message: 'Expense category added', severity: 'success' }));
-    } catch (err: any) {
-      dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to add category', severity: 'error' }));
-    }
-  };
-
-  const handleAddIncCat = async () => {
-    if (!newIncCat.trim()) return;
-    try {
-      await createIncCat({ name: newIncCat.trim() }).unwrap();
-      setNewIncCat('');
-      dispatch(showSnackbar({ message: 'Income category added', severity: 'success' }));
-    } catch (err: any) {
-      dispatch(showSnackbar({ message: err?.data?.message ?? 'Failed to add category', severity: 'error' }));
-    }
-  };
-
-  const handleDeleteCat = async (id: string) => {
-    try {
-      await deleteCat(id).unwrap();
-      dispatch(showSnackbar({ message: 'Category deleted', severity: 'success' }));
-    } catch (err: any) {
-      dispatch(showSnackbar({ message: err?.data?.message ?? 'Cannot delete system category', severity: 'error' }));
     }
   };
 
@@ -137,80 +88,6 @@ export default function SettingsPage() {
             </Box>
           </Stack>
         </form>
-      </Paper>
-
-      {/* ── Expense Categories ── */}
-      <Paper variant="outlined" sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Expense Categories</Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
-          {expCats.map((cat) => (
-            <Chip
-              key={cat.id}
-              label={cat.name}
-              size="small"
-              color={cat.isSystem ? 'default' : 'primary'}
-              variant={cat.isSystem ? 'outlined' : 'filled'}
-              onDelete={cat.isSystem ? undefined : () => handleDeleteCat(cat.id)}
-              deleteIcon={<DeleteIcon />}
-              sx={{ mb: 0.5 }}
-            />
-          ))}
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ maxWidth: 400 }}>
-          <TextField
-            size="small" label="New Category" value={newExpCat}
-            onChange={(e) => setNewExpCat(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpCat(); } }}
-            fullWidth
-          />
-          <Tooltip title="Add">
-            <span>
-              <IconButton onClick={handleAddExpCat} disabled={!newExpCat.trim() || creatingExpCat} color="primary">
-                <AddIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          System categories (outlined) cannot be deleted. Custom categories appear everywhere expenses are used.
-        </Typography>
-      </Paper>
-
-      {/* ── Income Categories ── */}
-      <Paper variant="outlined" sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Income Categories</Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
-          {incCats.map((cat) => (
-            <Chip
-              key={cat.id}
-              label={cat.name}
-              size="small"
-              color={cat.isSystem ? 'default' : 'success'}
-              variant={cat.isSystem ? 'outlined' : 'filled'}
-              onDelete={cat.isSystem ? undefined : () => handleDeleteCat(cat.id)}
-              deleteIcon={<DeleteIcon />}
-              sx={{ mb: 0.5 }}
-            />
-          ))}
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ maxWidth: 400 }}>
-          <TextField
-            size="small" label="New Category" value={newIncCat}
-            onChange={(e) => setNewIncCat(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddIncCat(); } }}
-            fullWidth
-          />
-          <Tooltip title="Add">
-            <span>
-              <IconButton onClick={handleAddIncCat} disabled={!newIncCat.trim() || creatingIncCat} color="success">
-                <AddIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          System categories (outlined) cannot be deleted. Custom categories appear everywhere income is used.
-        </Typography>
       </Paper>
 
       {appVersion && (

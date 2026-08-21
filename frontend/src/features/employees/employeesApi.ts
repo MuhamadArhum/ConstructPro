@@ -127,6 +127,7 @@ export const {
   useAddAdvanceMutation,
   useDeleteAdvanceMutation,
   useGetEmployeeAttendanceQuery,
+  useLazyGetEmployeeAttendanceQuery,
   useUpsertEmployeeAttendanceMutation,
   useBulkUpsertEmployeeAttendanceMutation,
 } = employeesApi;

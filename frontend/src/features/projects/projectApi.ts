@@ -80,6 +80,7 @@ export interface ProjectPayrollEmployee {
   fullName: string;
   designation: string | null;
   basicSalary: number;
+  attendanceDaysPresent: number;
   salary: ProjectPayrollSalary | null;
 }
 

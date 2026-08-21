@@ -54,6 +54,7 @@ import {
   useAddAdvanceMutation,
   useDeleteAdvanceMutation,
   useGetPendingAdvancesQuery,
+  useLazyGetEmployeeAttendanceQuery,
 } from './employeesApi';
 import type { SalaryPaymentDto } from '../../types/employee.types';
 
@@ -127,11 +128,18 @@ export default function SalaryPage() {
   const pendingTotal = pendingData?.total ?? 0;
   const pendingCount = pendingData?.advances.length ?? 0;
 
-  const handleOpenGenerate = () => {
+  const [fetchAttendance] = useLazyGetEmployeeAttendanceQuery();
+
+  const handleOpenGenerate = async () => {
     setBasicSalary(String(employee?.basicSalary ?? ''));
     setBonus('0'); setManualDeductions('0');
     setDaysPresent(''); setTotalDays('30'); setRemarks('');
     setSalaryOpen(true);
+    if (id) {
+      const result = await fetchAttendance({ id, month: selMonth, year: selYear }, false);
+      const present = (result.data ?? []).filter((r: any) => r.isPresent).length;
+      if (present > 0) setDaysPresent(String(present));
+    }
   };
 
   const handleGenerate = async () => {

@@ -738,6 +738,9 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException(`Project ${projectId} not found`);
 
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
     const employeeIds = project.employees.map((pe) => pe.employee.id);
     const salaryRecords = employeeIds.length > 0
       ? await this.prisma.salaryPayment.findMany({
@@ -746,37 +749,41 @@ export class ProjectsService {
       : [];
     const salaryMap = new Map(salaryRecords.map((s) => [s.employeeId, s]));
 
-    const employees = project.employees.map((pe) => {
-      const sp = salaryMap.get(pe.employee.id);
-      return {
-        employeeId: pe.employee.id,
-        fullName: pe.employee.fullName,
-        designation: pe.employee.designation,
-        basicSalary: Number(pe.employee.basicSalary),
-        salary: sp
-          ? {
-              id: sp.id,
-              code: sp.code ?? null,
-              employeeId: sp.employeeId,
-              month: sp.month,
-              year: sp.year,
-              basicSalary: Number(sp.basicSalary),
-              bonus: Number(sp.bonus),
-              deductions: Number(sp.deductions),
-              netSalary: Number(sp.netSalary),
-              daysPresent: sp.daysPresent,
-              totalDays: sp.totalDays,
-              status: sp.status,
-              generatedAt: sp.paidAt,
-              paidDate: sp.paidDate,
-              remarks: sp.remarks,
-            }
-          : null,
-      };
-    });
-
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const employees = await Promise.all(
+      project.employees.map(async (pe) => {
+        const sp = salaryMap.get(pe.employee.id);
+        const attRecords = await this.prisma.employeeAttendance.findMany({
+          where: { employeeId: pe.employee.id, date: { gte: startDate, lte: endDate } },
+        });
+        const attendanceDaysPresent = attRecords.filter((a) => a.isPresent).length;
+        return {
+          employeeId: pe.employee.id,
+          fullName: pe.employee.fullName,
+          designation: pe.employee.designation,
+          basicSalary: Number(pe.employee.basicSalary),
+          attendanceDaysPresent,
+          salary: sp
+            ? {
+                id: sp.id,
+                code: sp.code ?? null,
+                employeeId: sp.employeeId,
+                month: sp.month,
+                year: sp.year,
+                basicSalary: Number(sp.basicSalary),
+                bonus: Number(sp.bonus),
+                deductions: Number(sp.deductions),
+                netSalary: Number(sp.netSalary),
+                daysPresent: sp.daysPresent,
+                totalDays: sp.totalDays,
+                status: sp.status,
+                generatedAt: sp.paidAt,
+                paidDate: sp.paidDate,
+                remarks: sp.remarks,
+              }
+            : null,
+        };
+      }),
+    );
 
     const labours = await Promise.all(
       project.labours.map(async (pl) => {
