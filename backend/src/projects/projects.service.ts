@@ -11,8 +11,12 @@ import {
   UpdateMilestoneDto,
   CreateProjectExpenseDto,
   UpdateProjectExpenseDto,
+  CreateProjectIncomeDto,
+  UpdateProjectIncomeDto,
   AssignLabourDto,
   AssignMachineryDto,
+  AssignVehicleDto,
+  AssignPlantDto,
   AssignEmployeeDto,
 } from './dto/project.dto';
 import { generateCode } from '../common/utils/generate-code';
@@ -78,12 +82,23 @@ export class ProjectsService {
         client: { select: { id: true, name: true, companyName: true } },
         milestones: { orderBy: { dueDate: 'asc' } },
         expenses: { orderBy: { date: 'desc' } },
+        incomes: { orderBy: { date: 'desc' } },
         labours: {
-          include: { labour: { select: { id: true, name: true, trade: true } } },
+          include: { labour: { select: { id: true, name: true, trade: true, dailyWage: true } } },
         },
         machinery: {
           include: {
             machinery: { select: { id: true, name: true, model: true } },
+          },
+        },
+        vehicles: {
+          include: {
+            vehicle: { select: { id: true, code: true, registrationNumber: true, make: true, model: true } },
+          },
+        },
+        plants: {
+          include: {
+            plant: { select: { id: true, code: true, name: true, type: true } },
           },
         },
         employees: {
@@ -99,13 +114,9 @@ export class ProjectsService {
 
     return {
       ...this.mapProject(project),
-      milestones: project.milestones.map((m) => ({
-        ...m,
-      })),
-      expenses: project.expenses.map((e) => ({
-        ...e,
-        amount: Number(e.amount),
-      })),
+      milestones: project.milestones.map((m) => ({ ...m })),
+      expenses: project.expenses.map((e) => ({ ...e, amount: Number(e.amount) })),
+      incomes: project.incomes.map((i) => ({ ...i, amount: Number(i.amount) })),
       labours: project.labours.map((pl) => ({
         id: pl.id,
         assignedAt: pl.assignedAt,
@@ -115,6 +126,16 @@ export class ProjectsService {
         id: pm.id,
         assignedAt: pm.assignedAt,
         machinery: pm.machinery,
+      })),
+      vehicles: project.vehicles.map((pv) => ({
+        id: pv.id,
+        assignedAt: pv.assignedAt,
+        vehicle: pv.vehicle,
+      })),
+      plants: project.plants.map((pp) => ({
+        id: pp.id,
+        assignedAt: pp.assignedAt,
+        plant: pp.plant,
       })),
       employees: project.employees.map((pe) => ({
         id: pe.id,
@@ -344,6 +365,119 @@ export class ProjectsService {
     await this.prisma.project.update({ where: { id: projectId }, data: { spent } });
   }
 
+  // ── Project Income ──────────────────────────────────────────────────────────
+
+  async addIncome(projectId: string, dto: CreateProjectIncomeDto) {
+    await this.findOne(projectId);
+    const income = await this.prisma.projectIncome.create({
+      data: {
+        projectId,
+        category: dto.category,
+        amount: dto.amount,
+        date: new Date(dto.date),
+        description: dto.description,
+        source: dto.source,
+      },
+    });
+    return { ...income, amount: Number(income.amount) };
+  }
+
+  async updateIncome(projectId: string, incomeId: string, dto: UpdateProjectIncomeDto) {
+    const income = await this.prisma.projectIncome.findFirst({ where: { id: incomeId, projectId } });
+    if (!income) throw new NotFoundException('Income not found');
+    const updated = await this.prisma.projectIncome.update({
+      where: { id: incomeId },
+      data: {
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.source !== undefined && { source: dto.source }),
+      },
+    });
+    return { ...updated, amount: Number(updated.amount) };
+  }
+
+  async deleteIncome(projectId: string, incomeId: string) {
+    const income = await this.prisma.projectIncome.findFirst({ where: { id: incomeId, projectId } });
+    if (!income) throw new NotFoundException('Income not found');
+    await this.prisma.projectIncome.delete({ where: { id: incomeId } });
+    return { message: 'Income deleted successfully' };
+  }
+
+  // ── P&L ─────────────────────────────────────────────────────────────────────
+
+  async getPnL(projectId: string, month?: number, year?: number) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        expenses: true,
+        incomes: true,
+        labours: {
+          include: { labour: { select: { id: true, name: true, trade: true, dailyWage: true, overtimeRatePerHour: true } } },
+        },
+        employees: {
+          include: { employee: { select: { id: true, fullName: true, basicSalary: true } } },
+        },
+      },
+    });
+    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+
+    let dateFilter: { gte?: Date; lte?: Date } | undefined;
+    if (month && year) {
+      dateFilter = { gte: new Date(year, month - 1, 1), lte: new Date(year, month, 0, 23, 59, 59) };
+    }
+
+    const expenses = project.expenses.filter((e) =>
+      dateFilter ? e.date >= dateFilter.gte! && e.date <= dateFilter.lte! : true,
+    );
+    const incomes = project.incomes.filter((i) =>
+      dateFilter ? i.date >= dateFilter.gte! && i.date <= dateFilter.lte! : true,
+    );
+
+    const totalIncome = incomes.reduce((s, i) => s + Number(i.amount), 0);
+    const totalDirectExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+    // Labour wages from attendance
+    const labourWages = await Promise.all(
+      project.labours.map(async (pl) => {
+        const where: any = { labourId: pl.labour.id };
+        if (dateFilter) where.date = dateFilter;
+        const attendances = await this.prisma.labourAttendance.findMany({ where });
+        const presentDays = attendances.filter((a) => a.isPresent).length;
+        const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
+        const wage = presentDays * Number(pl.labour.dailyWage) + overtimeHours * Number(pl.labour.overtimeRatePerHour);
+        return wage;
+      }),
+    );
+    const totalLabourCost = labourWages.reduce((s, w) => s + w, 0);
+
+    // Employee salaries
+    const empIds = project.employees.map((pe) => pe.employee.id);
+    const salaryFilter: any = { employeeId: { in: empIds } };
+    if (month && year) { salaryFilter.month = month; salaryFilter.year = year; }
+    const salaries = empIds.length > 0
+      ? await this.prisma.salaryPayment.findMany({ where: salaryFilter })
+      : [];
+    const totalSalaryCost = salaries.reduce((s, sal) => s + Number(sal.netSalary), 0);
+
+    const totalCost = totalDirectExpenses + totalLabourCost + totalSalaryCost;
+    const grossProfit = totalIncome - totalCost;
+
+    return {
+      period: month && year ? { month, year } : { from: project.startDate, to: project.endDate ?? new Date() },
+      totalIncome: Math.round(totalIncome * 100) / 100,
+      totalDirectExpenses: Math.round(totalDirectExpenses * 100) / 100,
+      totalLabourCost: Math.round(totalLabourCost * 100) / 100,
+      totalSalaryCost: Math.round(totalSalaryCost * 100) / 100,
+      totalCost: Math.round(totalCost * 100) / 100,
+      grossProfit: Math.round(grossProfit * 100) / 100,
+      isProfitable: grossProfit >= 0,
+      incomeBreakdown: incomes.map((i) => ({ category: i.category, amount: Number(i.amount), date: i.date, description: i.description })),
+      expenseBreakdown: expenses.map((e) => ({ category: e.category, amount: Number(e.amount), date: e.date, description: e.description })),
+    };
+  }
+
   // ── Labour ──────────────────────────────────────────────────────────────────
 
   async assignLabour(projectId: string, dto: AssignLabourDto) {
@@ -431,6 +565,52 @@ export class ProjectsService {
 
     await this.prisma.projectMachinery.delete({ where: { id: record.id } });
     return { message: 'Machinery removed from project' };
+  }
+
+  // ── Vehicles ─────────────────────────────────────────────────────────────────
+
+  async assignVehicle(projectId: string, dto: AssignVehicleDto) {
+    await this.findOne(projectId);
+    try {
+      const record = await this.prisma.projectVehicle.create({
+        data: { projectId, vehicleId: dto.vehicleId },
+        include: { vehicle: { select: { id: true, registrationNumber: true, make: true, model: true } } },
+      });
+      return record;
+    } catch (err: any) {
+      if (err?.code === 'P2002') throw new ConflictException('Vehicle already assigned to this project');
+      throw err;
+    }
+  }
+
+  async removeVehicle(projectId: string, vehicleId: string) {
+    const record = await this.prisma.projectVehicle.findFirst({ where: { projectId, vehicleId } });
+    if (!record) throw new NotFoundException('Vehicle assignment not found');
+    await this.prisma.projectVehicle.delete({ where: { id: record.id } });
+    return { message: 'Vehicle removed from project' };
+  }
+
+  // ── Plants ───────────────────────────────────────────────────────────────────
+
+  async assignPlant(projectId: string, dto: AssignPlantDto) {
+    await this.findOne(projectId);
+    try {
+      const record = await this.prisma.projectPlant.create({
+        data: { projectId, plantId: dto.plantId },
+        include: { plant: { select: { id: true, name: true, type: true } } },
+      });
+      return record;
+    } catch (err: any) {
+      if (err?.code === 'P2002') throw new ConflictException('Plant already assigned to this project');
+      throw err;
+    }
+  }
+
+  async removePlant(projectId: string, plantId: string) {
+    const record = await this.prisma.projectPlant.findFirst({ where: { projectId, plantId } });
+    if (!record) throw new NotFoundException('Plant assignment not found');
+    await this.prisma.projectPlant.delete({ where: { id: record.id } });
+    return { message: 'Plant removed from project' };
   }
 
   // ── Salary Expense ──────────────────────────────────────────────────────────

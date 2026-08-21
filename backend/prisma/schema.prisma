@@ -399,6 +399,7 @@ model Vehicle {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   maintenanceRecords  VehicleMaintenance[]
+  projects            ProjectVehicle[]
 
   @@index([status])
   @@map("vehicles")
@@ -446,6 +447,7 @@ model Plant {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   maintenanceRecords  PlantMaintenance[]
+  projects            ProjectPlant[]
 
   @@index([status])
   @@map("plants")
@@ -523,63 +525,55 @@ enum StockTransactionType {
 }
 
 model Income {
-  id           String         @id @default(uuid())
-  code         String?        @unique
-  category     IncomeCategory
+  id           String   @id @default(uuid())
+  code         String?  @unique
+  category     String
   amount       Decimal
   date         DateTime
   description  String?
   customerName String?
   projectName  String?
   receiptPath  String?
-  isPaid       Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  isPaid       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   createdById  String?
-  createdBy    User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy    User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([category])
   @@map("incomes")
 }
 
-enum IncomeCategory {
-  CustomerPayment
-  ProjectIncome
-  OtherIncome
-}
-
 model Expense {
-  id          String          @id @default(uuid())
-  code        String?         @unique
-  category    ExpenseCategory
+  id          String   @id @default(uuid())
+  code        String?  @unique
+  category    String
   amount      Decimal
   date        DateTime
   description String?
   vendor      String?
   billPath    String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   createdById String?
-  createdBy   User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([category])
   @@map("expenses")
 }
 
-enum ExpenseCategory {
-  LabourExpenses
-  Salaries
-  MachineryMaintenance
-  VehicleExpenses
-  Fuel
-  PlantExpenses
-  CarpentryExpenses
-  ElectricalExpenses
-  SuppliesMaterialPurchase
-  OfficeExpenses
-  Miscellaneous
+model UserCategory {
+  id        String   @id @default(uuid())
+  type      String
+  name      String
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([type, name])
+  @@index([type])
+  @@map("user_categories")
 }
 
 model ChartOfAccount {
@@ -756,8 +750,11 @@ model Project {
   client         Customer?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
   milestones     ProjectMilestone[]
   expenses       ProjectExpense[]
+  incomes        ProjectIncome[]
   labours        ProjectLabour[]
   machinery      ProjectMachinery[]
+  vehicles       ProjectVehicle[]
+  plants         ProjectPlant[]
   employees      ProjectEmployee[]
   invoices       Invoice[]
   purchaseOrders PurchaseOrder[]
@@ -839,6 +836,48 @@ model ProjectEmployee {
 
   @@unique([projectId, employeeId])
   @@map("project_employees")
+}
+
+model ProjectIncome {
+  id          String   @id @default(uuid())
+  projectId   String
+  category    String
+  amount      Decimal
+  date        DateTime
+  description String?
+  source      String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_incomes")
+}
+
+model ProjectVehicle {
+  id         String   @id @default(uuid())
+  projectId  String
+  vehicleId  String
+  assignedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, vehicleId])
+  @@map("project_vehicles")
+}
+
+model ProjectPlant {
+  id         String   @id @default(uuid())
+  projectId  String
+  plantId    String
+  assignedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  plant      Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, plantId])
+  @@map("project_plants")
 }
 
 model Invoice {

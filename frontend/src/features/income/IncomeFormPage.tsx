@@ -12,15 +12,9 @@ import {
   useCreateIncomeMutation, useGetIncomeByIdQuery,
   useUpdateIncomeMutation, useGetNextIncomeCodeQuery,
 } from './incomeApi';
+import { useGetIncomeCategoriesQuery } from '../expense/categoryApi';
 import { useGetCustomersQuery } from '../customers/customerApi';
 import { useGetProjectsQuery } from '../projects/projectApi';
-import type { IncomeCategory } from '../../types/income.types';
-
-const categories: { value: IncomeCategory; label: string }[] = [
-  { value: 'CustomerPayment', label: 'Customer Payment' },
-  { value: 'ProjectIncome', label: 'Project Income' },
-  { value: 'OtherIncome', label: 'Other Income' },
-];
 
 export default function IncomeFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,9 +29,14 @@ export default function IncomeFormPage() {
 
   const { data: customersData } = useGetCustomersQuery({ pageSize: 1000 });
   const { data: projectsData } = useGetProjectsQuery({ pageSize: 1000 });
+  const { data: categoriesData = [] } = useGetIncomeCategoriesQuery();
+
+  const categoryNames = categoriesData.length > 0
+    ? categoriesData.map((c) => c.name)
+    : ['CustomerPayment', 'ProjectIncome', 'OtherIncome'];
 
   const [code, setCode] = useState('');
-  const [category, setCategory] = useState<IncomeCategory>('CustomerPayment');
+  const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
@@ -51,6 +50,10 @@ export default function IncomeFormPage() {
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) setCode(nextCodeData.code);
   }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
+    if (categoryNames.length > 0 && !category) setCategory(categoryNames[0]);
+  }, [categoryNames.length]);
 
   useEffect(() => {
     if (existing) {
@@ -117,8 +120,8 @@ export default function IncomeFormPage() {
 
             <FormControl fullWidth required>
               <InputLabel>Category</InputLabel>
-              <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value as IncomeCategory)}>
-                {categories.map((c) => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+              <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                {categoryNames.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
             </FormControl>
 
@@ -144,7 +147,6 @@ export default function IncomeFormPage() {
               fullWidth multiline rows={2}
             />
 
-            {/* Customer autocomplete */}
             <Autocomplete
               freeSolo
               options={customers.map((c: any) => c.companyName ?? c.name)}
@@ -153,7 +155,6 @@ export default function IncomeFormPage() {
               renderInput={(params) => <TextField {...params} label="Customer" fullWidth />}
             />
 
-            {/* Project autocomplete */}
             <Autocomplete
               freeSolo
               options={projects.map((p: any) => p.name)}

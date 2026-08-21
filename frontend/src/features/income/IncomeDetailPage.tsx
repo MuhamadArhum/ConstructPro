@@ -14,9 +14,8 @@ import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { Perms } from '../../utils/permissions';
 import { useGetIncomeByIdQuery, useDeleteIncomeMutation } from './incomeApi';
 import { useState } from 'react';
-import type { IncomeCategory } from '../../types/income.types';
 
-const categoryLabels: Record<IncomeCategory, string> = {
+const categoryLabels: Record<string, string> = {
   CustomerPayment: 'Customer Payment',
   ProjectIncome: 'Project Income',
   OtherIncome: 'Other Income',

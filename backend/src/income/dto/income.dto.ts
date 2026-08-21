@@ -5,13 +5,11 @@ import {
   IsNumber,
   IsBoolean,
   IsPositive,
-  IsEnum,
   Min,
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IncomeCategory } from '@prisma/client';
 
 export class CreateIncomeDto {
   @ApiPropertyOptional({ example: 'INC-0001' })
@@ -19,10 +17,10 @@ export class CreateIncomeDto {
   @IsString()
   code?: string;
 
-  @ApiProperty({ enum: IncomeCategory, example: IncomeCategory.CustomerPayment })
-  @IsEnum(IncomeCategory)
+  @ApiProperty({ example: 'CustomerPayment' })
+  @IsString()
   @IsNotEmpty()
-  category: IncomeCategory;
+  category: string;
 
   @ApiProperty({ example: 50000 })
   @IsNumber()
@@ -68,10 +66,10 @@ export class UpdateIncomeDto {
   @IsString()
   code?: string;
 
-  @ApiPropertyOptional({ enum: IncomeCategory })
+  @ApiPropertyOptional({ example: 'CustomerPayment' })
   @IsOptional()
-  @IsEnum(IncomeCategory)
-  category?: IncomeCategory;
+  @IsString()
+  category?: string;
 
   @ApiPropertyOptional({ example: 50000 })
   @IsOptional()
@@ -126,10 +124,10 @@ export class IncomeQueryDto {
   @Min(1)
   pageSize?: number = 10;
 
-  @ApiPropertyOptional({ enum: IncomeCategory })
+  @ApiPropertyOptional({ example: 'CustomerPayment' })
   @IsOptional()
-  @IsEnum(IncomeCategory)
-  category?: IncomeCategory;
+  @IsString()
+  category?: string;
 
   @ApiPropertyOptional({ example: '2026-01-01' })
   @IsOptional()

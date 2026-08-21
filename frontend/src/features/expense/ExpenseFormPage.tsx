@@ -8,23 +8,9 @@ import Loader from '../../components/common/Loader';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useCreateExpenseMutation, useGetExpenseByIdQuery, useUpdateExpenseMutation, useGetNextExpenseCodeQuery } from './expenseApi';
+import { useGetExpenseCategoriesQuery } from './categoryApi';
 import { useGetSuppliersQuery } from '../suppliers/supplierApi';
 import { useGetProjectsQuery } from '../projects/projectApi';
-import type { ExpenseCategory } from '../../types/expense.types';
-
-const categories: { value: ExpenseCategory; label: string }[] = [
-  { value: 'LabourExpenses', label: 'Labour Expenses' },
-  { value: 'Salaries', label: 'Salaries' },
-  { value: 'MachineryMaintenance', label: 'Machinery Maintenance' },
-  { value: 'VehicleExpenses', label: 'Vehicle Expenses' },
-  { value: 'Fuel', label: 'Fuel' },
-  { value: 'PlantExpenses', label: 'Plant Expenses' },
-  { value: 'CarpentryExpenses', label: 'Carpentry Expenses' },
-  { value: 'ElectricalExpenses', label: 'Electrical Expenses' },
-  { value: 'SuppliesMaterialPurchase', label: 'Supplies/Material Purchase' },
-  { value: 'OfficeExpenses', label: 'Office Expenses' },
-  { value: 'Miscellaneous', label: 'Miscellaneous' },
-];
 
 export default function ExpenseFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,9 +25,14 @@ export default function ExpenseFormPage() {
 
   const { data: suppliersData } = useGetSuppliersQuery({ pageSize: 1000 });
   const { data: projectsData } = useGetProjectsQuery({ pageSize: 1000 });
+  const { data: categoriesData = [] } = useGetExpenseCategoriesQuery();
+
+  const categoryNames = categoriesData.length > 0
+    ? categoriesData.map((c) => c.name)
+    : ['LabourExpenses', 'Salaries', 'MachineryMaintenance', 'VehicleExpenses', 'Fuel', 'PlantExpenses', 'CarpentryExpenses', 'ElectricalExpenses', 'SuppliesMaterialPurchase', 'OfficeExpenses', 'Miscellaneous'];
 
   const [code, setCode] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('LabourExpenses');
+  const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
@@ -54,6 +45,10 @@ export default function ExpenseFormPage() {
   useEffect(() => {
     if (!isEdit && nextCodeData?.code) setCode(nextCodeData.code);
   }, [nextCodeData, isEdit]);
+
+  useEffect(() => {
+    if (categoryNames.length > 0 && !category) setCategory(categoryNames[0]);
+  }, [categoryNames.length]);
 
   useEffect(() => {
     if (existing) {
@@ -113,8 +108,8 @@ export default function ExpenseFormPage() {
 
             <FormControl fullWidth required>
               <InputLabel>Category</InputLabel>
-              <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
-                {categories.map((c) => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+              <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                {categoryNames.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
             </FormControl>
 
@@ -140,7 +135,6 @@ export default function ExpenseFormPage() {
               fullWidth multiline rows={2}
             />
 
-            {/* Supplier/Vendor autocomplete */}
             <Autocomplete
               freeSolo
               options={suppliers.map((s: any) => s.companyName ?? s.name)}
@@ -149,7 +143,6 @@ export default function ExpenseFormPage() {
               renderInput={(params) => <TextField {...params} label="Vendor / Supplier" fullWidth />}
             />
 
-            {/* Project autocomplete */}
             <Autocomplete
               freeSolo
               options={projects.map((p: any) => p.name)}

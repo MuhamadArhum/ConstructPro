@@ -1,9 +1,9 @@
-export type IncomeCategory = 'CustomerPayment' | 'ProjectIncome' | 'OtherIncome';
+export type IncomeCategory = string;
 
 export interface IncomeDto {
   id: string;
   code?: string;
-  category: IncomeCategory;
+  category: string;
   amount: number;
   date: string;
   description?: string;
@@ -23,7 +23,7 @@ export interface IncomeSummaryDto {
 
 export interface CreateIncomeRequest {
   code?: string;
-  category: IncomeCategory;
+  category: string;
   amount: number;
   date: string;
   description?: string;

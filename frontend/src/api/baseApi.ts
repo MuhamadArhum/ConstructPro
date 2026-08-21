@@ -31,6 +31,6 @@ export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: axiosBaseQuery(),
   keepUnusedDataFor: 300,
-  tagTypes: ['User', 'CurrentUser', 'Role', 'Permission', 'AuditLog', 'Income', 'Expense', 'Labour', 'Employee', 'Machinery', 'Dashboard', 'Vehicle', 'Plant', 'Customer', 'Supplier', 'Inventory', 'Tax', 'Account', 'JournalEntry', 'Notification', 'Settings', 'Project', 'Invoice', 'PurchaseOrder', 'Boq'],
+  tagTypes: ['User', 'CurrentUser', 'Role', 'Permission', 'AuditLog', 'Income', 'Expense', 'Labour', 'Employee', 'Machinery', 'Dashboard', 'Vehicle', 'Plant', 'Customer', 'Supplier', 'Inventory', 'Tax', 'Account', 'JournalEntry', 'Notification', 'Settings', 'Project', 'Invoice', 'PurchaseOrder', 'Boq', 'Category'],
   endpoints: () => ({}),
 });

@@ -13,7 +13,6 @@ import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled'] as const;
-const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Employee', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'] as const;
 
 export class CreateProjectDto {
   @IsOptional()
@@ -93,7 +92,7 @@ export class UpdateMilestoneDto extends PartialType(CreateMilestoneDto) {
 }
 
 export class CreateProjectExpenseDto {
-  @IsIn(EXPENSE_CATEGORIES)
+  @IsString()
   @IsNotEmpty()
   category: string;
 
@@ -113,6 +112,31 @@ export class CreateProjectExpenseDto {
 
 export class UpdateProjectExpenseDto extends PartialType(CreateProjectExpenseDto) {}
 
+export class CreateProjectIncomeDto {
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amount: number;
+
+  @IsDateString()
+  @IsNotEmpty()
+  date: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+}
+
+export class UpdateProjectIncomeDto extends PartialType(CreateProjectIncomeDto) {}
+
 export class AssignLabourDto {
   @IsString()
   @IsNotEmpty()
@@ -123,6 +147,18 @@ export class AssignMachineryDto {
   @IsString()
   @IsNotEmpty()
   machineryId: string;
+}
+
+export class AssignVehicleDto {
+  @IsString()
+  @IsNotEmpty()
+  vehicleId: string;
+}
+
+export class AssignPlantDto {
+  @IsString()
+  @IsNotEmpty()
+  plantId: string;
 }
 
 export class AssignEmployeeDto {

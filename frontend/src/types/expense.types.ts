@@ -1,20 +1,9 @@
-export type ExpenseCategory =
-  | 'LabourExpenses'
-  | 'Salaries'
-  | 'MachineryMaintenance'
-  | 'VehicleExpenses'
-  | 'Fuel'
-  | 'PlantExpenses'
-  | 'CarpentryExpenses'
-  | 'ElectricalExpenses'
-  | 'SuppliesMaterialPurchase'
-  | 'OfficeExpenses'
-  | 'Miscellaneous';
+export type ExpenseCategory = string;
 
 export interface ExpenseDto {
   id: string;
   code?: string;
-  category: ExpenseCategory;
+  category: string;
   amount: number;
   date: string;
   description?: string;
@@ -30,7 +19,7 @@ export interface ExpenseSummaryDto {
 
 export interface CreateExpenseRequest {
   code?: string;
-  category: ExpenseCategory;
+  category: string;
   amount: number;
   date: string;
   description?: string;

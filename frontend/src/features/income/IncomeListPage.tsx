@@ -17,14 +17,8 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetIncomesQuery, useGetIncomeSummaryQuery, useDeleteIncomeMutation } from './incomeApi';
+import { useGetIncomeCategoriesQuery } from '../expense/categoryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
-import type { IncomeCategory } from '../../types/income.types';
-
-const categoryLabels: Record<IncomeCategory, string> = {
-  CustomerPayment: 'Customer Payment',
-  ProjectIncome: 'Project Income',
-  OtherIncome: 'Other Income',
-};
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -36,7 +30,7 @@ function exportToCsv(rows: any[]) {
       [
         r.code ?? '',
         new Date(r.date).toLocaleDateString('en-GB'),
-        categoryLabels[r.category as IncomeCategory] ?? r.category,
+        r.category,
         `"${(r.description ?? '').replace(/"/g, '""')}"`,
         r.customerName ?? '',
         r.projectName ?? '',
@@ -83,6 +77,7 @@ export default function IncomeListPage() {
 
   const { data, isLoading } = useGetIncomesQuery(query);
   const { data: summary } = useGetIncomeSummaryQuery();
+  const { data: categoriesData = [] } = useGetIncomeCategoriesQuery();
   const [deleteIncome] = useDeleteIncomeMutation();
 
   const hasFilters = !!(search || category || fromDate !== todayStr || toDate !== todayStr || amountMin || amountMax);
@@ -157,8 +152,8 @@ export default function IncomeListPage() {
             <InputLabel>Category</InputLabel>
             <Select label="Category" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
-              {(Object.keys(categoryLabels) as IncomeCategory[]).map((k) => (
-                <MenuItem key={k} value={k}>{categoryLabels[k]}</MenuItem>
+              {categoriesData.map((c) => (
+                <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -219,7 +214,7 @@ export default function IncomeListPage() {
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell>{new Date(row.date).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>
-                      <Chip label={categoryLabels[row.category]} size="small" />
+                      <Chip label={row.category} size="small" />
                     </TableCell>
                     <TableCell>{row.description ?? '-'}</TableCell>
                     <TableCell>{row.customerName ?? '-'}</TableCell>

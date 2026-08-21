@@ -14,9 +14,8 @@ import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { Perms } from '../../utils/permissions';
 import { useGetExpenseByIdQuery, useDeleteExpenseMutation } from './expenseApi';
 import { useState } from 'react';
-import type { ExpenseCategory } from '../../types/expense.types';
 
-const categoryLabels: Record<ExpenseCategory, string> = {
+const categoryLabels: Record<string, string> = {
   LabourExpenses: 'Labour Expenses',
   Salaries: 'Salaries',
   MachineryMaintenance: 'Machinery Maintenance',

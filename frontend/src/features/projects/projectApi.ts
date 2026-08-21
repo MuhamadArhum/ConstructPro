@@ -1,6 +1,30 @@
 import { baseApi } from '../../api/baseApi';
 import type { Project, ProjectDetail, ProjectStats, ProjectMilestone, ProjectExpense, ProjectLabour, ProjectMachinery, ProjectEmployee } from '../../types/project.types';
 
+export interface ProjectIncome {
+  id: string;
+  projectId: string;
+  category: string;
+  amount: number;
+  date: string;
+  description?: string | null;
+  source?: string | null;
+  createdAt: string;
+}
+
+export interface ProjectPnL {
+  period: { month?: number; year?: number; from?: string; to?: string };
+  totalIncome: number;
+  totalDirectExpenses: number;
+  totalLabourCost: number;
+  totalSalaryCost: number;
+  totalCost: number;
+  grossProfit: number;
+  isProfitable: boolean;
+  incomeBreakdown: { category: string; amount: number; date: string; description?: string | null }[];
+  expenseBreakdown: { category: string; amount: number; date: string; description?: string | null }[];
+}
+
 export interface ProjectSummary {
   totalProjects: number;
   activeProjects: number;
@@ -173,6 +197,38 @@ export const projectApi = baseApi.injectEndpoints({
       query: ({ id, month, year }) => ({ url: `/projects/${id}/payroll`, params: { month, year } }),
       providesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }, 'Employee'],
     }),
+    addProjectIncome: builder.mutation<ProjectIncome, { id: string; data: Partial<ProjectIncome> }>({
+      query: ({ id, data }) => ({ url: `/projects/${id}/incomes`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    updateProjectIncome: builder.mutation<ProjectIncome, { id: string; incomeId: string; data: Partial<ProjectIncome> }>({
+      query: ({ id, incomeId, data }) => ({ url: `/projects/${id}/incomes/${incomeId}`, method: 'PATCH', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    deleteProjectIncome: builder.mutation<void, { id: string; incomeId: string }>({
+      query: ({ id, incomeId }) => ({ url: `/projects/${id}/incomes/${incomeId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    getProjectPnL: builder.query<ProjectPnL, { id: string; month?: number; year?: number }>({
+      query: ({ id, month, year }) => ({ url: `/projects/${id}/pnl`, params: { month, year } }),
+      providesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    assignVehicle: builder.mutation<any, { id: string; data: { vehicleId: string } }>({
+      query: ({ id, data }) => ({ url: `/projects/${id}/vehicles`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    removeVehicle: builder.mutation<void, { id: string; vehicleId: string }>({
+      query: ({ id, vehicleId }) => ({ url: `/projects/${id}/vehicles/${vehicleId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    assignPlant: builder.mutation<any, { id: string; data: { plantId: string } }>({
+      query: ({ id, data }) => ({ url: `/projects/${id}/plants`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
+    removePlant: builder.mutation<void, { id: string; plantId: string }>({
+      query: ({ id, plantId }) => ({ url: `/projects/${id}/plants/${plantId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Project' as const, id }],
+    }),
   }),
 });
 
@@ -189,10 +245,18 @@ export const {
   useAddProjectExpenseMutation,
   useUpdateProjectExpenseMutation,
   useDeleteProjectExpenseMutation,
+  useAddProjectIncomeMutation,
+  useUpdateProjectIncomeMutation,
+  useDeleteProjectIncomeMutation,
+  useGetProjectPnLQuery,
   useAssignLabourMutation,
   useRemoveLabourMutation,
   useAssignMachineryMutation,
   useRemoveMachineryMutation,
+  useAssignVehicleMutation,
+  useRemoveVehicleMutation,
+  useAssignPlantMutation,
+  useRemovePlantMutation,
   useAssignEmployeeMutation,
   useRemoveEmployeeMutation,
   useGetNextProjectCodeQuery,

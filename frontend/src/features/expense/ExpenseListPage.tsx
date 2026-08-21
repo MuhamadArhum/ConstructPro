@@ -17,22 +17,8 @@ import PermissionGate from '../../components/common/PermissionGate';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetExpensesQuery, useGetExpenseSummaryQuery, useDeleteExpenseMutation } from './expenseApi';
+import { useGetExpenseCategoriesQuery } from './categoryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
-import type { ExpenseCategory } from '../../types/expense.types';
-
-const categoryLabels: Record<ExpenseCategory, string> = {
-  LabourExpenses: 'Labour Expenses',
-  Salaries: 'Salaries',
-  MachineryMaintenance: 'Machinery Maintenance',
-  VehicleExpenses: 'Vehicle Expenses',
-  Fuel: 'Fuel',
-  PlantExpenses: 'Plant Expenses',
-  CarpentryExpenses: 'Carpentry Expenses',
-  ElectricalExpenses: 'Electrical Expenses',
-  SuppliesMaterialPurchase: 'Supplies/Material Purchase',
-  OfficeExpenses: 'Office Expenses',
-  Miscellaneous: 'Miscellaneous',
-};
 
 const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
 
@@ -44,7 +30,7 @@ function exportToCsv(rows: any[]) {
       [
         r.code ?? '',
         new Date(r.date).toLocaleDateString('en-GB'),
-        categoryLabels[r.category as ExpenseCategory] ?? r.category,
+        r.category,
         `"${(r.description ?? '').replace(/"/g, '""')}"`,
         r.vendor ?? '',
         r.amount,
@@ -89,6 +75,7 @@ export default function ExpenseListPage() {
 
   const { data, isLoading } = useGetExpensesQuery(query);
   const { data: summary } = useGetExpenseSummaryQuery();
+  const { data: categoriesData = [] } = useGetExpenseCategoriesQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
 
   const hasFilters = !!(search || category || fromDate !== todayStr || toDate !== todayStr || amountMin || amountMax);
@@ -159,8 +146,8 @@ export default function ExpenseListPage() {
             <InputLabel>Category</InputLabel>
             <Select label="Category" value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }}>
               <MenuItem value="">All</MenuItem>
-              {(Object.keys(categoryLabels) as ExpenseCategory[]).map((k) => (
-                <MenuItem key={k} value={k}>{categoryLabels[k]}</MenuItem>
+              {categoriesData.map((c) => (
+                <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -219,7 +206,7 @@ export default function ExpenseListPage() {
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.code ?? '-'}</TableCell>
                     <TableCell>{new Date(row.date).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>
-                      <Chip label={categoryLabels[row.category]} size="small" />
+                      <Chip label={row.category} size="small" />
                     </TableCell>
                     <TableCell>{row.description ?? '-'}</TableCell>
                     <TableCell>{row.vendor ?? '-'}</TableCell>

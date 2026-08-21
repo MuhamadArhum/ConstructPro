@@ -34,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { BoqModule } from './boq/boq.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   controllers: [AppController],
@@ -72,6 +73,7 @@ import { BoqModule } from './boq/boq.module';
     SettingsModule,
     AuditLogsModule,
     BoqModule,
+    CategoriesModule,
   ],
   providers: [
     AppService,

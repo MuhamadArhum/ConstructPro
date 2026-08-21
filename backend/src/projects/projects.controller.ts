@@ -26,8 +26,12 @@ import {
   UpdateMilestoneDto,
   CreateProjectExpenseDto,
   UpdateProjectExpenseDto,
+  CreateProjectIncomeDto,
+  UpdateProjectIncomeDto,
   AssignLabourDto,
   AssignMachineryDto,
+  AssignVehicleDto,
+  AssignPlantDto,
   AssignEmployeeDto,
 } from './dto/project.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -257,6 +261,55 @@ export class ProjectsController {
     return this.projectsService.getProjectPayroll(id, Number(month), Number(year));
   }
 
+  // ── Income ──────────────────────────────────────────────────────────────────
+
+  @Post(':id/incomes')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Add income to project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  addIncome(@Param('id') id: string, @Body() dto: CreateProjectIncomeDto) {
+    return this.projectsService.addIncome(id, dto);
+  }
+
+  @Patch(':id/incomes/:incomeId')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Update project income' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'incomeId', description: 'Income UUID' })
+  updateIncome(
+    @Param('id') id: string,
+    @Param('incomeId') incomeId: string,
+    @Body() dto: UpdateProjectIncomeDto,
+  ) {
+    return this.projectsService.updateIncome(id, incomeId, dto);
+  }
+
+  @Delete(':id/incomes/:incomeId')
+  @HasPermission('Project.Manage')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete project income' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'incomeId', description: 'Income UUID' })
+  deleteIncome(@Param('id') id: string, @Param('incomeId') incomeId: string) {
+    return this.projectsService.deleteIncome(id, incomeId);
+  }
+
+  // ── P&L ─────────────────────────────────────────────────────────────────────
+
+  @Get(':id/pnl')
+  @HasPermission('Project.View')
+  @ApiOperation({ summary: 'Get project P&L summary' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiQuery({ name: 'month', required: false, type: Number })
+  @ApiQuery({ name: 'year', required: false, type: Number })
+  getPnL(
+    @Param('id') id: string,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ) {
+    return this.projectsService.getPnL(id, month ? Number(month) : undefined, year ? Number(year) : undefined);
+  }
+
   // ── Machinery ───────────────────────────────────────────────────────────────
 
   @Post(':id/machinery')
@@ -278,5 +331,45 @@ export class ProjectsController {
     @Param('machineryId') machineryId: string,
   ) {
     return this.projectsService.removeMachinery(id, machineryId);
+  }
+
+  // ── Vehicles ─────────────────────────────────────────────────────────────────
+
+  @Post(':id/vehicles')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Assign vehicle to project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  assignVehicle(@Param('id') id: string, @Body() dto: AssignVehicleDto) {
+    return this.projectsService.assignVehicle(id, dto);
+  }
+
+  @Delete(':id/vehicles/:vehicleId')
+  @HasPermission('Project.Manage')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove vehicle from project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'vehicleId', description: 'Vehicle UUID' })
+  removeVehicle(@Param('id') id: string, @Param('vehicleId') vehicleId: string) {
+    return this.projectsService.removeVehicle(id, vehicleId);
+  }
+
+  // ── Plants ───────────────────────────────────────────────────────────────────
+
+  @Post(':id/plants')
+  @HasPermission('Project.Manage')
+  @ApiOperation({ summary: 'Assign plant to project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  assignPlant(@Param('id') id: string, @Body() dto: AssignPlantDto) {
+    return this.projectsService.assignPlant(id, dto);
+  }
+
+  @Delete(':id/plants/:plantId')
+  @HasPermission('Project.Manage')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove plant from project' })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiParam({ name: 'plantId', description: 'Plant UUID' })
+  removePlant(@Param('id') id: string, @Param('plantId') plantId: string) {
+    return this.projectsService.removePlant(id, plantId);
   }
 }

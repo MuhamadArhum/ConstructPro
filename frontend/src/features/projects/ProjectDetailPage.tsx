@@ -61,13 +61,27 @@ import { useGetPurchaseOrdersQuery } from '../purchase-orders/purchaseOrderApi';
 import AttendanceSheet from '../../components/AttendanceSheet';
 import ProjectFormDialog from './ProjectFormDialog';
 import { PROJECT_STATUS_COLORS } from '../../utils/statusColors';
+import {
+  useAddProjectIncomeMutation,
+  useUpdateProjectIncomeMutation,
+  useDeleteProjectIncomeMutation,
+  useGetProjectPnLQuery,
+  useAssignVehicleMutation,
+  useRemoveVehicleMutation,
+  useAssignPlantMutation,
+  useRemovePlantMutation,
+} from './projectApi';
+import { useGetVehiclesQuery } from '../vehicles/vehicleApi';
+import { useGetPlantsQuery } from '../plants/plantApi';
+import { useGetExpenseCategoriesQuery, useGetIncomeCategoriesQuery } from '../expense/categoryApi';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 const today = () => new Date().toISOString().split('T')[0];
 const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
-
-const EXPENSE_CATEGORIES = ['Materials', 'Labour', 'Employee', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
 
 const INV_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
   if (s === 'Sent') return 'info';
@@ -102,7 +116,7 @@ export default function ProjectDetailPage() {
   // Expense state
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
-  const [expCategory, setExpCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [expCategory, setExpCategory] = useState('Materials');
   const [expAmount, setExpAmount] = useState('');
   const [expDate, setExpDate] = useState(today());
   const [expDescription, setExpDescription] = useState('');
@@ -117,6 +131,33 @@ export default function ProjectDetailPage() {
   const [machineryOpen, setMachineryOpen] = useState(false);
   const [selectedMachineryId, setSelectedMachineryId] = useState('');
   const [removeMachineryId, setRemoveMachineryId] = useState<string | null>(null);
+
+  // Income state
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [editIncomeId, setEditIncomeId] = useState<string | null>(null);
+  const [incCategory, setIncCategory] = useState('');
+  const [incAmount, setIncAmount] = useState('');
+  const [incDate, setIncDate] = useState(today());
+  const [incDescription, setIncDescription] = useState('');
+  const [incSource, setIncSource] = useState('');
+  const [deleteIncId, setDeleteIncId] = useState<string | null>(null);
+
+  // Vehicle state
+  const [vehicleOpen, setVehicleOpen] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [removeVehicleId, setRemoveVehicleId] = useState<string | null>(null);
+
+  // Plant state
+  const [plantOpen, setPlantOpen] = useState(false);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const [removePlantId, setRemovePlantId] = useState<string | null>(null);
+
+  // P&L state
+  const [pnlMonth, setPnlMonth] = useState<number | undefined>(undefined);
+  const [pnlYear, setPnlYear] = useState<number | undefined>(undefined);
+
+  // Resources sub-tab state (0=Machinery, 1=Vehicles, 2=Plants)
+  const [resourcesSubTab, setResourcesSubTab] = useState(0);
 
   // Employee state
   const [employeeOpen, setEmployeeOpen] = useState(false);
@@ -149,26 +190,34 @@ export default function ProjectDetailPage() {
   const { data: laboursData } = useGetLaboursQuery({ pageSize: 1000 });
   const { data: machineriesData } = useGetMachineriesQuery({ pageSize: 1000 });
   const { data: employeesData } = useGetEmployeesQuery({ pageSize: 1000, isActive: true });
+  const { data: vehiclesData } = useGetVehiclesQuery({ pageSize: 1000 });
+  const { data: plantsData } = useGetPlantsQuery({ pageSize: 1000 });
+  const { data: expenseCategories = [] } = useGetExpenseCategoriesQuery();
+  const { data: incomeCategories = [] } = useGetIncomeCategoriesQuery();
+  const { data: pnlData } = useGetProjectPnLQuery(
+    { id: id ?? '', month: pnlMonth, year: pnlYear },
+    { skip: !id || tab !== 4 },
+  );
   const { data: invoicesData } = useGetInvoicesQuery(
     { projectId: id, pageSize: 100 },
-    { skip: !id || tab !== 6 },
+    { skip: !id || tab !== 8 },
   );
   const { data: posData } = useGetPurchaseOrdersQuery(
     { projectId: id, pageSize: 100 },
-    { skip: !id || tab !== 7 },
+    { skip: !id || tab !== 9 },
   );
   const { data: payrollData, refetch: refetchPayroll } = useGetProjectPayrollQuery(
     { id: id ?? '', month: payrollMonth, year: payrollYear },
-    { skip: !id || tab !== 8 },
+    { skip: !id || tab !== 10 },
   );
 
   const { data: attLabourRecords = [] } = useGetLabourAttendanceQuery(
     { id: selectedAttLabourId, month: attMonth, year: attYear },
-    { skip: !selectedAttLabourId || tab !== 9 || attSubTab !== 0 },
+    { skip: !selectedAttLabourId || tab !== 11 || attSubTab !== 0 },
   );
   const { data: attEmployeeRecords = [] } = useGetEmployeeAttendanceQuery(
     { id: selectedAttEmployeeId, month: attMonth, year: attYear },
-    { skip: !selectedAttEmployeeId || tab !== 9 || attSubTab !== 1 },
+    { skip: !selectedAttEmployeeId || tab !== 11 || attSubTab !== 1 },
   );
   const [bulkUpsertLabourAttendance, { isLoading: savingLabourAtt }] = useBulkUpsertLabourAttendanceMutation();
   const [bulkUpsertEmpAttendance, { isLoading: savingEmpAtt }] = useBulkUpsertEmployeeAttendanceMutation();
@@ -195,6 +244,13 @@ export default function ProjectDetailPage() {
   const [removeMachinery] = useRemoveMachineryMutation();
   const [assignEmployee, { isLoading: assigningEmployee }] = useAssignEmployeeMutation();
   const [removeEmployee] = useRemoveEmployeeMutation();
+  const [addIncome, { isLoading: addingInc }] = useAddProjectIncomeMutation();
+  const [updateIncome, { isLoading: updatingInc }] = useUpdateProjectIncomeMutation();
+  const [deleteIncome] = useDeleteProjectIncomeMutation();
+  const [assignVehicle, { isLoading: assigningVehicle }] = useAssignVehicleMutation();
+  const [removeVehicle] = useRemoveVehicleMutation();
+  const [assignPlant, { isLoading: assigningPlant }] = useAssignPlantMutation();
+  const [removePlant] = useRemovePlantMutation();
 
   const handleDeleteProject = async () => {
     try {
@@ -258,7 +314,7 @@ export default function ProjectDetailPage() {
 
   const openAddExpense = () => {
     setEditExpenseId(null);
-    setExpCategory(EXPENSE_CATEGORIES[0]);
+    setExpCategory((expenseCategories as any[])[0]?.name ?? 'Materials');
     setExpAmount('');
     setExpDate(today());
     setExpDescription('');
@@ -346,6 +402,84 @@ export default function ProjectDetailPage() {
     setRemoveMachineryId(null);
   };
 
+  // Income handlers
+  const openAddIncome = () => {
+    setEditIncomeId(null);
+    setIncCategory((incomeCategories as any[])[0]?.name ?? '');
+    setIncAmount('');
+    setIncDate(today());
+    setIncDescription('');
+    setIncSource('');
+    setIncomeOpen(true);
+  };
+  const openEditIncome = (inc: any) => {
+    setEditIncomeId(inc.id);
+    setIncCategory(inc.category);
+    setIncAmount(String(inc.amount));
+    setIncDate(inc.date?.split('T')[0] ?? today());
+    setIncDescription(inc.description ?? '');
+    setIncSource(inc.source ?? '');
+    setIncomeOpen(true);
+  };
+  const handleSaveIncome = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const data = { category: incCategory, amount: Number(incAmount), date: incDate, description: incDescription || undefined, source: incSource || undefined };
+      if (editIncomeId) {
+        await updateIncome({ id: id!, incomeId: editIncomeId, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Income updated', severity: 'success' }));
+      } else {
+        await addIncome({ id: id!, data }).unwrap();
+        dispatch(showSnackbar({ message: 'Income added', severity: 'success' }));
+      }
+      setIncomeOpen(false);
+    } catch { dispatch(showSnackbar({ message: 'Failed to save income', severity: 'error' })); }
+  };
+  const handleDeleteIncome = async () => {
+    if (!deleteIncId) return;
+    try {
+      await deleteIncome({ id: id!, incomeId: deleteIncId }).unwrap();
+      dispatch(showSnackbar({ message: 'Income deleted', severity: 'success' }));
+    } catch { dispatch(showSnackbar({ message: 'Failed to delete income', severity: 'error' })); }
+    setDeleteIncId(null);
+  };
+
+  // Vehicle handlers
+  const handleAssignVehicle = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await assignVehicle({ id: id!, data: { vehicleId: selectedVehicleId } }).unwrap();
+      dispatch(showSnackbar({ message: 'Vehicle assigned', severity: 'success' }));
+      setVehicleOpen(false); setSelectedVehicleId('');
+    } catch { dispatch(showSnackbar({ message: 'Failed to assign vehicle', severity: 'error' })); }
+  };
+  const handleRemoveVehicle = async () => {
+    if (!removeVehicleId) return;
+    try {
+      await removeVehicle({ id: id!, vehicleId: removeVehicleId }).unwrap();
+      dispatch(showSnackbar({ message: 'Vehicle removed', severity: 'success' }));
+    } catch { dispatch(showSnackbar({ message: 'Failed to remove vehicle', severity: 'error' })); }
+    setRemoveVehicleId(null);
+  };
+
+  // Plant handlers
+  const handleAssignPlant = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await assignPlant({ id: id!, data: { plantId: selectedPlantId } }).unwrap();
+      dispatch(showSnackbar({ message: 'Plant assigned', severity: 'success' }));
+      setPlantOpen(false); setSelectedPlantId('');
+    } catch { dispatch(showSnackbar({ message: 'Failed to assign plant', severity: 'error' })); }
+  };
+  const handleRemovePlant = async () => {
+    if (!removePlantId) return;
+    try {
+      await removePlant({ id: id!, plantId: removePlantId }).unwrap();
+      dispatch(showSnackbar({ message: 'Plant removed', severity: 'success' }));
+    } catch { dispatch(showSnackbar({ message: 'Failed to remove plant', severity: 'error' })); }
+    setRemovePlantId(null);
+  };
+
   const handleAssignEmployee = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -374,9 +508,18 @@ export default function ProjectDetailPage() {
   const remaining = project.budget - project.spent;
   const budgetUsedPct = project.budget > 0 ? (project.spent / project.budget) * 100 : 0;
   const totalExpenses = project.expenses?.reduce((s, e) => s + e.amount, 0) ?? 0;
+  const totalIncome = (project as any).incomes?.reduce((s: number, inc: any) => s + inc.amount, 0) ?? 0;
   const laboursList = laboursData?.items ?? [];
   const machineriesList = machineriesData?.items ?? [];
+  const vehiclesList = (vehiclesData as any)?.items ?? [];
+  const plantsList = (plantsData as any)?.items ?? [];
   const employeesList = employeesData?.items ?? [];
+  const expCategoryNames: string[] = (expenseCategories as any[]).length > 0
+    ? (expenseCategories as any[]).map((c: any) => c.name)
+    : ['Materials', 'Labour', 'Employee', 'Machinery', 'Transport', 'Utilities', 'Permits', 'Other'];
+  const incCategoryNames: string[] = (incomeCategories as any[]).length > 0
+    ? (incomeCategories as any[]).map((c: any) => c.name)
+    : ['Contract', 'Advance', 'Retention', 'Variation', 'Other'];
   const overdueMilestones = project.milestones?.filter((m) => !m.isCompleted && isOverdue(m.dueDate)).length ?? 0;
 
   return (
@@ -463,8 +606,10 @@ export default function ProjectDetailPage() {
           <Tab label="Overview" />
           <Tab label={`Milestones${overdueMilestones > 0 ? ` ⚠ ${overdueMilestones}` : ''}`} />
           <Tab label="Expenses" />
+          <Tab label="Income" icon={<TrendingUpIcon fontSize="small" />} iconPosition="start" />
+          <Tab label="P&L" icon={<TrendingDownIcon fontSize="small" />} iconPosition="start" />
           <Tab label="Labour" />
-          <Tab label="Machinery" />
+          <Tab label="Resources" icon={<PrecisionManufacturingIcon fontSize="small" />} iconPosition="start" />
           <Tab label="Employees" />
           <Tab label={`Invoices (${invoicesData?.data.length ?? 0})`} />
           <Tab label={`Purchase Orders (${posData?.data.length ?? 0})`} />
@@ -602,7 +747,7 @@ export default function ProjectDetailPage() {
               </Stack>
               {/* Category breakdown */}
               {(project.expenses?.length ?? 0) > 0 && (() => {
-                const byCategory = EXPENSE_CATEGORIES.map((cat) => ({
+                const byCategory = expCategoryNames.map((cat) => ({
                   cat,
                   total: project.expenses?.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0) ?? 0,
                 })).filter((r) => r.total > 0);
@@ -655,8 +800,200 @@ export default function ProjectDetailPage() {
             </>
           )}
 
-          {/* ── Labour ── */}
+          {/* ── Income ── */}
           {tab === 3 && (
+            <>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="body2">Total: <strong>{fmt(totalIncome)}</strong></Typography>
+                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={openAddIncome}>
+                  Add Income
+                </Button>
+              </Stack>
+              {/* Category breakdown */}
+              {((project as any).incomes?.length ?? 0) > 0 && (() => {
+                const byCategory = incCategoryNames.map((cat) => ({
+                  cat,
+                  total: (project as any).incomes?.filter((i: any) => i.category === cat).reduce((s: number, i: any) => s + i.amount, 0) ?? 0,
+                })).filter((r) => r.total > 0);
+                return (
+                  <Stack direction="row" sx={{ flexWrap: 'wrap', mb: 2 }} spacing={1}>
+                    {byCategory.map(({ cat, total }) => (
+                      <Chip key={cat} label={`${cat}: ${fmt(total)}`} size="small" variant="outlined" color="success" />
+                    ))}
+                  </Stack>
+                );
+              })()}
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Category</TableCell>
+                      <TableCell>Source</TableCell>
+                      <TableCell>Description</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {((project as any).incomes ?? []).map((inc: any) => (
+                      <TableRow key={inc.id} hover>
+                        <TableCell>{fmtDate(inc.date)}</TableCell>
+                        <TableCell>{inc.category}</TableCell>
+                        <TableCell>{inc.source ?? '-'}</TableCell>
+                        <TableCell>{inc.description ?? '-'}</TableCell>
+                        <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>{fmt(inc.amount)}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => openEditIncome(inc)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton size="small" color="error" onClick={() => setDeleteIncId(inc.id)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!((project as any).incomes?.length) && (
+                      <TableRow><TableCell colSpan={6}><EmptyState message="No income recorded yet" actionLabel="Add Income" onAction={openAddIncome} /></TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+
+          {/* ── P&L ── */}
+          {tab === 4 && (() => {
+            const MONTHS_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+
+            const pnlIncome = (pnlData as any)?.totalIncome ?? 0;
+            const pnlDirectExpenses = (pnlData as any)?.totalDirectExpenses ?? 0;
+            const pnlLabourCost = (pnlData as any)?.totalLabourCost ?? 0;
+            const pnlSalaryCost = (pnlData as any)?.totalSalaryCost ?? 0;
+            const pnlTotalCosts = pnlDirectExpenses + pnlLabourCost + pnlSalaryCost;
+            const pnlGrossProfit = pnlIncome - pnlTotalCosts;
+            const isProfit = pnlGrossProfit >= 0;
+
+            return (
+              <>
+                {/* Month/Year filter */}
+                <Stack direction="row" spacing={2} sx={{ mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Filter by Period:</Typography>
+                  <FormControl size="small" sx={{ minWidth: 130 }}>
+                    <InputLabel>Month</InputLabel>
+                    <Select
+                      label="Month"
+                      value={pnlMonth ? String(pnlMonth) : ''}
+                      onChange={(e) => { const v = e.target.value as string; setPnlMonth(v === '' ? undefined : Number(v)); }}
+                    >
+                      <MenuItem value="">All Months</MenuItem>
+                      {MONTHS_LIST.map((m, i) => (
+                        <MenuItem key={i + 1} value={String(i + 1)}>{m}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 100 }}>
+                    <InputLabel>Year</InputLabel>
+                    <Select
+                      label="Year"
+                      value={pnlYear ? String(pnlYear) : ''}
+                      onChange={(e) => { const v = e.target.value as string; setPnlYear(v === '' ? undefined : Number(v)); }}
+                    >
+                      <MenuItem value="">All Years</MenuItem>
+                      {years.map((y) => <MenuItem key={y} value={String(y)}>{y}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </Stack>
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card variant="outlined" sx={{ borderColor: 'success.main' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">Total Income</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{fmt(pnlIncome)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card variant="outlined" sx={{ borderColor: 'error.light' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">Direct Expenses</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>{fmt(pnlDirectExpenses)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card variant="outlined" sx={{ borderColor: 'warning.light' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">Labour + Salary Cost</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.dark' }}>{fmt(pnlLabourCost + pnlSalaryCost)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card variant="outlined" sx={{ borderColor: isProfit ? 'success.main' : 'error.main', bgcolor: isProfit ? 'success.50' : 'error.50' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">Gross {isProfit ? 'Profit' : 'Loss'}</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: isProfit ? 'success.main' : 'error.main' }}>
+                          {isProfit ? '+' : ''}{fmt(pnlGrossProfit)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                {/* P&L breakdown table */}
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Item</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow sx={{ bgcolor: 'success.50' }}>
+                        <TableCell sx={{ fontWeight: 600, color: 'success.dark' }}>Total Income</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>{fmt(pnlIncome)}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ pl: 4, color: 'text.secondary' }}>Direct Expenses</TableCell>
+                        <TableCell align="right" sx={{ color: 'error.main' }}>({fmt(pnlDirectExpenses)})</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ pl: 4, color: 'text.secondary' }}>Labour Wages</TableCell>
+                        <TableCell align="right" sx={{ color: 'error.main' }}>({fmt(pnlLabourCost)})</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ pl: 4, color: 'text.secondary' }}>Employee Salaries</TableCell>
+                        <TableCell align="right" sx={{ color: 'error.main' }}>({fmt(pnlSalaryCost)})</TableCell>
+                      </TableRow>
+                      <TableRow sx={{ bgcolor: 'action.hover' }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Total Costs</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>({fmt(pnlTotalCosts)})</TableCell>
+                      </TableRow>
+                      <TableRow sx={{ bgcolor: isProfit ? 'success.50' : 'error.50' }}>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '1rem', color: isProfit ? 'success.dark' : 'error.dark' }}>
+                          Gross {isProfit ? 'Profit' : 'Loss'}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '1rem', color: isProfit ? 'success.main' : 'error.main' }}>
+                          {isProfit ? '+' : ''}{fmt(pnlGrossProfit)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            );
+          })()}
+
+          {/* ── Labour ── */}
+          {tab === 5 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
                 <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setLabourOpen(true)}>
@@ -699,52 +1036,151 @@ export default function ProjectDetailPage() {
             </>
           )}
 
-          {/* ── Machinery ── */}
-          {tab === 4 && (
+          {/* ── Resources (Machinery + Vehicles + Plants) ── */}
+          {tab === 6 && (
             <>
-              <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
-                <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setMachineryOpen(true)}>
-                  Assign Machinery
-                </Button>
-              </Stack>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Model</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Assigned Date</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {project.machinery?.map((pm) => (
-                      <TableRow key={pm.id} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{pm.machinery.name}</TableCell>
-                        <TableCell>{pm.machinery.model ?? '-'}</TableCell>
-                        <TableCell>{pm.machinery.status}</TableCell>
-                        <TableCell>{fmtDate(pm.assignedAt)}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Remove">
-                            <IconButton size="small" color="error" onClick={() => setRemoveMachineryId(pm.id)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!project.machinery?.length && (
-                      <TableRow><TableCell colSpan={5}><EmptyState message="No machinery assigned yet" actionLabel="Assign Machinery" onAction={() => setMachineryOpen(true)} /></TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Tabs value={resourcesSubTab} onChange={(_, v) => setResourcesSubTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Tab label={`Machinery (${project.machinery?.length ?? 0})`} />
+                <Tab label={`Vehicles (${(project as any).vehicles?.length ?? 0})`} />
+                <Tab label={`Plants (${(project as any).plants?.length ?? 0})`} />
+              </Tabs>
+
+              {/* Machinery sub-tab */}
+              {resourcesSubTab === 0 && (
+                <>
+                  <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
+                    <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setMachineryOpen(true)}>
+                      Assign Machinery
+                    </Button>
+                  </Stack>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Assigned Date</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {project.machinery?.map((pm) => (
+                          <TableRow key={pm.id} hover>
+                            <TableCell sx={{ fontWeight: 600 }}>{pm.machinery.name}</TableCell>
+                            <TableCell>{pm.machinery.model ?? '-'}</TableCell>
+                            <TableCell>{pm.machinery.status}</TableCell>
+                            <TableCell>{fmtDate(pm.assignedAt)}</TableCell>
+                            <TableCell align="right">
+                              <Tooltip title="Remove">
+                                <IconButton size="small" color="error" onClick={() => setRemoveMachineryId(pm.id)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {!project.machinery?.length && (
+                          <TableRow><TableCell colSpan={5}><EmptyState message="No machinery assigned yet" actionLabel="Assign Machinery" onAction={() => setMachineryOpen(true)} /></TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
+
+              {/* Vehicles sub-tab */}
+              {resourcesSubTab === 1 && (
+                <>
+                  <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
+                    <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setVehicleOpen(true)}>
+                      Assign Vehicle
+                    </Button>
+                  </Stack>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Registration</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Assigned Date</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {((project as any).vehicles ?? []).map((pv: any) => (
+                          <TableRow key={pv.id} hover>
+                            <TableCell sx={{ fontWeight: 600 }}>{pv.vehicle?.name ?? pv.vehicle?.make ?? '-'}</TableCell>
+                            <TableCell>{pv.vehicle?.registrationNumber ?? '-'}</TableCell>
+                            <TableCell>{pv.vehicle?.status ?? '-'}</TableCell>
+                            <TableCell>{fmtDate(pv.assignedAt)}</TableCell>
+                            <TableCell align="right">
+                              <Tooltip title="Remove">
+                                <IconButton size="small" color="error" onClick={() => setRemoveVehicleId(pv.id)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {!(project as any).vehicles?.length && (
+                          <TableRow><TableCell colSpan={5}><EmptyState message="No vehicles assigned yet" actionLabel="Assign Vehicle" onAction={() => setVehicleOpen(true)} /></TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
+
+              {/* Plants sub-tab */}
+              {resourcesSubTab === 2 && (
+                <>
+                  <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
+                    <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setPlantOpen(true)}>
+                      Assign Plant
+                    </Button>
+                  </Stack>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Type</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Assigned Date</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {((project as any).plants ?? []).map((pp: any) => (
+                          <TableRow key={pp.id} hover>
+                            <TableCell sx={{ fontWeight: 600 }}>{pp.plant?.name ?? '-'}</TableCell>
+                            <TableCell>{pp.plant?.type ?? '-'}</TableCell>
+                            <TableCell>{pp.plant?.status ?? '-'}</TableCell>
+                            <TableCell>{fmtDate(pp.assignedAt)}</TableCell>
+                            <TableCell align="right">
+                              <Tooltip title="Remove">
+                                <IconButton size="small" color="error" onClick={() => setRemovePlantId(pp.id)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {!(project as any).plants?.length && (
+                          <TableRow><TableCell colSpan={5}><EmptyState message="No plants assigned yet" actionLabel="Assign Plant" onAction={() => setPlantOpen(true)} /></TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
             </>
           )}
 
           {/* ── Employees ── */}
-          {tab === 5 && (
+          {tab === 7 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 2 }}>
                 <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setEmployeeOpen(true)}>
@@ -788,7 +1224,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Invoices ── */}
-          {tab === 6 && (
+          {tab === 8 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 {invoicesData?.data.length ? (() => {
@@ -848,7 +1284,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Purchase Orders ── */}
-          {tab === 7 && (
+          {tab === 9 && (
             <>
               <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 {posData?.data.length ? (() => {
@@ -908,7 +1344,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Payroll ── */}
-          {tab === 8 && (
+          {tab === 10 && (
             <>
               {/* Month/Year selector */}
               <Stack direction="row" spacing={2} sx={{ mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1097,7 +1533,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Attendance ── */}
-          {tab === 9 && (() => {
+          {tab === 11 && (() => {
             const assignedLabours = project.labours ?? [];
             const assignedEmployees = project.employees ?? [];
             const selectedLabour = assignedLabours.find((l) => l.labour?.id === selectedAttLabourId)?.labour;
@@ -1304,7 +1740,7 @@ export default function ProjectDetailPage() {
               <FormControl fullWidth>
                 <InputLabel>Category</InputLabel>
                 <Select label="Category" value={expCategory} onChange={(e) => setExpCategory(e.target.value)}>
-                  {EXPENSE_CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                  {expCategoryNames.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                 </Select>
               </FormControl>
               <TextField
@@ -1418,6 +1854,103 @@ export default function ProjectDetailPage() {
         </form>
       </Dialog>
 
+      {/* Add / Edit Income Dialog */}
+      <Dialog open={incomeOpen} onClose={() => setIncomeOpen(false)} maxWidth="sm" fullWidth>
+        <form onSubmit={handleSaveIncome}>
+          <DialogTitle>{editIncomeId ? 'Edit Income' : 'Add Income'}</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select label="Category" value={incCategory} onChange={(e) => setIncCategory(e.target.value)}>
+                  {incCategoryNames.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Amount"
+                type="number"
+                value={incAmount}
+                onChange={(e) => setIncAmount(e.target.value)}
+                required
+                fullWidth
+                slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              />
+              <TextField
+                label="Date"
+                type="date"
+                value={incDate}
+                onChange={(e) => setIncDate(e.target.value)}
+                required
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+              <TextField label="Source" value={incSource} onChange={(e) => setIncSource(e.target.value)} fullWidth placeholder="e.g. Client name, invoice ref" />
+              <TextField label="Description" value={incDescription} onChange={(e) => setIncDescription(e.target.value)} fullWidth multiline rows={2} />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIncomeOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={addingInc || updatingInc}>
+              {(addingInc || updatingInc) ? <CircularProgress size={20} /> : editIncomeId ? 'Update' : 'Add'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Assign Vehicle Dialog */}
+      <Dialog open={vehicleOpen} onClose={() => setVehicleOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleAssignVehicle}>
+          <DialogTitle>Assign Vehicle</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Vehicle</InputLabel>
+                <Select label="Vehicle" value={selectedVehicleId} onChange={(e) => setSelectedVehicleId(e.target.value)} required>
+                  {vehiclesList.map((v: any) => (
+                    <MenuItem key={v.id} value={v.id}>
+                      {v.name ?? `${v.make ?? ''} ${v.model ?? ''}`.trim()}{v.registrationNumber ? ` — ${v.registrationNumber}` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setVehicleOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={assigningVehicle || !selectedVehicleId}>
+              {assigningVehicle ? <CircularProgress size={20} /> : 'Assign'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Assign Plant Dialog */}
+      <Dialog open={plantOpen} onClose={() => setPlantOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleAssignPlant}>
+          <DialogTitle>Assign Plant</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Plant</InputLabel>
+                <Select label="Plant" value={selectedPlantId} onChange={(e) => setSelectedPlantId(e.target.value)} required>
+                  {plantsList.map((p: any) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}{p.type ? ` — ${p.type}` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPlantOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={assigningPlant || !selectedPlantId}>
+              {assigningPlant ? <CircularProgress size={20} /> : 'Assign'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
       <ConfirmDialog
         open={Boolean(deleteExpId)}
         title="Delete Expense"
@@ -1444,6 +1977,33 @@ export default function ProjectDetailPage() {
         destructive
         onConfirm={handleRemoveMachinery}
         onCancel={() => setRemoveMachineryId(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteIncId)}
+        title="Delete Income"
+        message="Are you sure you want to delete this income record?"
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteIncome}
+        onCancel={() => setDeleteIncId(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(removeVehicleId)}
+        title="Remove Vehicle"
+        message="Are you sure you want to remove this vehicle from the project?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={handleRemoveVehicle}
+        onCancel={() => setRemoveVehicleId(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(removePlantId)}
+        title="Remove Plant"
+        message="Are you sure you want to remove this plant from the project?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={handleRemovePlant}
+        onCancel={() => setRemovePlantId(null)}
       />
       <ConfirmDialog
         open={Boolean(removeEmployeeId)}
