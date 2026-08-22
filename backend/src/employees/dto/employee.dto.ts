@@ -6,6 +6,7 @@ import {
   IsBoolean,
   Min,
   Max,
+  MaxLength,
   IsDateString,
   ValidateNested,
   IsArray,
@@ -22,31 +23,37 @@ export class CreateEmployeeDto {
   @ApiProperty({ example: 'Muhammad Ali' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   fullName: string;
 
   @ApiPropertyOptional({ example: 'Site Engineer' })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   designation?: string;
 
   @ApiPropertyOptional({ example: 'Engineering' })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   department?: string;
 
   @ApiPropertyOptional({ example: '+92-300-1111111' })
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   phoneNumber?: string;
 
   @ApiPropertyOptional({ example: '35202-7654321-1' })
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   cnic?: string;
 
   @ApiPropertyOptional({ example: '789 Model Town, Lahore' })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   address?: string;
 
   @ApiProperty({ example: 50000 })

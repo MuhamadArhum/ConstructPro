@@ -192,23 +192,25 @@ export class InvoicesService {
   }
 
   async updateStatus(id: string, dto: UpdateInvoiceStatusDto) {
-    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
-    if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findUnique({ where: { id } });
+      if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
 
-    const updated = await this.prisma.invoice.update({
-      where: { id },
-      data: { status: dto.status },
-      include: {
-        customer: { select: { id: true, name: true } },
-        project: { select: { id: true, name: true } },
-      },
-    });
+      const wasNotPaid = invoice.status !== 'Paid';
 
-    // Only process payment transaction when transitioning TO Paid for the first time
-    if (dto.status === 'Paid' && invoice.status !== 'Paid') {
-      const invoiceTotal = Number(invoice.total);
-      await this.prisma.$transaction([
-        this.prisma.customerTransaction.create({
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { status: dto.status },
+        include: {
+          customer: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true } },
+        },
+      });
+
+      // Only process payment transaction when transitioning TO Paid for the first time
+      if (dto.status === 'Paid' && wasNotPaid) {
+        const invoiceTotal = Number(invoice.total);
+        await tx.customerTransaction.create({
           data: {
             customerId: invoice.customerId,
             type: 'PAYMENT',
@@ -217,18 +219,18 @@ export class InvoicesService {
             description: `Payment for invoice ${invoice.invoiceNumber}`,
             reference: invoice.invoiceNumber,
           },
-        }),
-        this.prisma.customer.update({
+        });
+        await tx.customer.update({
           where: { id: invoice.customerId },
           data: {
             totalBilled: { increment: invoiceTotal },
             totalPaid: { increment: invoiceTotal },
           },
-        }),
-      ]);
-    }
+        });
+      }
 
-    return this.mapInvoice(updated);
+      return this.mapInvoice(updated);
+    });
   }
 
   async remove(id: string) {

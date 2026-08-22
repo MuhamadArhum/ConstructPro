@@ -5,6 +5,8 @@ import {
   IsNumber,
   IsPositive,
   Min,
+  Max,
+  MaxLength,
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -19,12 +21,12 @@ export class CreateExpenseDto {
   @ApiProperty({ example: 'LabourExpenses' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   category: string;
 
   @ApiProperty({ example: 25000 })
   @IsNumber()
   @IsPositive()
-  @Min(0)
   @Type(() => Number)
   amount: number;
 
@@ -36,16 +38,19 @@ export class CreateExpenseDto {
   @ApiPropertyOptional({ example: 'Payment for foundation work' })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional({ example: 'Ali Construction Co.' })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   vendor?: string;
 
   @ApiPropertyOptional({ example: 'Includes overtime charges' })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 }
 
@@ -101,6 +106,7 @@ export class ExpenseQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @Max(100)
   pageSize?: number = 10;
 
   @ApiPropertyOptional({ example: 'LabourExpenses' })

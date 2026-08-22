@@ -14,8 +14,8 @@ export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: InventoryQueryDto) {
-    const page = query.pageNumber ?? 1;
-    const limit = query.pageSize ?? 10;
+    const page = Math.max(1, Math.floor(query.pageNumber ?? 1));
+    const limit = Math.min(100, Math.max(1, Math.floor(query.pageSize ?? 10)));
     const skip = (page - 1) * limit;
 
     const where: any = {};

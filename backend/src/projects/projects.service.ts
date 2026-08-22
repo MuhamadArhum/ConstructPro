@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -34,7 +35,9 @@ export class ProjectsService {
     startDateFrom?: string,
     startDateTo?: string,
   ) {
-    const skip = (page - 1) * pageSize;
+    const safePage = Math.max(1, Math.floor(page));
+    const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+    const skip = (safePage - 1) * safePageSize;
 
     const where: any = {};
 
@@ -60,7 +63,7 @@ export class ProjectsService {
       this.prisma.project.findMany({
         where,
         skip,
-        take: pageSize,
+        take: safePageSize,
         orderBy: { createdAt: 'desc' },
         include: {
           client: { select: { id: true, name: true } },
@@ -160,6 +163,10 @@ export class ProjectsService {
     } else {
       code = await generateCode(this.prisma, 'project');
     }
+    if (dto.endDate && new Date(dto.endDate) < new Date(dto.startDate)) {
+      throw new BadRequestException('End date cannot be before start date');
+    }
+
     const project = await this.prisma.project.create({
       data: {
         code,
@@ -438,18 +445,23 @@ export class ProjectsService {
     const totalIncome = incomes.reduce((s, i) => s + Number(i.amount), 0);
     const totalDirectExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
 
-    // Labour wages from attendance
-    const labourWages = await Promise.all(
-      project.labours.map(async (pl) => {
-        const where: any = { labourId: pl.labour.id };
-        if (dateFilter) where.date = dateFilter;
-        const attendances = await this.prisma.labourAttendance.findMany({ where });
-        const presentDays = attendances.filter((a) => a.isPresent).length;
-        const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
-        const wage = presentDays * Number(pl.labour.dailyWage) + overtimeHours * Number(pl.labour.overtimeRatePerHour);
-        return wage;
-      }),
-    );
+    // Labour wages from attendance — single batch query instead of N+1
+    const labourIds = project.labours.map((pl) => pl.labour.id);
+    const allLabourAttendances = labourIds.length > 0
+      ? await this.prisma.labourAttendance.findMany({
+          where: { labourId: { in: labourIds }, ...(dateFilter && { date: dateFilter }) },
+        })
+      : [];
+    const labourAttendanceMap = new Map<string, typeof allLabourAttendances>();
+    labourIds.forEach((id) => labourAttendanceMap.set(id, []));
+    allLabourAttendances.forEach((a) => labourAttendanceMap.get(a.labourId)?.push(a));
+
+    const labourWages = project.labours.map((pl) => {
+      const attendances = labourAttendanceMap.get(pl.labour.id) ?? [];
+      const presentDays = attendances.filter((a) => a.isPresent).length;
+      const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
+      return presentDays * Number(pl.labour.dailyWage) + overtimeHours * Number(pl.labour.overtimeRatePerHour);
+    });
     const totalLabourCost = labourWages.reduce((s, w) => s + w, 0);
 
     // Employee salaries
@@ -668,39 +680,41 @@ export class ProjectsService {
       }),
     );
 
-    // Labour wages from attendance within project dates
-    const labourResults = await Promise.all(
-      project.labours.map(async (pl) => {
-        const dailyWage = Number(pl.labour.dailyWage);
-        const overtimeRate = Number(pl.labour.overtimeRatePerHour);
+    // Labour wages from attendance within project dates — batch fetch
+    const salaryLabourIds = project.labours.map((pl) => pl.labour.id);
+    const allSalaryLabourAttendances = salaryLabourIds.length > 0
+      ? await this.prisma.labourAttendance.findMany({
+          where: { labourId: { in: salaryLabourIds }, date: { gte: from, lte: to } },
+        })
+      : [];
+    const salaryLabourAttendanceMap = new Map<string, typeof allSalaryLabourAttendances>();
+    salaryLabourIds.forEach((id) => salaryLabourAttendanceMap.set(id, []));
+    allSalaryLabourAttendances.forEach((a) => salaryLabourAttendanceMap.get(a.labourId)?.push(a));
 
-        const attendances = await this.prisma.labourAttendance.findMany({
-          where: {
-            labourId: pl.labour.id,
-            date: { gte: from, lte: to },
-          },
-        });
+    const labourResults = project.labours.map((pl) => {
+      const dailyWage = Number(pl.labour.dailyWage);
+      const overtimeRate = Number(pl.labour.overtimeRatePerHour);
+      const attendances = salaryLabourAttendanceMap.get(pl.labour.id) ?? [];
 
-        const presentDays = attendances.filter((a) => a.isPresent).length;
-        const totalOvertimeHours = attendances.reduce((sum, a) => sum + Number(a.overtimeHours), 0);
-        const wagesEarned = presentDays * dailyWage;
-        const overtimePay = totalOvertimeHours * overtimeRate;
-        const totalWages = wagesEarned + overtimePay;
+      const presentDays = attendances.filter((a) => a.isPresent).length;
+      const totalOvertimeHours = attendances.reduce((sum, a) => sum + Number(a.overtimeHours), 0);
+      const wagesEarned = presentDays * dailyWage;
+      const overtimePay = totalOvertimeHours * overtimeRate;
+      const totalWages = wagesEarned + overtimePay;
 
-        return {
-          id: pl.labour.id,
-          name: pl.labour.name,
-          trade: pl.labour.trade,
-          dailyWage,
-          assignedAt: pl.assignedAt,
-          presentDays,
-          totalOvertimeHours,
-          wagesEarned,
-          overtimePay,
-          totalWages,
-        };
-      }),
-    );
+      return {
+        id: pl.labour.id,
+        name: pl.labour.name,
+        trade: pl.labour.trade,
+        dailyWage,
+        assignedAt: pl.assignedAt,
+        presentDays,
+        totalOvertimeHours,
+        wagesEarned,
+        overtimePay,
+        totalWages,
+      };
+    });
 
     const totalEmployeeSalary = employeeResults.reduce((s, e) => s + e.totalSalary, 0);
     const totalLabourWages = labourResults.reduce((s, l) => s + l.totalWages, 0);
@@ -749,70 +763,83 @@ export class ProjectsService {
       : [];
     const salaryMap = new Map(salaryRecords.map((s) => [s.employeeId, s]));
 
-    const employees = await Promise.all(
-      project.employees.map(async (pe) => {
-        const sp = salaryMap.get(pe.employee.id);
-        const attRecords = await this.prisma.employeeAttendance.findMany({
-          where: { employeeId: pe.employee.id, date: { gte: startDate, lte: endDate } },
-        });
-        const attendanceDaysPresent = attRecords.filter((a) => a.isPresent).length;
-        return {
-          employeeId: pe.employee.id,
-          fullName: pe.employee.fullName,
-          designation: pe.employee.designation,
-          basicSalary: Number(pe.employee.basicSalary),
-          attendanceDaysPresent,
-          salary: sp
-            ? {
-                id: sp.id,
-                code: sp.code ?? null,
-                employeeId: sp.employeeId,
-                month: sp.month,
-                year: sp.year,
-                basicSalary: Number(sp.basicSalary),
-                bonus: Number(sp.bonus),
-                deductions: Number(sp.deductions),
-                netSalary: Number(sp.netSalary),
-                daysPresent: sp.daysPresent,
-                totalDays: sp.totalDays,
-                status: sp.status,
-                generatedAt: sp.paidAt,
-                paidDate: sp.paidDate,
-                remarks: sp.remarks,
-              }
-            : null,
-        };
-      }),
-    );
+    // Batch fetch all employee attendance in one query instead of N+1
+    const payrollEmpIds = project.employees.map((pe) => pe.employee.id);
+    const allEmpAttendances = payrollEmpIds.length > 0
+      ? await this.prisma.employeeAttendance.findMany({
+          where: { employeeId: { in: payrollEmpIds }, date: { gte: startDate, lte: endDate } },
+        })
+      : [];
+    const empAttendanceMap = new Map<string, typeof allEmpAttendances>();
+    payrollEmpIds.forEach((id) => empAttendanceMap.set(id, []));
+    allEmpAttendances.forEach((a) => empAttendanceMap.get(a.employeeId)?.push(a));
 
-    const labours = await Promise.all(
-      project.labours.map(async (pl) => {
-        const lab = pl.labour;
-        const dailyWage = Number(lab.dailyWage);
-        const overtimeRate = Number(lab.overtimeRatePerHour);
+    const employees = project.employees.map((pe) => {
+      const sp = salaryMap.get(pe.employee.id);
+      const attRecords = empAttendanceMap.get(pe.employee.id) ?? [];
+      const attendanceDaysPresent = attRecords.filter((a) => a.isPresent).length;
+      return {
+        employeeId: pe.employee.id,
+        fullName: pe.employee.fullName,
+        designation: pe.employee.designation,
+        basicSalary: Number(pe.employee.basicSalary),
+        attendanceDaysPresent,
+        salary: sp
+          ? {
+              id: sp.id,
+              code: sp.code ?? null,
+              employeeId: sp.employeeId,
+              month: sp.month,
+              year: sp.year,
+              basicSalary: Number(sp.basicSalary),
+              bonus: Number(sp.bonus),
+              deductions: Number(sp.deductions),
+              netSalary: Number(sp.netSalary),
+              daysPresent: sp.daysPresent,
+              totalDays: sp.totalDays,
+              status: sp.status,
+              generatedAt: sp.paidAt,
+              paidDate: sp.paidDate,
+              remarks: sp.remarks,
+            }
+          : null,
+      };
+    });
 
-        const attendances = await this.prisma.labourAttendance.findMany({
-          where: { labourId: lab.id, date: { gte: startDate, lte: endDate } },
-        });
+    // Batch fetch all labour attendance in one query instead of N+1
+    const payrollLabourIds = project.labours.map((pl) => pl.labour.id);
+    const allLabourAtt = payrollLabourIds.length > 0
+      ? await this.prisma.labourAttendance.findMany({
+          where: { labourId: { in: payrollLabourIds }, date: { gte: startDate, lte: endDate } },
+        })
+      : [];
+    const labourAttMap = new Map<string, typeof allLabourAtt>();
+    payrollLabourIds.forEach((id) => labourAttMap.set(id, []));
+    allLabourAtt.forEach((a) => labourAttMap.get(a.labourId)?.push(a));
 
-        const daysPresent = attendances.filter((a) => a.isPresent).length;
-        const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
-        const wagesEarned = daysPresent * dailyWage;
-        const overtimePay = overtimeHours * overtimeRate;
+    const labours = project.labours.map((pl) => {
+      const lab = pl.labour;
+      const dailyWage = Number(lab.dailyWage);
+      const overtimeRate = Number(lab.overtimeRatePerHour);
+      const attendances = labourAttMap.get(lab.id) ?? [];
 
-        return {
-          labourId: lab.id,
-          name: lab.name,
-          trade: lab.trade,
-          dailyWage,
-          daysPresent,
-          overtimeHours: Math.round(overtimeHours * 100) / 100,
-          wagesEarned: Math.round(wagesEarned * 100) / 100,
-          overtimePay: Math.round(overtimePay * 100) / 100,
-          totalWages: Math.round((wagesEarned + overtimePay) * 100) / 100,
-        };
-      }),
-    );
+      const daysPresent = attendances.filter((a) => a.isPresent).length;
+      const overtimeHours = attendances.reduce((s, a) => s + Number(a.overtimeHours), 0);
+      const wagesEarned = daysPresent * dailyWage;
+      const overtimePay = overtimeHours * overtimeRate;
+
+      return {
+        labourId: lab.id,
+        name: lab.name,
+        trade: lab.trade,
+        dailyWage,
+        daysPresent,
+        overtimeHours: Math.round(overtimeHours * 100) / 100,
+        wagesEarned: Math.round(wagesEarned * 100) / 100,
+        overtimePay: Math.round(overtimePay * 100) / 100,
+        totalWages: Math.round((wagesEarned + overtimePay) * 100) / 100,
+      };
+    });
 
     return { month, year, employees, labours };
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box, Button, Divider, FormControl, Grid, IconButton, InputAdornment,
   InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody,
@@ -23,14 +23,15 @@ interface LineItem extends CreateInvoiceItemDto {
   _key: number;
 }
 
-let keyCounter = 0;
-const newItem = (): LineItem => ({ _key: ++keyCounter, description: '', quantity: 1, unitPrice: 0 });
+// keyCounter is component-scoped via useRef — do NOT use a module-level variable
 
 export default function InvoiceFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const keyRef = useRef(0);
+  const newItem = (): LineItem => ({ _key: ++keyRef.current, description: '', quantity: 1, unitPrice: 0 });
 
   const { data: existing, isLoading: loadingExisting } = useGetInvoiceQuery(id ?? '', { skip: !isEdit });
   const { data: customersData } = useGetCustomersQuery({ pageSize: 1000 });
@@ -58,7 +59,7 @@ export default function InvoiceFormPage() {
       setNotes(existing.notes ?? '');
       setTaxAmount(existing.taxAmount ?? 0);
       if (existing.items?.length) {
-        setItems(existing.items.map((it) => ({ _key: ++keyCounter, description: it.description, quantity: it.quantity, unitPrice: it.unitPrice })));
+        setItems(existing.items.map((it) => ({ _key: ++keyRef.current, description: it.description, quantity: it.quantity, unitPrice: it.unitPrice })));
       }
     }
   }, [existing]);
@@ -93,6 +94,10 @@ export default function InvoiceFormPage() {
     }
     if (items.some((it) => it.unitPrice <= 0)) {
       dispatch(showSnackbar({ message: 'All line items must have a unit price greater than zero', severity: 'warning' }));
+      return;
+    }
+    if (taxAmount < 0) {
+      dispatch(showSnackbar({ message: 'Tax amount cannot be negative', severity: 'warning' }));
       return;
     }
     const payload = {
@@ -272,11 +277,11 @@ export default function InvoiceFormPage() {
             <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Tax Amount</Typography>
             <TextField
               value={taxAmount}
-              onChange={(e) => setTaxAmount(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setTaxAmount(Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
               type="number"
               sx={{ width: 120 }}
-              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0, step: 0.01 } }}
             />
           </Stack>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320 }}>

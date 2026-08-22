@@ -39,7 +39,7 @@ export default function ExpenseFormPage() {
   const [vendor, setVendor] = useState('');
   const [projectName, setProjectName] = useState('');
 
-  const suppliers = (suppliersData as any)?.items ?? (suppliersData as any)?.data ?? [];
+  const suppliers = suppliersData?.items ?? [];
   const projects = projectsData?.data ?? [];
 
   useEffect(() => {

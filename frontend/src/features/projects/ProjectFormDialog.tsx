@@ -114,7 +114,7 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
   };
 
   const isBusy = isCreating || isUpdating;
-  const customers = (customersData as any)?.items ?? (customersData as any)?.data ?? [];
+  const customers = customersData?.items ?? [];
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

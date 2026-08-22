@@ -54,8 +54,8 @@ export class CreateInvoiceDto {
   dueDate: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(InvoiceStatus)
+  status?: InvoiceStatus;
 
   @IsOptional()
   @Type(() => Number)

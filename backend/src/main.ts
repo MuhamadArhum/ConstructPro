@@ -33,7 +33,22 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // ─── Security headers ─────────────────────────────────────────────
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+    }),
+  );
 
   // ─── CORS ─────────────────────────────────────────────────────────
   const rawOrigins = process.env.CORS_ORIGINS;

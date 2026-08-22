@@ -1,11 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private statsCache: { data: unknown; expiresAt: number } | null = null;
+  private dashboardCache: { data: unknown; expiresAt: number } | null = null;
+
   async getStats() {
+    if (this.statsCache && this.statsCache.expiresAt > Date.now()) {
+      return this.statsCache.data;
+    }
+    const result = await this._fetchStats();
+    this.statsCache = { data: result, expiresAt: Date.now() + CACHE_TTL_MS };
+    return result;
+  }
+
+  private async _fetchStats() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -158,6 +172,15 @@ export class DashboardService {
   }
 
   async getDashboardData() {
+    if (this.dashboardCache && this.dashboardCache.expiresAt > Date.now()) {
+      return this.dashboardCache.data;
+    }
+    const result = await this._fetchDashboardData();
+    this.dashboardCache = { data: result, expiresAt: Date.now() + CACHE_TTL_MS };
+    return result;
+  }
+
+  private async _fetchDashboardData() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);

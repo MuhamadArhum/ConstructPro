@@ -7,6 +7,7 @@ import {
   IsIn,
   Min,
   Max,
+  MaxLength,
   IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -17,14 +18,17 @@ const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancell
 export class CreateProjectDto {
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   code?: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   name: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @IsOptional()
@@ -33,6 +37,7 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   siteAddress?: string;
 
   @IsDateString()
@@ -62,10 +67,12 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   managerName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 }
 

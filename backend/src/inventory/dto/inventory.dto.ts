@@ -6,6 +6,8 @@ import {
   IsEnum,
   IsBoolean,
   Min,
+  Max,
+  MaxLength,
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -21,16 +23,19 @@ export class CreateInventoryItemDto {
   @ApiProperty({ example: 'Portland Cement' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   name: string;
 
   @ApiPropertyOptional({ example: 'Building Materials' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   category?: string;
 
   @ApiPropertyOptional({ example: 'Bags' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   unit?: string;
 
   @ApiPropertyOptional({ example: 0, default: 0 })
@@ -180,6 +185,7 @@ export class InventoryQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @Max(100)
   pageSize?: number = 10;
 
   @ApiPropertyOptional({ example: 'Cement' })
