@@ -7,7 +7,6 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Chip } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -104,6 +103,7 @@ export default function ProjectDetailPage() {
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
   const [expCategory, setExpCategory] = useState('Materials');
   const [expAmount, setExpAmount] = useState('');
+  const [expTax, setExpTax] = useState('0');
   const [expDate, setExpDate] = useState(today());
   const [expDescription, setExpDescription] = useState('');
   const [deleteExpId, setDeleteExpId] = useState<string | null>(null);
@@ -123,6 +123,7 @@ export default function ProjectDetailPage() {
   const [editIncomeId, setEditIncomeId] = useState<string | null>(null);
   const [incCategory, setIncCategory] = useState('');
   const [incAmount, setIncAmount] = useState('');
+  const [incTax, setIncTax] = useState('0');
   const [incDate, setIncDate] = useState(today());
   const [incDescription, setIncDescription] = useState('');
   const [incSource, setIncSource] = useState('');
@@ -308,15 +309,17 @@ export default function ProjectDetailPage() {
     setEditExpenseId(null);
     setExpCategory((expenseCategories as any[])[0]?.name ?? 'Materials');
     setExpAmount('');
+    setExpTax('0');
     setExpDate(today());
     setExpDescription('');
     setExpenseOpen(true);
   };
 
-  const openEditExpense = (exp: { id: string; category: string; amount: number; date: string; description?: string | null }) => {
+  const openEditExpense = (exp: { id: string; category: string; amount: number; tax: number; date: string; description?: string | null }) => {
     setEditExpenseId(exp.id);
     setExpCategory(exp.category);
     setExpAmount(String(exp.amount));
+    setExpTax(String(exp.tax ?? 0));
     setExpDate(exp.date.split('T')[0]);
     setExpDescription(exp.description ?? '');
     setExpenseOpen(true);
@@ -324,7 +327,7 @@ export default function ProjectDetailPage() {
 
   const handleSaveExpense = async (e: FormEvent) => {
     e.preventDefault();
-    const data = { category: expCategory, amount: parseFloat(expAmount), date: expDate, description: expDescription || undefined };
+    const data = { category: expCategory, amount: parseFloat(expAmount), tax: parseFloat(expTax) || 0, date: expDate, description: expDescription || undefined };
     try {
       if (editExpenseId) {
         await updateExpense({ id: id!, expId: editExpenseId, data }).unwrap();
@@ -399,6 +402,7 @@ export default function ProjectDetailPage() {
     setEditIncomeId(null);
     setIncCategory((incomeCategories as any[])[0]?.name ?? '');
     setIncAmount('');
+    setIncTax('0');
     setIncDate(today());
     setIncDescription('');
     setIncSource('');
@@ -408,6 +412,7 @@ export default function ProjectDetailPage() {
     setEditIncomeId(inc.id);
     setIncCategory(inc.category);
     setIncAmount(String(inc.amount));
+    setIncTax(String(inc.tax ?? 0));
     setIncDate(inc.date?.split('T')[0] ?? today());
     setIncDescription(inc.description ?? '');
     setIncSource(inc.source ?? '');
@@ -416,7 +421,7 @@ export default function ProjectDetailPage() {
   const handleSaveIncome = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const data = { category: incCategory, amount: Number(incAmount), date: incDate, description: incDescription || undefined, source: incSource || undefined };
+      const data = { category: incCategory, amount: Number(incAmount), tax: parseFloat(incTax) || 0, date: incDate, description: incDescription || undefined, source: incSource || undefined };
       if (editIncomeId) {
         await updateIncome({ id: id!, incomeId: editIncomeId, data }).unwrap();
         dispatch(showSnackbar({ message: 'Income updated', severity: 'success' }));
@@ -635,7 +640,7 @@ export default function ProjectDetailPage() {
               bulkUpsertLabourAttendance={bulkUpsertLabourAttendance}
               bulkUpsertEmpAttendance={bulkUpsertEmpAttendance}
               dispatch={dispatch}
-              showSnackbar={showSnackbar}
+              showSnackbar={(args) => showSnackbar({ message: args.message, severity: args.severity as any })}
               payrollData={payrollData}
               payrollMonth={payrollMonth}
               setPayrollMonth={setPayrollMonth}
@@ -661,7 +666,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* ── Invoices ── */}
-          {tab === 6 && <ProjectInvoicesTab invoicesData={invoicesData} navigate={navigate} />}
+          {tab === 6 && <ProjectInvoicesTab invoicesData={invoicesData} navigate={navigate} projectId={id ?? ''} />}
 
           {/* ── Purchase Orders ── */}
           {tab === 7 && <ProjectPurchaseOrdersTab posData={posData} navigate={navigate} />}
@@ -742,6 +747,15 @@ export default function ProjectDetailPage() {
                 required
                 fullWidth
                 slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              />
+              <TextField
+                label="Tax"
+                type="number"
+                value={expTax}
+                onChange={(e) => setExpTax(e.target.value)}
+                fullWidth
+                slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                helperText={parseFloat(expAmount) > 0 && parseFloat(expTax) > 0 ? `Total: PKR ${(parseFloat(expAmount) + parseFloat(expTax)).toLocaleString()}` : ''}
               />
               <TextField
                 label="Date"
@@ -865,6 +879,15 @@ export default function ProjectDetailPage() {
                 required
                 fullWidth
                 slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+              />
+              <TextField
+                label="Tax"
+                type="number"
+                value={incTax}
+                onChange={(e) => setIncTax(e.target.value)}
+                fullWidth
+                slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
+                helperText={parseFloat(incAmount) > 0 && parseFloat(incTax) > 0 ? `Net: PKR ${(parseFloat(incAmount) - parseFloat(incTax)).toLocaleString()}` : ''}
               />
               <TextField
                 label="Date"

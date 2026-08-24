@@ -1,18 +1,15 @@
-import { useState } from 'react';
 import {
   Box, Button, Chip, CircularProgress, Divider, Grid, IconButton, Paper,
   Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
-import { useGetInvoiceQuery, useDeleteInvoiceMutation, useUpdateInvoiceStatusMutation } from './invoiceApi';
+import { useGetInvoiceQuery, useUpdateInvoiceStatusMutation } from './invoiceApi';
 import { INVOICE_STATUS_COLORS } from '../../utils/statusColors';
 import { useGetSettingsQuery } from '../settings/settingsApi';
 import jsPDF from 'jspdf';
@@ -27,26 +24,13 @@ const ORANGE: [number, number, number] = [232, 93, 31];
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo') ?? '/invoices';
   const dispatch = useAppDispatch();
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: settings } = useGetSettingsQuery();
   const { data: invoice, isLoading } = useGetInvoiceQuery(id ?? '', { skip: !id });
-  const [deleteInvoice] = useDeleteInvoiceMutation();
   const [updateStatus, { isLoading: updatingStatus }] = useUpdateInvoiceStatusMutation();
-
-  const handleDelete = async () => {
-    if (!id) return;
-    try {
-      await deleteInvoice(id).unwrap();
-      dispatch(showSnackbar({ message: 'Invoice deleted', severity: 'success' }));
-      navigate('/invoices');
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to delete invoice', severity: 'error' }));
-    } finally {
-      setDeleteOpen(false);
-    }
-  };
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!id) return;
@@ -172,15 +156,15 @@ export default function InvoiceDetailPage() {
   );
 
   const canMarkSent = invoice.status === 'Draft';
-  const canMarkPaid = invoice.status === 'Sent' || invoice.status === 'Overdue';
-  const canMarkCancelled = invoice.status !== 'Paid' && invoice.status !== 'Cancelled';
+  const canMarkPaid = invoice.status === 'Sent';
+  const canMarkCancelled = invoice.status !== 'Cancelled';
 
   return (
     <Box>
-      <AppBreadcrumbs crumbs={[{ label: 'Invoices', to: '/invoices' }, { label: invoice.invoiceNumber }]} />
+      <AppBreadcrumbs crumbs={[{ label: 'Invoices', to: returnTo }, { label: invoice.invoiceNumber }]} />
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <Tooltip title="Back to Invoices">
-          <IconButton onClick={() => navigate('/invoices')} aria-label="Back to Invoices"><ArrowBackIcon /></IconButton>
+        <Tooltip title="Back">
+          <IconButton onClick={() => navigate(returnTo)} aria-label="Back"><ArrowBackIcon /></IconButton>
         </Tooltip>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{invoice.invoiceNumber}</Typography>
@@ -189,11 +173,8 @@ export default function InvoiceDetailPage() {
         <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={handleExportPdf} size="small">
           Export PDF
         </Button>
-        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/invoices/${id}/edit`)} size="small">
+        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/invoices/${id}/edit?returnTo=${encodeURIComponent(returnTo)}`)} size="small">
           Edit
-        </Button>
-        <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteOpen(true)} size="small">
-          Delete
         </Button>
       </Stack>
 
@@ -288,7 +269,7 @@ export default function InvoiceDetailPage() {
             <Typography sx={{ minWidth: 120, textAlign: 'right' }}>{fmt(invoice.subtotal)}</Typography>
           </Stack>
           <Stack direction="row" spacing={6} sx={{ minWidth: 280 }}>
-            <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Tax</Typography>
+            <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Tax {invoice.taxRate > 0 ? `(${invoice.taxRate}%)` : ''}</Typography>
             <Typography sx={{ minWidth: 120, textAlign: 'right' }}>{fmt(invoice.taxAmount)}</Typography>
           </Stack>
           <Divider sx={{ width: '100%', maxWidth: 400 }} />
@@ -308,15 +289,6 @@ export default function InvoiceDetailPage() {
         </Paper>
       )}
 
-      <ConfirmDialog
-        open={deleteOpen}
-        title="Delete Invoice"
-        message="Are you sure you want to delete this invoice? This cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteOpen(false)}
-      />
     </Box>
   );
 }

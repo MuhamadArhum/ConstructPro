@@ -7,7 +7,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
@@ -16,7 +16,7 @@ import { useGetCustomersQuery } from '../customers/customerApi';
 import { useGetProjectsQuery } from '../projects/projectApi';
 import type { CreateInvoiceItemDto } from '../../types/invoice.types';
 
-const STATUS_OPTIONS = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'];
+const STATUS_OPTIONS = ['Draft', 'Sent', 'Paid', 'Cancelled'];
 const today = () => new Date().toISOString().split('T')[0];
 
 interface LineItem extends CreateInvoiceItemDto {
@@ -29,6 +29,9 @@ export default function InvoiceFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo') ?? '/invoices';
+  const prefilledProjectId = searchParams.get('projectId') ?? '';
   const dispatch = useAppDispatch();
   const keyRef = useRef(0);
   const newItem = (): LineItem => ({ _key: ++keyRef.current, description: '', quantity: 1, unitPrice: 0 });
@@ -41,12 +44,12 @@ export default function InvoiceFormPage() {
   const [updateInvoice, { isLoading: updating }] = useUpdateInvoiceMutation();
 
   const [customerId, setCustomerId] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState(prefilledProjectId);
   const [issueDate, setIssueDate] = useState(today());
   const [dueDate, setDueDate] = useState(today());
   const [status, setStatus] = useState('Draft');
   const [notes, setNotes] = useState('');
-  const [taxAmount, setTaxAmount] = useState(0);
+  const [taxRate, setTaxRate] = useState(0);
   const [items, setItems] = useState<LineItem[]>([newItem()]);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function InvoiceFormPage() {
       setDueDate(existing.dueDate?.split('T')[0] ?? today());
       setStatus(existing.status ?? 'Draft');
       setNotes(existing.notes ?? '');
-      setTaxAmount(existing.taxAmount ?? 0);
+      setTaxRate(existing.taxRate ?? 0);
       if (existing.items?.length) {
         setItems(existing.items.map((it) => ({ _key: ++keyRef.current, description: it.description, quantity: it.quantity, unitPrice: it.unitPrice })));
       }
@@ -73,7 +76,8 @@ export default function InvoiceFormPage() {
   };
 
   const subtotal = items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0);
-  const total = subtotal + (taxAmount || 0);
+  const taxAmount = Math.round((subtotal * taxRate) / 100 * 100) / 100;
+  const total = subtotal + taxAmount;
 
   const handleSubmit = async () => {
     if (!customerId) {
@@ -96,8 +100,8 @@ export default function InvoiceFormPage() {
       dispatch(showSnackbar({ message: 'All line items must have a unit price greater than zero', severity: 'warning' }));
       return;
     }
-    if (taxAmount < 0) {
-      dispatch(showSnackbar({ message: 'Tax amount cannot be negative', severity: 'warning' }));
+    if (taxRate < 0 || taxRate > 100) {
+      dispatch(showSnackbar({ message: 'Tax rate must be between 0 and 100', severity: 'warning' }));
       return;
     }
     const payload = {
@@ -106,7 +110,7 @@ export default function InvoiceFormPage() {
       issueDate,
       dueDate,
       status,
-      taxAmount,
+      taxRate,
       notes: notes || undefined,
       items: items.map(({ description, quantity, unitPrice }) => ({ description, quantity, unitPrice })),
     };
@@ -118,7 +122,7 @@ export default function InvoiceFormPage() {
         await createInvoice(payload).unwrap();
         dispatch(showSnackbar({ message: 'Invoice created', severity: 'success' }));
       }
-      navigate('/invoices');
+      navigate(returnTo);
     } catch {
       dispatch(showSnackbar({ message: 'Failed to save invoice', severity: 'error' }));
     }
@@ -129,7 +133,7 @@ export default function InvoiceFormPage() {
   return (
     <Box sx={{ maxWidth: 900 }}>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/invoices')}><ArrowBackIcon /></IconButton>
+        <IconButton onClick={() => navigate(returnTo)}><ArrowBackIcon /></IconButton>
         <Typography variant="h1">{isEdit ? 'Edit Invoice' : 'New Invoice'}</Typography>
       </Stack>
 
@@ -274,14 +278,16 @@ export default function InvoiceFormPage() {
             <Typography sx={{ minWidth: 120, textAlign: 'right', fontWeight: 600 }}>PKR {subtotal.toLocaleString()}</Typography>
           </Stack>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320, alignItems: 'center' }}>
-            <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Tax Amount</Typography>
+            <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>
+              Tax ({taxRate}%) = PKR {taxAmount.toLocaleString()}
+            </Typography>
             <TextField
-              value={taxAmount}
-              onChange={(e) => setTaxAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+              value={taxRate}
+              onChange={(e) => setTaxRate(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
               size="small"
               type="number"
               sx={{ width: 120 }}
-              slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> }, htmlInput: { min: 0, step: 0.01 } }}
+              slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, max: 100, step: 0.1 } }}
             />
           </Stack>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320 }}>
@@ -294,7 +300,7 @@ export default function InvoiceFormPage() {
       </Paper>
 
       <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-        <Button onClick={() => navigate('/invoices')}>Cancel</Button>
+        <Button onClick={() => navigate(returnTo)}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={creating || updating}>
           {creating || updating ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Invoice'}
         </Button>

@@ -34,6 +34,7 @@ export interface ProjectExpense {
   projectId: string;
   category: string;
   amount: number;
+  tax: number;
   date: string;
   description?: string | null;
 }

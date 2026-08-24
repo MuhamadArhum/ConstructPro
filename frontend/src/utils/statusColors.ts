@@ -28,7 +28,6 @@ export const INVOICE_STATUS_COLORS: Record<string, 'default' | 'info' | 'success
   Draft: 'default',
   Sent: 'info',
   Paid: 'success',
-  Overdue: 'error',
   Cancelled: 'warning',
 };
 

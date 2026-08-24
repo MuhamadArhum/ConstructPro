@@ -7,24 +7,23 @@ import {
 import Grid from '@mui/material/Grid';
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TableSkeleton from '../../components/common/TableSkeleton';
-import { useGetInvoicesQuery, useDeleteInvoiceMutation, useUpdateInvoiceStatusMutation } from './invoiceApi';
+import { useGetInvoicesQuery, useUpdateInvoiceStatusMutation } from './invoiceApi';
 
 const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
 
-const STATUS_OPTIONS = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'];
+const STATUS_OPTIONS = ['Draft', 'Sent', 'Paid', 'Cancelled'];
 
 const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
   if (s === 'Sent') return 'info';
   if (s === 'Paid') return 'success';
-  if (s === 'Overdue') return 'error';
+  if (s === 'Cancelled') return 'warning';
   return 'default';
 };
 
@@ -57,7 +56,6 @@ export default function InvoiceListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<{ id: string; status: string } | null>(null);
 
   const { data, isLoading } = useGetInvoicesQuery({
@@ -66,24 +64,11 @@ export default function InvoiceListPage() {
     status: status || undefined,
     search: search || undefined,
   });
-  const [deleteInvoice] = useDeleteInvoiceMutation();
   const [updateStatus] = useUpdateInvoiceStatusMutation();
 
   const items = data?.data ?? [];
   const unpaid = items.filter((r) => r.status !== 'Paid' && r.status !== 'Cancelled').length;
-  const overdue = items.filter((r) => r.status === 'Overdue').length;
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await deleteInvoice(deleteId).unwrap();
-      dispatch(showSnackbar({ message: 'Invoice deleted', severity: 'success' }));
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to delete invoice', severity: 'error' }));
-    } finally {
-      setDeleteId(null);
-    }
-  };
+  const cancelled = items.filter((r) => r.status === 'Cancelled').length;
 
   const handleStatusChange = (id: string, newStatus: string) => {
     if (newStatus === 'Paid' || newStatus === 'Cancelled') {
@@ -132,9 +117,9 @@ export default function InvoiceListPage() {
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'error.main' }}>
-            <Typography variant="caption" color="text.secondary">Overdue</Typography>
-            <Typography variant="h4">{overdue}</Typography>
+          <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'text.disabled' }}>
+            <Typography variant="caption" color="text.secondary">Cancelled</Typography>
+            <Typography variant="h4">{cancelled}</Typography>
           </Paper>
         </Grid>
       </Grid>
@@ -180,11 +165,7 @@ export default function InvoiceListPage() {
             {isLoading ? <TableSkeleton cols={8} /> : (
               <>
                 {items.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    hover={row.status !== 'Overdue'}
-                    sx={row.status === 'Overdue' ? { bgcolor: 'error.light', '&:hover': { bgcolor: 'error.light' } } : undefined}
-                  >
+                  <TableRow key={row.id} hover>
                     <TableCell>
                       <Typography
                         sx={{ fontWeight: 600, color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
@@ -217,11 +198,6 @@ export default function InvoiceListPage() {
                           {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s} sx={{ fontSize: '12px' }}>{s}</MenuItem>)}
                         </Select>
                       </FormControl>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)} sx={{ ml: 0.5 }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -242,16 +218,6 @@ export default function InvoiceListPage() {
           rowsPerPageOptions={[10, 20, 50]}
         />
       </TableContainer>
-
-      <ConfirmDialog
-        open={Boolean(deleteId)}
-        title="Delete Invoice"
-        message="Are you sure you want to delete this invoice? This cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-      />
 
       <ConfirmDialog
         open={Boolean(pendingStatus)}

@@ -12,6 +12,7 @@ interface Expense {
   id: string;
   category: string;
   amount: number;
+  tax: number;
   date: string;
   description?: string | null;
 }
@@ -63,6 +64,8 @@ export default function ProjectExpensesTab({
               <TableCell>Category</TableCell>
               <TableCell>Description</TableCell>
               <TableCell align="right">Amount</TableCell>
+              <TableCell align="right">Tax</TableCell>
+              <TableCell align="right">Total</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -73,6 +76,8 @@ export default function ProjectExpensesTab({
                 <TableCell>{exp.category}</TableCell>
                 <TableCell>{exp.description ?? '-'}</TableCell>
                 <TableCell align="right">{fmt(exp.amount)}</TableCell>
+                <TableCell align="right" sx={{ color: 'warning.main' }}>{exp.tax > 0 ? fmt(exp.tax) : '-'}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(exp.amount + (exp.tax ?? 0))}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="Edit">
                     <IconButton size="small" onClick={() => openEditExpense(exp)}>
@@ -88,7 +93,7 @@ export default function ProjectExpensesTab({
               </TableRow>
             ))}
             {!project.expenses?.length && (
-              <TableRow><TableCell colSpan={5}><EmptyState message="No expenses yet" actionLabel="Add Expense" onAction={openAddExpense} /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={7}><EmptyState message="No expenses yet" actionLabel="Add Expense" onAction={openAddExpense} /></TableCell></TableRow>
             )}
           </TableBody>
         </Table>

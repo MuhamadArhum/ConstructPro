@@ -15,6 +15,7 @@ export interface Invoice {
   dueDate: string;
   status: string;
   subtotal: number;
+  taxRate: number;
   taxAmount: number;
   total: number;
   notes?: string | null;
@@ -36,7 +37,7 @@ export interface CreateInvoiceDto {
   issueDate: string;
   dueDate: string;
   status?: string;
-  taxAmount?: number;
+  taxRate?: number;
   notes?: string;
   items: CreateInvoiceItemDto[];
 }

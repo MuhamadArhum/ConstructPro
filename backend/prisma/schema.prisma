@@ -789,6 +789,7 @@ model ProjectExpense {
   projectId   String
   category    String
   amount      Decimal
+  tax         Decimal  @default(0)
   date        DateTime
   description String?
   createdAt   DateTime @default(now())
@@ -843,6 +844,7 @@ model ProjectIncome {
   projectId   String
   category    String
   amount      Decimal
+  tax         Decimal  @default(0)
   date        DateTime
   description String?
   source      String?
@@ -889,6 +891,7 @@ model Invoice {
   dueDate       DateTime
   status        String        @default("Draft")
   subtotal      Decimal       @default(0)
+  taxRate       Decimal       @default(0)
   taxAmount     Decimal       @default(0)
   total         Decimal       @default(0)
   notes         String?

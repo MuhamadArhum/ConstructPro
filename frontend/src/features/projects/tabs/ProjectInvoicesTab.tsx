@@ -10,9 +10,11 @@ import { fmt, fmtDate, INV_STATUS_COLOR } from './utils';
 interface Props {
   invoicesData: any;
   navigate: (path: string) => void;
+  projectId: string;
 }
 
-export default function ProjectInvoicesTab({ invoicesData, navigate }: Props) {
+export default function ProjectInvoicesTab({ invoicesData, navigate, projectId }: Props) {
+  const newInvoiceUrl = `/invoices/new?projectId=${projectId}&returnTo=/projects/${projectId}`;
   return (
     <>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -28,7 +30,7 @@ export default function ProjectInvoicesTab({ invoicesData, navigate }: Props) {
             </Stack>
           );
         })() : <Box />}
-        <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => navigate(`/invoices/new`)}>
+        <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => navigate(newInvoiceUrl)}>
           New Invoice
         </Button>
       </Stack>
@@ -56,7 +58,7 @@ export default function ProjectInvoicesTab({ invoicesData, navigate }: Props) {
                 <TableCell><Chip label={inv.status} color={INV_STATUS_COLOR(inv.status)} size="small" /></TableCell>
                 <TableCell align="right">
                   <Tooltip title="View">
-                    <IconButton size="small" onClick={() => navigate(`/invoices/${inv.id}`)}>
+                    <IconButton size="small" onClick={() => navigate(`/invoices/${inv.id}?returnTo=/projects/${projectId}`)}>
                       <VisibilityIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -64,7 +66,7 @@ export default function ProjectInvoicesTab({ invoicesData, navigate }: Props) {
               </TableRow>
             ))}
             {!invoicesData?.data.length && (
-              <TableRow><TableCell colSpan={7}><EmptyState message="No invoices for this project" actionLabel="New Invoice" onAction={() => navigate('/invoices/new')} /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={7}><EmptyState message="No invoices for this project" actionLabel="New Invoice" onAction={() => navigate(newInvoiceUrl)} /></TableCell></TableRow>
             )}
           </TableBody>
         </Table>

@@ -13,19 +13,31 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     createInvoice: builder.mutation<Invoice, CreateInvoiceDto>({
       query: (data) => ({ url: '/invoices', method: 'POST', data }),
-      invalidatesTags: [{ type: 'Invoice', id: 'LIST' }],
+      invalidatesTags: (result) => [
+        { type: 'Invoice', id: 'LIST' },
+        ...(result?.projectId ? [{ type: 'Project' as const, id: result.projectId }] : []),
+      ],
     }),
     updateInvoice: builder.mutation<Invoice, { id: string; data: Partial<CreateInvoiceDto> }>({
       query: ({ id, data }) => ({ url: `/invoices/${id}`, method: 'PATCH', data }),
-      invalidatesTags: (_r, _e, { id }) => [{ type: 'Invoice', id: 'LIST' }, { type: 'Invoice' as const, id }],
+      invalidatesTags: (result, _e, { id }) => [
+        { type: 'Invoice', id: 'LIST' },
+        { type: 'Invoice' as const, id },
+        ...(result?.projectId ? [{ type: 'Project' as const, id: result.projectId }] : []),
+      ],
     }),
     updateInvoiceStatus: builder.mutation<Invoice, { id: string; status: string }>({
       query: ({ id, status }) => ({ url: `/invoices/${id}/status`, method: 'PATCH', data: { status } }),
-      invalidatesTags: (_r, _e, { id }) => [{ type: 'Invoice', id: 'LIST' }, { type: 'Invoice' as const, id }, 'Customer'],
+      invalidatesTags: (result, _e, { id }) => [
+        { type: 'Invoice', id: 'LIST' },
+        { type: 'Invoice' as const, id },
+        'Customer',
+        ...(result?.projectId ? [{ type: 'Project' as const, id: result.projectId }] : []),
+      ],
     }),
     deleteInvoice: builder.mutation<void, string>({
       query: (id) => ({ url: `/invoices/${id}`, method: 'DELETE' }),
-      invalidatesTags: [{ type: 'Invoice', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Invoice', id: 'LIST' }, { type: 'Project', id: 'LIST' }],
     }),
   }),
 });

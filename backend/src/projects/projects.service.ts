@@ -118,8 +118,8 @@ export class ProjectsService {
     return {
       ...this.mapProject(project),
       milestones: project.milestones.map((m) => ({ ...m })),
-      expenses: project.expenses.map((e) => ({ ...e, amount: Number(e.amount) })),
-      incomes: project.incomes.map((i) => ({ ...i, amount: Number(i.amount) })),
+      expenses: project.expenses.map((e) => ({ ...e, amount: Number(e.amount), tax: Number(e.tax) })),
+      incomes: project.incomes.map((i) => ({ ...i, amount: Number(i.amount), tax: Number(i.tax) })),
       labours: project.labours.map((pl) => ({
         id: pl.id,
         assignedAt: pl.assignedAt,
@@ -321,6 +321,7 @@ export class ProjectsService {
         projectId,
         category: dto.category,
         amount: dto.amount,
+        tax: dto.tax ?? 0,
         date: new Date(dto.date),
         description: dto.description,
       },
@@ -328,7 +329,7 @@ export class ProjectsService {
 
     await this.syncSpent(projectId);
 
-    return { ...expense, amount: Number(expense.amount) };
+    return { ...expense, amount: Number(expense.amount), tax: Number(expense.tax) };
   }
 
   async updateExpense(projectId: string, expenseId: string, dto: UpdateProjectExpenseDto) {
@@ -342,13 +343,14 @@ export class ProjectsService {
       data: {
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.tax !== undefined && { tax: dto.tax }),
         ...(dto.date !== undefined && { date: new Date(dto.date) }),
         ...(dto.description !== undefined && { description: dto.description }),
       },
     });
 
     await this.syncSpent(projectId);
-    return { ...updated, amount: Number(updated.amount) };
+    return { ...updated, amount: Number(updated.amount), tax: Number(updated.tax) };
   }
 
   async deleteExpense(projectId: string, expenseId: string) {
@@ -381,12 +383,13 @@ export class ProjectsService {
         projectId,
         category: dto.category,
         amount: dto.amount,
+        tax: dto.tax ?? 0,
         date: new Date(dto.date),
         description: dto.description,
         source: dto.source,
       },
     });
-    return { ...income, amount: Number(income.amount) };
+    return { ...income, amount: Number(income.amount), tax: Number(income.tax) };
   }
 
   async updateIncome(projectId: string, incomeId: string, dto: UpdateProjectIncomeDto) {
@@ -397,12 +400,13 @@ export class ProjectsService {
       data: {
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.tax !== undefined && { tax: dto.tax }),
         ...(dto.date !== undefined && { date: new Date(dto.date) }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.source !== undefined && { source: dto.source }),
       },
     });
-    return { ...updated, amount: Number(updated.amount) };
+    return { ...updated, amount: Number(updated.amount), tax: Number(updated.tax) };
   }
 
   async deleteIncome(projectId: string, incomeId: string) {
@@ -442,8 +446,15 @@ export class ProjectsService {
       dateFilter ? i.date >= dateFilter.gte! && i.date <= dateFilter.lte! : true,
     );
 
-    const totalIncome = incomes.reduce((s, i) => s + Number(i.amount), 0);
-    const totalDirectExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const totalIncomeBase = incomes.reduce((s, i) => s + Number(i.amount), 0);
+    const totalIncomeTax  = incomes.reduce((s, i) => s + Number(i.tax),    0);
+    const totalIncomeNet  = totalIncomeBase - totalIncomeTax;
+
+    const totalExpenseBase  = expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const totalExpenseTax   = expenses.reduce((s, e) => s + Number(e.tax),    0);
+    const totalDirectExpenses = totalExpenseBase + totalExpenseTax;
+
+    const totalIncome = totalIncomeNet;
 
     // Labour wages from attendance — single batch query instead of N+1
     const labourIds = project.labours.map((pl) => pl.labour.id);
@@ -478,15 +489,33 @@ export class ProjectsService {
 
     return {
       period: month && year ? { month, year } : { from: project.startDate, to: project.endDate ?? new Date() },
-      totalIncome: Math.round(totalIncome * 100) / 100,
+      totalIncomeBase: Math.round(totalIncomeBase * 100) / 100,
+      totalIncomeTax:  Math.round(totalIncomeTax  * 100) / 100,
+      totalIncome:     Math.round(totalIncomeNet   * 100) / 100,
+      totalExpenseBase: Math.round(totalExpenseBase * 100) / 100,
+      totalExpenseTax:  Math.round(totalExpenseTax  * 100) / 100,
       totalDirectExpenses: Math.round(totalDirectExpenses * 100) / 100,
       totalLabourCost: Math.round(totalLabourCost * 100) / 100,
       totalSalaryCost: Math.round(totalSalaryCost * 100) / 100,
       totalCost: Math.round(totalCost * 100) / 100,
       grossProfit: Math.round(grossProfit * 100) / 100,
       isProfitable: grossProfit >= 0,
-      incomeBreakdown: incomes.map((i) => ({ category: i.category, amount: Number(i.amount), date: i.date, description: i.description })),
-      expenseBreakdown: expenses.map((e) => ({ category: e.category, amount: Number(e.amount), date: e.date, description: e.description })),
+      incomeBreakdown: incomes.map((i) => ({
+        category: i.category,
+        baseAmount: Number(i.amount),
+        tax: Number(i.tax),
+        netAmount: Number(i.amount) - Number(i.tax),
+        date: i.date,
+        description: i.description,
+      })),
+      expenseBreakdown: expenses.map((e) => ({
+        category: e.category,
+        baseAmount: Number(e.amount),
+        tax: Number(e.tax),
+        totalAmount: Number(e.amount) + Number(e.tax),
+        date: e.date,
+        description: e.description,
+      })),
     };
   }
 

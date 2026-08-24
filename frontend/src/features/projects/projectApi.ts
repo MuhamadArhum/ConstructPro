@@ -14,15 +14,19 @@ export interface ProjectIncome {
 
 export interface ProjectPnL {
   period: { month?: number; year?: number; from?: string; to?: string };
+  totalIncomeBase: number;
+  totalIncomeTax: number;
   totalIncome: number;
+  totalExpenseBase: number;
+  totalExpenseTax: number;
   totalDirectExpenses: number;
   totalLabourCost: number;
   totalSalaryCost: number;
   totalCost: number;
   grossProfit: number;
   isProfitable: boolean;
-  incomeBreakdown: { category: string; amount: number; date: string; description?: string | null }[];
-  expenseBreakdown: { category: string; amount: number; date: string; description?: string | null }[];
+  incomeBreakdown: { category: string; baseAmount: number; tax: number; netAmount: number; date: string; description?: string | null }[];
+  expenseBreakdown: { category: string; baseAmount: number; tax: number; totalAmount: number; date: string; description?: string | null }[];
 }
 
 export interface ProjectSummary {

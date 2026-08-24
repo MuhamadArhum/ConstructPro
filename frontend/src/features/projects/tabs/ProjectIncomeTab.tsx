@@ -56,6 +56,8 @@ export default function ProjectIncomeTab({
               <TableCell>Source</TableCell>
               <TableCell>Description</TableCell>
               <TableCell align="right">Amount</TableCell>
+              <TableCell align="right">Tax</TableCell>
+              <TableCell align="right">Net</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -67,6 +69,8 @@ export default function ProjectIncomeTab({
                 <TableCell>{inc.source ?? '-'}</TableCell>
                 <TableCell>{inc.description ?? '-'}</TableCell>
                 <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>{fmt(inc.amount)}</TableCell>
+                <TableCell align="right" sx={{ color: 'warning.main' }}>{(inc.tax ?? 0) > 0 ? fmt(inc.tax) : '-'}</TableCell>
+                <TableCell align="right" sx={{ color: 'success.main', fontWeight: 700 }}>{fmt(inc.amount - (inc.tax ?? 0))}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="Edit">
                     <IconButton size="small" onClick={() => openEditIncome(inc)}>
@@ -82,7 +86,7 @@ export default function ProjectIncomeTab({
               </TableRow>
             ))}
             {!((project as any).incomes?.length) && (
-              <TableRow><TableCell colSpan={6}><EmptyState message="No income recorded yet" actionLabel="Add Income" onAction={openAddIncome} /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={8}><EmptyState message="No income recorded yet" actionLabel="Add Income" onAction={openAddIncome} /></TableCell></TableRow>
             )}
           </TableBody>
         </Table>

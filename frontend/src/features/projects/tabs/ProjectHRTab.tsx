@@ -29,8 +29,8 @@ interface Props {
   attEmployeeRecords: any[];
   savingLabourAtt: boolean;
   savingEmpAtt: boolean;
-  bulkUpsertLabourAttendance: (args: any) => Promise<any>;
-  bulkUpsertEmpAttendance: (args: any) => Promise<any>;
+  bulkUpsertLabourAttendance: (args: any) => any;
+  bulkUpsertEmpAttendance: (args: any) => any;
   dispatch: (action: any) => void;
   showSnackbar: (args: { message: string; severity: string }) => any;
   payrollData: any;

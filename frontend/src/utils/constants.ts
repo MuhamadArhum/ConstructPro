@@ -15,7 +15,7 @@ export const ALL_ROLES: AppRole[] = [
 ];
 
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
+  import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 export const ACCESS_TOKEN_KEY = 'builderp_access_token';
 export const REFRESH_TOKEN_KEY = 'builderp_refresh_token';

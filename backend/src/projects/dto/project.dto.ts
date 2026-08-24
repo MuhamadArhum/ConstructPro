@@ -108,6 +108,12 @@ export class CreateProjectExpenseDto {
   @Min(0)
   amount: number;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  tax?: number;
+
   @IsDateString()
   @IsNotEmpty()
   date: string;
@@ -128,6 +134,12 @@ export class CreateProjectIncomeDto {
   @IsNumber()
   @Min(0)
   amount: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  tax?: number;
 
   @IsDateString()
   @IsNotEmpty()

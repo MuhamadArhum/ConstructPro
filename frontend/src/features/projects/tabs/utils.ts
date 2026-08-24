@@ -6,9 +6,8 @@ export const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
 export const INV_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {
   if (s === 'Sent') return 'info';
   if (s === 'Paid') return 'success';
-  if (s === 'Overdue') return 'error';
-  if (s === 'Cancelled') return 'default';
-  return 'warning';
+  if (s === 'Cancelled') return 'warning';
+  return 'default';
 };
 
 export const PO_STATUS_COLOR = (s: string): 'default' | 'info' | 'success' | 'error' | 'warning' => {

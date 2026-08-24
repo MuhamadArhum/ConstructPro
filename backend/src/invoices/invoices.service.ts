@@ -81,23 +81,27 @@ export class InvoicesService {
       (sum, item) => sum + item.quantity * item.unitPrice,
       0,
     );
-    const taxAmount = dto.taxAmount ?? 0;
+    const taxRate = dto.taxRate ?? 0;
+    const taxAmount = Math.round((subtotal * taxRate) / 100 * 100) / 100;
     const total = subtotal + taxAmount;
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const count = await this.prisma.invoice.count();
     const invoiceNumber = `INV-${dateStr}-${String(count + 1).padStart(4, '0')}`;
 
+    const finalStatus = dto.status ?? 'Draft';
+
     const invoice = await this.prisma.$transaction(async (tx) => {
-      return tx.invoice.create({
+      const created = await tx.invoice.create({
         data: {
           invoiceNumber,
           customerId: dto.customerId,
           projectId: dto.projectId,
           issueDate: new Date(dto.issueDate),
           dueDate: new Date(dto.dueDate),
-          status: dto.status ?? 'Draft',
+          status: finalStatus,
           subtotal,
+          taxRate,
           taxAmount,
           total,
           notes: dto.notes,
@@ -116,6 +120,23 @@ export class InvoicesService {
           items: true,
         },
       });
+
+      // If created directly as Paid, record project income
+      if (finalStatus === 'Paid' && dto.projectId) {
+        await tx.projectIncome.create({
+          data: {
+            projectId: dto.projectId,
+            category: 'Invoice',
+            amount: total,
+            tax: taxAmount,
+            date: new Date(dto.issueDate),
+            description: invoiceNumber,
+            source: `invoice:${created.id}`,
+          },
+        });
+      }
+
+      return created;
     });
 
     return {
@@ -137,7 +158,11 @@ export class InvoicesService {
     const subtotal = items
       ? items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
       : undefined;
-    const taxAmount = dto.taxAmount;
+    const taxRate = dto.taxRate;
+    const taxAmount =
+      subtotal !== undefined && taxRate !== undefined
+        ? Math.round((subtotal * taxRate) / 100 * 100) / 100
+        : dto.taxAmount;
     const total =
       subtotal !== undefined ? subtotal + (taxAmount ?? 0) : undefined;
 
@@ -157,6 +182,7 @@ export class InvoicesService {
           ...(dto.dueDate !== undefined && { dueDate: new Date(dto.dueDate) }),
           ...(dto.status !== undefined && { status: dto.status }),
           ...(subtotal !== undefined && { subtotal }),
+          ...(taxRate !== undefined && { taxRate }),
           ...(taxAmount !== undefined && { taxAmount }),
           ...(total !== undefined && { total }),
           ...(dto.notes !== undefined && { notes: dto.notes }),
@@ -196,7 +222,9 @@ export class InvoicesService {
       const invoice = await tx.invoice.findUnique({ where: { id } });
       if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
 
-      const wasNotPaid = invoice.status !== 'Paid';
+      const wasPaid = invoice.status === 'Paid';
+      const becomingPaid = dto.status === 'Paid' && !wasPaid;
+      const unpaying = wasPaid && dto.status !== 'Paid';
 
       const updated = await tx.invoice.update({
         where: { id },
@@ -207,9 +235,10 @@ export class InvoicesService {
         },
       });
 
-      // Only process payment transaction when transitioning TO Paid for the first time
-      if (dto.status === 'Paid' && wasNotPaid) {
+      if (becomingPaid) {
         const invoiceTotal = Number(invoice.total);
+
+        // Customer ledger
         await tx.customerTransaction.create({
           data: {
             customerId: invoice.customerId,
@@ -227,6 +256,28 @@ export class InvoicesService {
             totalPaid: { increment: invoiceTotal },
           },
         });
+
+        // Project income (P&L)
+        if (invoice.projectId) {
+          await tx.projectIncome.create({
+            data: {
+              projectId: invoice.projectId,
+              category: 'Invoice',
+              amount: invoiceTotal,
+              tax: Number(invoice.taxAmount),
+              date: invoice.issueDate,
+              description: invoice.invoiceNumber,
+              source: `invoice:${invoice.id}`,
+            },
+          });
+        }
+      }
+
+      // If reverting from Paid — remove linked project income
+      if (unpaying && invoice.projectId) {
+        await tx.projectIncome.deleteMany({
+          where: { projectId: invoice.projectId, source: `invoice:${invoice.id}` },
+        });
       }
 
       return this.mapInvoice(updated);
@@ -237,13 +288,29 @@ export class InvoicesService {
     const invoice = await this.prisma.invoice.findUnique({ where: { id } });
     if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
 
-    if (invoice.status === 'Paid') {
-      throw new BadRequestException(
-        'Cannot delete a Paid invoice. Change status to Cancelled first.',
-      );
-    }
+    await this.prisma.$transaction(async (tx) => {
+      // If Paid — reverse customer balance and remove project income
+      if (invoice.status === 'Paid') {
+        const invoiceTotal = Number(invoice.total);
+        await tx.customer.update({
+          where: { id: invoice.customerId },
+          data: {
+            totalBilled: { decrement: invoiceTotal },
+            totalPaid: { decrement: invoiceTotal },
+          },
+        });
+      }
 
-    await this.prisma.invoice.delete({ where: { id } });
+      // Remove linked project income regardless of status
+      if (invoice.projectId) {
+        await tx.projectIncome.deleteMany({
+          where: { projectId: invoice.projectId, source: `invoice:${invoice.id}` },
+        });
+      }
+
+      await tx.invoice.delete({ where: { id } });
+    });
+
     return { message: 'Invoice deleted successfully' };
   }
 
@@ -261,6 +328,7 @@ export class InvoicesService {
       dueDate: invoice.dueDate,
       status: invoice.status,
       subtotal: Number(invoice.subtotal),
+      taxRate: Number(invoice.taxRate),
       taxAmount: Number(invoice.taxAmount),
       total: Number(invoice.total),
       notes: invoice.notes,

@@ -16,7 +16,6 @@ export enum InvoiceStatus {
   Draft = 'Draft',
   Sent = 'Sent',
   Paid = 'Paid',
-  Overdue = 'Overdue',
   Cancelled = 'Cancelled',
 }
 
@@ -56,6 +55,12 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsEnum(InvoiceStatus)
   status?: InvoiceStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  taxRate?: number;
 
   @IsOptional()
   @Type(() => Number)
