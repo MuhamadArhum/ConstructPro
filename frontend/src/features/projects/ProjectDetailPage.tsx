@@ -70,7 +70,7 @@ import {
 } from './projectApi';
 import { useGetVehiclesQuery } from '../vehicles/vehicleApi';
 import { useGetPlantsQuery } from '../plants/plantApi';
-import { fmtAmount, fmtNum } from '../../utils/formatNumber';
+import { fmtAmount } from '../../utils/formatNumber';
 import { useGetExpenseCategoriesQuery, useGetIncomeCategoriesQuery } from '../expense/categoryApi';
 
 import { today, isOverdue } from './tabs/utils';

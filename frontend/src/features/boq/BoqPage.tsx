@@ -504,7 +504,7 @@ export default function BoqPage() {
             <Typography variant="body2" color="text.secondary">{projectName}</Typography>
           </Box>
         </Stack>
-        <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
           {boq && (
             <>
               <Button startIcon={<PrintIcon />} variant="outlined" size="small" onClick={() => handlePrint(boq, projectName)}>
@@ -668,7 +668,7 @@ export default function BoqPage() {
                         <TableRow key={item.id} hover sx={{ opacity: fullyBilled ? 0.6 : 1 }}>
                           <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>{iIdx + 1}</TableCell>
                           <TableCell>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                               <Box>
                                 <Typography variant="body2">{item.description}</Typography>
                                 {item.notes && <Typography variant="caption" color="text.secondary">{item.notes}</Typography>}
@@ -912,7 +912,7 @@ export default function BoqPage() {
       <Dialog open={pbOpen} onClose={() => setPbOpen(false)} maxWidth="md" fullWidth>
         <form onSubmit={handleProgressBillSubmit}>
           <DialogTitle>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <ReceiptLongIcon color="secondary" />
               <Box>
                 <Typography variant="h6">Create Progress Bill (RA Bill)</Typography>
@@ -987,7 +987,7 @@ export default function BoqPage() {
                             <TableCell align="right"><Typography variant="body2">{fmtNum(item.quantity)}</Typography></TableCell>
                             <TableCell align="right"><Typography variant="body2" color="info.main">{fmtNum(item.billedQuantity)}</Typography></TableCell>
                             <TableCell align="right">
-                              <Typography variant="body2" color={fullyBilled ? 'success.main' : 'warning.main'} fontWeight={fullyBilled ? 700 : 400}>
+                              <Typography variant="body2" sx={{ color: fullyBilled ? 'success.main' : 'warning.main', fontWeight: fullyBilled ? 700 : 400 }}>
                                 {fullyBilled ? '✓ Done' : fmtNum(item.remainingQuantity)}
                               </Typography>
                             </TableCell>
@@ -1018,7 +1018,7 @@ export default function BoqPage() {
               <Divider />
 
               {/* Tax + Notes + Total */}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'flex-start' }}>
                 <TextField
                   label="Tax Rate %" type="number" value={pbTaxRate}
                   onChange={(e) => setPbTaxRate(e.target.value)}
@@ -1036,20 +1036,20 @@ export default function BoqPage() {
               {/* Bill Preview */}
               <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                 <Stack spacing={0.5}>
-                  <Stack direction="row" justifyContent="space-between">
+                  <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                     <Typography color="text.secondary">Subtotal</Typography>
-                    <Typography fontWeight={600}>{fmt(pbSubtotal)}</Typography>
+                    <Typography sx={{ fontWeight: 600 }}>{fmt(pbSubtotal)}</Typography>
                   </Stack>
                   {pbTaxAmt > 0 && (
-                    <Stack direction="row" justifyContent="space-between">
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                       <Typography color="text.secondary">Tax ({pbTaxRate}%)</Typography>
                       <Typography>{fmt(pbTaxAmt)}</Typography>
                     </Stack>
                   )}
                   <Divider />
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography fontWeight={800} fontSize="1.1rem">Total</Typography>
-                    <Typography fontWeight={800} fontSize="1.1rem" color="primary.main">{fmt(pbTotal)}</Typography>
+                  <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: '1.1rem' }}>Total</Typography>
+                    <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: 'primary.main' }}>{fmt(pbTotal)}</Typography>
                   </Stack>
                 </Stack>
               </Paper>
