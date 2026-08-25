@@ -20,6 +20,7 @@ import { Perms } from '../../utils/permissions';
 import { useGetTaxRecordsQuery, useGetTaxSummaryQuery, useDeleteTaxRecordMutation, useUpdateTaxRecordMutation } from './taxApi';
 import type { TaxType } from '../../types/tax.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
 const taxTypeLabels: Record<TaxType, string> = {
   VAT: 'VAT',
@@ -29,7 +30,7 @@ const taxTypeLabels: Record<TaxType, string> = {
   Other: 'Other',
 };
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
 function exportToCsv(rows: any[]) {

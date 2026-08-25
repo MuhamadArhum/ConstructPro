@@ -13,9 +13,10 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetAccountsQuery, useDeleteAccountMutation } from './accountsApi';
 import type { AccountType } from '../../types/accounts.types';
+import { fmtAmountSigned } from '../../utils/formatNumber';
 
 const typeColors: Record<AccountType, 'info' | 'error' | 'warning' | 'success' | 'default'> = { Asset: 'info', Liability: 'error', Equity: 'warning', Revenue: 'success', Expense: 'default' };
-const fmt = (n: number) => n >= 0 ? `PKR ${Math.abs(n).toLocaleString()}` : `-PKR ${Math.abs(n).toLocaleString()}`;
+const fmt = fmtAmountSigned;
 
 export default function ChartOfAccountsPage() {
   const navigate = useNavigate();

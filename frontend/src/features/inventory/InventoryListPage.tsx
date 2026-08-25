@@ -14,9 +14,10 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetInventoryItemsQuery, useDeleteInventoryItemMutation } from './inventoryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmountOrDash, fmtNum as fmtNumUtil } from '../../utils/formatNumber';
 
-const fmt = (n?: number) => n != null ? `PKR ${n.toLocaleString()}` : '-';
-const fmtNum = (n?: number) => n != null ? n.toLocaleString() : '0';
+const fmt = fmtAmountOrDash;
+const fmtNum = (n?: number) => n != null ? fmtNumUtil(n) : '0';
 
 const exportCSV = (rows: { code?: string; name: string; category?: string; unit?: string; currentStock: number; lowStockThreshold: number; unitPrice?: number; supplierName?: string; location?: string }[]) => {
   const header = ['Code', 'Name', 'Category', 'Unit', 'Current Stock', 'Low Stock Threshold', 'Unit Price', 'Supplier', 'Storage Location'];

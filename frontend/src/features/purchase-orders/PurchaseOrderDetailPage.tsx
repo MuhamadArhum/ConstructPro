@@ -17,8 +17,9 @@ import { PO_STATUS_COLORS } from '../../utils/statusColors';
 import { useGetSettingsQuery } from '../settings/settingsApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
 
 const BLUEPRINT: [number, number, number] = [14, 42, 71];

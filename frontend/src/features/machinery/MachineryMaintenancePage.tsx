@@ -35,8 +35,9 @@ import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { useGetMachineryByIdQuery, useGetMaintenanceHistoryQuery, useAddMaintenanceMutation } from './machineryApi';
 import type { MaintenanceType } from '../../types/machinery.types';
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function MachineryMaintenancePage() {
   const { id } = useParams<{ id: string }>();
@@ -97,7 +98,7 @@ export default function MachineryMaintenancePage() {
         <Box sx={{ flex: 1 }}>
           <Typography variant="h1">{machinery?.name} — Maintenance</Typography>
           <Typography variant="body2" color="text.secondary">
-            {machinery?.model ?? ''} | Status: {machinery?.statusDisplay} | Running Hours: {machinery?.totalRunningHours.toLocaleString()} hrs
+            {machinery?.model ?? ''} | Status: {machinery?.statusDisplay} | Running Hours: {fmtNum(machinery?.totalRunningHours)} hrs
             {machinery?.isMaintenanceDue && (
               <Chip label="Maintenance Due" color="error" size="small" sx={{ ml: 1 }} />
             )}
@@ -140,7 +141,7 @@ export default function MachineryMaintenancePage() {
                   <TableCell>{row.description}</TableCell>
                   <TableCell align="right">{fmt(row.cost)}</TableCell>
                   <TableCell align="right">
-                    {row.runningHoursAtService ? `${row.runningHoursAtService.toLocaleString()} hrs` : '-'}
+                    {row.runningHoursAtService ? `${fmtNum(row.runningHoursAtService)} hrs` : '-'}
                   </TableCell>
                   <TableCell>
                     {row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}

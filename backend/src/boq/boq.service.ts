@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateBoqDto,
@@ -7,6 +7,7 @@ import {
   UpdateBoqSectionDto,
   CreateBoqItemDto,
   UpdateBoqItemDto,
+  CreateProgressBillDto,
 } from './dto/boq.dto';
 
 @Injectable()
@@ -169,11 +170,189 @@ export class BoqService {
     return { message: 'Item deleted' };
   }
 
+  // ── Progress Bills ───────────────────────────────────────────────────────────
+
+  async createProgressBill(projectId: string, dto: CreateProgressBillDto) {
+    const boq = await this.prisma.boq.findUnique({
+      where: { projectId },
+      include: {
+        sections: { include: { items: true } },
+      },
+    });
+    if (!boq) throw new NotFoundException('BOQ not found');
+
+    // Validate all boqItemIds belong to this BOQ and check remaining qty
+    const allItems = boq.sections.flatMap((s) => s.items);
+    const itemMap = new Map(allItems.map((i) => [i.id, i]));
+
+    for (const billItem of dto.items) {
+      const boqItem = itemMap.get(billItem.boqItemId);
+      if (!boqItem) throw new BadRequestException(`BOQ item ${billItem.boqItemId} not found in this BOQ`);
+
+      const remaining = Number(boqItem.quantity) - Number(boqItem.billedQuantity);
+      if (billItem.billedQty > remaining + 0.00001) {
+        throw new BadRequestException(
+          `Item "${boqItem.description}": billed qty (${billItem.billedQty}) exceeds remaining qty (${remaining.toFixed(4)})`
+        );
+      }
+    }
+
+    // Generate bill number
+    const billCount = await this.prisma.boqProgressBill.count({ where: { boqId: boq.id } });
+    const billNumber = billCount + 1;
+
+    // Calculate invoice amounts
+    const taxRate = dto.taxRate ?? 0;
+    const invoiceItems = dto.items
+      .filter((bi) => bi.billedQty > 0)
+      .map((bi) => {
+        const boqItem = itemMap.get(bi.boqItemId)!;
+        const rate = Number(boqItem.unitRate);
+        const amount = bi.billedQty * rate;
+        return { boqItemId: bi.boqItemId, billedQty: bi.billedQty, rate, amount, boqItem };
+      });
+
+    if (invoiceItems.length === 0) {
+      throw new BadRequestException('At least one item with quantity > 0 is required');
+    }
+
+    const subtotal = invoiceItems.reduce((s, i) => s + i.amount, 0);
+    const taxAmount = (subtotal * taxRate) / 100;
+    const total = subtotal + taxAmount;
+
+    // Generate invoice number
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const invoiceCount = await this.prisma.invoice.count();
+    const invoiceNumber = `INV-${dateStr}-${String(invoiceCount + 1).padStart(4, '0')}`;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create Invoice
+      const invoice = await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          customerId: dto.customerId,
+          projectId,
+          issueDate: new Date(dto.issueDate),
+          dueDate: new Date(dto.dueDate),
+          status: 'Draft',
+          subtotal,
+          taxRate,
+          taxAmount,
+          total,
+          notes: dto.notes ?? `Progress Bill #${billNumber}`,
+          items: {
+            create: invoiceItems.map((i) => ({
+              description: `${i.boqItem.description} (${i.billedQty} ${i.boqItem.unit})`,
+              quantity: i.billedQty,
+              unitPrice: i.rate,
+              total: i.amount,
+            })),
+          },
+        },
+      });
+
+      // Create BoqProgressBill record
+      const progressBill = await tx.boqProgressBill.create({
+        data: {
+          boqId: boq.id,
+          invoiceId: invoice.id,
+          billNumber,
+          notes: dto.notes,
+          items: {
+            create: invoiceItems.map((i) => ({
+              boqItemId: i.boqItemId,
+              billedQty: i.billedQty,
+              unitRate: i.rate,
+              amount: i.amount,
+            })),
+          },
+        },
+      });
+
+      // Update billedQuantity on each BoqItem
+      for (const i of invoiceItems) {
+        await tx.boqItem.update({
+          where: { id: i.boqItemId },
+          data: {
+            billedQuantity: {
+              increment: i.billedQty,
+            },
+          },
+        });
+      }
+
+      return { progressBill, invoice };
+    });
+
+    return {
+      progressBillId: result.progressBill.id,
+      billNumber,
+      invoiceId: result.invoice.id,
+      invoiceNumber,
+      total,
+    };
+  }
+
+  async getProgressBills(projectId: string) {
+    const boq = await this.prisma.boq.findUnique({ where: { projectId } });
+    if (!boq) return [];
+
+    const bills = await this.prisma.boqProgressBill.findMany({
+      where: { boqId: boq.id },
+      orderBy: { billNumber: 'asc' },
+      include: {
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            status: true,
+            total: true,
+            issueDate: true,
+            dueDate: true,
+            customer: { select: { id: true, name: true } },
+          },
+        },
+        items: {
+          include: {
+            boqItem: { select: { description: true, unit: true } },
+          },
+        },
+      },
+    });
+
+    return bills.map((b) => ({
+      id: b.id,
+      billNumber: b.billNumber,
+      notes: b.notes,
+      createdAt: b.createdAt,
+      invoice: {
+        id: b.invoice.id,
+        invoiceNumber: b.invoice.invoiceNumber,
+        status: b.invoice.status,
+        total: Number(b.invoice.total),
+        issueDate: b.invoice.issueDate,
+        dueDate: b.invoice.dueDate,
+        customer: b.invoice.customer,
+      },
+      items: b.items.map((i) => ({
+        id: i.id,
+        boqItemId: i.boqItemId,
+        description: i.boqItem.description,
+        unit: i.boqItem.unit,
+        billedQty: Number(i.billedQty),
+        unitRate: Number(i.unitRate),
+        amount: Number(i.amount),
+      })),
+    }));
+  }
+
   // ── Mappers ──────────────────────────────────────────────────────────────────
 
   private mapBoq(boq: any) {
     const sections = (boq.sections ?? []).map((s: any) => this.mapSection(s));
     const grandTotal = sections.reduce((sum: number, s: any) => sum + s.subtotal, 0);
+    const totalBilled = sections.reduce((sum: number, s: any) =>
+      sum + s.items.reduce((ss: number, i: any) => ss + i.billedAmount, 0), 0);
     return {
       id: boq.id,
       projectId: boq.projectId,
@@ -183,12 +362,15 @@ export class BoqService {
       updatedAt: boq.updatedAt,
       sections,
       grandTotal,
+      totalBilled,
+      remainingAmount: grandTotal - totalBilled,
     };
   }
 
   private mapSection(section: any) {
     const items = (section.items ?? []).map((i: any) => this.mapItem(i));
     const subtotal = items.reduce((sum: number, i: any) => sum + i.amount, 0);
+    const billedSubtotal = items.reduce((sum: number, i: any) => sum + i.billedAmount, 0);
     return {
       id: section.id,
       boqId: section.boqId,
@@ -196,18 +378,31 @@ export class BoqService {
       order: section.order,
       items,
       subtotal,
+      billedSubtotal,
     };
   }
 
   private mapItem(item: any) {
+    const quantity = Number(item.quantity);
+    const unitRate = Number(item.unitRate);
+    const amount = Number(item.amount);
+    const billedQuantity = Number(item.billedQuantity ?? 0);
+    const remainingQuantity = Math.max(0, quantity - billedQuantity);
+    const billedAmount = billedQuantity * unitRate;
+    const remainingAmount = remainingQuantity * unitRate;
+
     return {
       id: item.id,
       sectionId: item.sectionId,
       description: item.description,
       unit: item.unit,
-      quantity: Number(item.quantity),
-      unitRate: Number(item.unitRate),
-      amount: Number(item.amount),
+      quantity,
+      unitRate,
+      amount,
+      billedQuantity,
+      remainingQuantity,
+      billedAmount,
+      remainingAmount,
       notes: item.notes,
       order: item.order,
     };

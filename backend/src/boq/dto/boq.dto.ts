@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, Min, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNumber, Min, IsNotEmpty, IsArray, ValidateNested, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -124,4 +124,50 @@ export class UpdateBoqItemDto {
   @Type(() => Number)
   @IsNumber()
   order?: number;
+}
+
+export class ProgressBillItemDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  boqItemId: string;
+
+  @ApiProperty({ example: 50 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  billedQty: number;
+}
+
+export class CreateProgressBillDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  customerId: string;
+
+  @ApiProperty({ example: '2025-01-01' })
+  @IsDateString()
+  issueDate: string;
+
+  @ApiProperty({ example: '2025-01-31' })
+  @IsDateString()
+  dueDate: string;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  taxRate?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiProperty({ type: [ProgressBillItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProgressBillItemDto)
+  items: ProgressBillItemDto[];
 }

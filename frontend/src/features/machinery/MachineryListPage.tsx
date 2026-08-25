@@ -36,6 +36,7 @@ import { Perms } from '../../utils/permissions';
 import { useGetMachineriesQuery, useDeleteMachineryMutation, useGetMaintenanceDueQuery } from './machineryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
 import type { MachineryStatus } from '../../types/machinery.types';
+import { fmtNum } from '../../utils/formatNumber';
 
 const statusColor: Record<MachineryStatus, 'success' | 'warning' | 'default'> = {
   Active: 'success',
@@ -201,7 +202,7 @@ export default function MachineryListPage() {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell align="right">{row.totalRunningHours.toLocaleString()} hrs</TableCell>
+                    <TableCell align="right">{fmtNum(row.totalRunningHours)} hrs</TableCell>
                     <TableCell
                       sx={{ color: row.isMaintenanceDue ? 'error.main' : 'text.primary', fontWeight: row.isMaintenanceDue ? 600 : 400 }}
                     >

@@ -14,6 +14,7 @@ import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { Perms } from '../../utils/permissions';
 import { useGetIncomeByIdQuery, useDeleteIncomeMutation } from './incomeApi';
 import { useState } from 'react';
+import { fmtAmount } from '../../utils/formatNumber';
 
 const categoryLabels: Record<string, string> = {
   CustomerPayment: 'Customer Payment',
@@ -21,7 +22,7 @@ const categoryLabels: Record<string, string> = {
   OtherIncome: 'Other Income',
 };
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
 export default function IncomeDetailPage() {

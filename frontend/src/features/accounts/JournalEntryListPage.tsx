@@ -8,8 +8,9 @@ import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useGetJournalEntriesQuery, useDeleteJournalEntryMutation } from './accountsApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function JournalEntryListPage() {
   const navigate = useNavigate();

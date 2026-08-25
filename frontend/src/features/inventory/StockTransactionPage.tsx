@@ -7,6 +7,7 @@ import { useGetInventoryItemByIdQuery, useGetStockTransactionsQuery, useAddStock
 import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import type { StockTransactionType } from '../../types/inventory.types';
+import { fmtAmountOrDash } from '../../utils/formatNumber';
 
 const typeColors: Record<StockTransactionType, 'success' | 'error' | 'info'> = { In: 'success', Out: 'error', Adjustment: 'info' };
 
@@ -93,7 +94,7 @@ export default function StockTransactionPage() {
                   <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                   <TableCell><Chip label={t.typeDisplay} color={typeColors[t.type]} size="small" /></TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>{t.quantity}</TableCell>
-                  <TableCell align="right">{t.unitPrice ? `PKR ${t.unitPrice.toLocaleString()}` : '-'}</TableCell>
+                  <TableCell align="right">{fmtAmountOrDash(t.unitPrice)}</TableCell>
                   <TableCell>{t.reference ?? '-'}</TableCell>
                   <TableCell>{t.projectName ?? '-'}</TableCell>
                 </TableRow>

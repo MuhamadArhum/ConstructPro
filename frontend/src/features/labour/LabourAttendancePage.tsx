@@ -54,8 +54,9 @@ import {
   useMarkLabourWageAsPaidMutation,
   useDeleteLabourWagePaymentMutation,
 } from './labourApi';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-GB');
 
 const months = [

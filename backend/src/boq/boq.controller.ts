@@ -8,6 +8,7 @@ import {
   CreateBoqDto, UpdateBoqDto,
   CreateBoqSectionDto, UpdateBoqSectionDto,
   CreateBoqItemDto, UpdateBoqItemDto,
+  CreateProgressBillDto,
 } from './dto/boq.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -107,5 +108,23 @@ export class BoqController {
   @ApiParam({ name: 'itemId' })
   deleteItem(@Param('itemId') itemId: string) {
     return this.boqService.deleteItem(itemId);
+  }
+
+  // ── Progress Bills ───────────────────────────────────────────────────────────
+
+  @Post('project/:projectId/progress-bill')
+  @HasPermission('Projects.Edit')
+  @ApiOperation({ summary: 'Create a progress bill (RA Bill) from BOQ items' })
+  @ApiParam({ name: 'projectId' })
+  createProgressBill(@Param('projectId') projectId: string, @Body() dto: CreateProgressBillDto) {
+    return this.boqService.createProgressBill(projectId, dto);
+  }
+
+  @Get('project/:projectId/progress-bills')
+  @HasPermission('Projects.View')
+  @ApiOperation({ summary: 'Get all progress bills for a BOQ' })
+  @ApiParam({ name: 'projectId' })
+  getProgressBills(@Param('projectId') projectId: string) {
+    return this.boqService.getProgressBills(projectId);
   }
 }

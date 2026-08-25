@@ -15,9 +15,10 @@ import { Perms } from '../../utils/permissions';
 import { useGetPlantsQuery, useDeletePlantMutation } from './plantApi';
 import type { PlantStatus } from '../../types/plant.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmountOrDash } from '../../utils/formatNumber';
 
 const statusColors: Record<PlantStatus, 'success' | 'warning' | 'error' | 'default'> = { Active: 'success', Inactive: 'default', Maintenance: 'warning', Retired: 'error' };
-const fmt = (n?: number) => n != null ? `PKR ${n.toLocaleString()}` : '-';
+const fmt = fmtAmountOrDash;
 
 const isDue = (date?: string | null) => (date ? new Date(date) < new Date() : false);
 

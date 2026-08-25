@@ -3,6 +3,7 @@ import type {
   BoqDto, CreateBoqRequest, UpdateBoqRequest,
   BoqSectionDto, CreateBoqSectionRequest, UpdateBoqSectionRequest,
   BoqItemDto, CreateBoqItemRequest, UpdateBoqItemRequest,
+  CreateProgressBillRequest, CreateProgressBillResponse, ProgressBillDto,
 } from '../../types/boq.types';
 
 export const boqApi = baseApi.injectEndpoints({
@@ -47,6 +48,17 @@ export const boqApi = baseApi.injectEndpoints({
       query: ({ itemId }) => ({ url: `/boq/items/${itemId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { projectId }) => [{ type: 'Boq' as const, id: projectId }],
     }),
+    createProgressBill: builder.mutation<CreateProgressBillResponse, { projectId: string; data: CreateProgressBillRequest }>({
+      query: ({ projectId, data }) => ({ url: `/boq/project/${projectId}/progress-bill`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { projectId }) => [
+        { type: 'Boq' as const, id: projectId },
+        { type: 'Invoice' as const, id: 'LIST' },
+      ],
+    }),
+    getProgressBills: builder.query<ProgressBillDto[], string>({
+      query: (projectId) => ({ url: `/boq/project/${projectId}/progress-bills` }),
+      providesTags: (_r, _e, projectId) => [{ type: 'Boq' as const, id: projectId }],
+    }),
   }),
 });
 
@@ -61,4 +73,6 @@ export const {
   useAddBoqItemMutation,
   useUpdateBoqItemMutation,
   useDeleteBoqItemMutation,
+  useCreateProgressBillMutation,
+  useGetProgressBillsQuery,
 } = boqApi;

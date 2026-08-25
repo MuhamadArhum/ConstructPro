@@ -20,8 +20,9 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useGetProjectsQuery, useDeleteProjectMutation, useGetProjectSummaryQuery } from './projectApi';
 import ProjectFormDialog from './ProjectFormDialog';
 import type { ProjectStatus } from '../../types/project.types';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 

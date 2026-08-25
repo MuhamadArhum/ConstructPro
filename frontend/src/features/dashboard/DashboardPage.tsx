@@ -32,8 +32,9 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../app/store';
 import { useGetDashboardQuery } from './dashboardApi';
 import type { DashboardActiveProject, DashboardChartPoint, DashboardLowStockAlert, DashboardRecentTransaction } from '../../types/dashboard.types';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
 function greeting() {

@@ -4,8 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useGetAccountLedgerQuery } from './accountsApi';
 import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
+import { fmtAmountAbs } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${Math.abs(n).toLocaleString()}`;
+const fmt = fmtAmountAbs;
 
 export default function AccountLedgerPage() {
   const { id } = useParams<{ id: string }>();

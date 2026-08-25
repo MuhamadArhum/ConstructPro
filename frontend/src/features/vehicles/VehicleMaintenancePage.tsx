@@ -6,8 +6,9 @@ import { showSnackbar } from '../../app/snackbarSlice';
 import { useGetVehicleByIdQuery, useGetVehicleMaintenanceQuery, useAddVehicleMaintenanceMutation } from './vehicleApi';
 import Loader from '../../components/common/Loader';
 import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function VehicleMaintenancePage() {
   const { id } = useParams<{ id: string }>();

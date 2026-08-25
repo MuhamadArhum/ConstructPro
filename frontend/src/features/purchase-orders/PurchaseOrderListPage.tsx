@@ -15,8 +15,9 @@ import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TableSkeleton from '../../components/common/TableSkeleton';
 import { useGetPurchaseOrdersQuery, useDeletePurchaseOrderMutation, useUpdatePurchaseOrderStatusMutation } from './purchaseOrderApi';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
 
 const STATUS_OPTIONS = ['Draft', 'Sent', 'Received', 'Cancelled'];
@@ -121,7 +122,7 @@ export default function PurchaseOrderListPage() {
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper variant="outlined" sx={{ p: 2, borderLeft: '4px solid', borderColor: 'success.main' }}>
             <Typography variant="caption" color="text.secondary">Total Amount</Typography>
-            <Typography variant="h4">PKR {totalAmount.toLocaleString()}</Typography>
+            <Typography variant="h4">{fmt(totalAmount)}</Typography>
           </Paper>
         </Grid>
       </Grid>

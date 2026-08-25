@@ -15,6 +15,7 @@ import { Perms } from '../../utils/permissions';
 import { useGetVehiclesQuery, useDeleteVehicleMutation } from './vehicleApi';
 import type { VehicleStatus } from '../../types/vehicle.types';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtNum } from '../../utils/formatNumber';
 
 const statusColors: Record<VehicleStatus, 'success' | 'warning' | 'error'> = {
   Active: 'success', UnderMaintenance: 'warning', Retired: 'error',
@@ -166,7 +167,7 @@ export default function VehicleListPage() {
                       <TableCell sx={{ fontWeight: 600 }}>{row.registrationNumber}</TableCell>
                       <TableCell>{row.make} {row.model ?? ''} {row.year ? `(${row.year})` : ''}</TableCell>
                       <TableCell>{row.driverName ?? '-'}</TableCell>
-                      <TableCell>{row.totalMileage.toLocaleString()}</TableCell>
+                      <TableCell>{fmtNum(row.totalMileage)}</TableCell>
                       <TableCell>{row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate).toLocaleDateString() : '-'}</TableCell>
                       <TableCell>
                         {expiryStatus === 'expired' && <Chip label="Expired" color="error" size="small" />}

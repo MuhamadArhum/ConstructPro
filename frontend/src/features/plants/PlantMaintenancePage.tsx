@@ -16,8 +16,9 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import PermissionGate from '../../components/common/PermissionGate';
 import { Perms } from '../../utils/permissions';
 import { useGetPlantByIdQuery, useGetPlantMaintenanceHistoryQuery, useAddPlantMaintenanceMutation, useDeletePlantMaintenanceMutation } from './plantApi';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function PlantMaintenancePage() {
   const { id } = useParams<{ id: string }>();

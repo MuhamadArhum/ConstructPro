@@ -34,8 +34,9 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetLaboursQuery, useDeactivateLabourMutation, useActivateLabourMutation } from './labourApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function LabourListPage() {
   const navigate = useNavigate();

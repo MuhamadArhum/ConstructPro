@@ -11,6 +11,7 @@ import { useGetCustomersQuery } from '../customers/customerApi';
 import type { ProjectStatus } from '../../types/project.types';
 
 const today = () => new Date().toISOString().split('T')[0];
+const toDateInput = (val?: string | null) => val ? val.split('T')[0] : '';
 const STATUSES: ProjectStatus[] = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled'];
 
 interface ProjectFormDialogProps {
@@ -54,8 +55,8 @@ export default function ProjectFormDialog({ open, onClose, projectId }: ProjectF
       setName(existing.name);
       setStatus(existing.status);
       setClientId(existing.clientId ?? '');
-      setStartDate(existing.startDate ?? today());
-      setEndDate(existing.endDate ?? '');
+      setStartDate(toDateInput(existing.startDate) || today());
+      setEndDate(toDateInput(existing.endDate));
       setBudget(existing.budget.toString());
       setProgress(existing.progress);
       setManagerName(existing.managerName ?? '');

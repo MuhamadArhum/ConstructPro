@@ -44,7 +44,9 @@ import type {
   VehicleReportDto,
 } from '../../types/reports.types';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
+
+const fmt = fmtAmount;
 const fmtDate = (d: string | Date | null | undefined) =>
   d ? new Date(d).toLocaleDateString('en-GB') : '—';
 const today = () => new Date().toISOString().split('T')[0];
@@ -82,7 +84,7 @@ function SummaryCard({
       <CardContent>
         <Typography variant="body2" color="text.secondary">{label}</Typography>
         <Typography variant="h5" sx={{ fontWeight: 700, color: color ?? 'text.primary' }}>
-          {isCount ? value.toLocaleString() : fmt(value)}
+          {isCount ? fmtNum(value) : fmt(value)}
         </Typography>
       </CardContent>
     </Card>
@@ -118,10 +120,10 @@ function IncomeExpenseBarChart({ data }: { data: IncomeExpenseReportDto['monthly
           return (
             <g key={i}>
               <rect x={x} y={180 - incH} width={barW} height={incH} fill="#1976d2">
-                <title>Income: PKR {d.income.toLocaleString()}</title>
+                <title>Income: {fmt(d.income)}</title>
               </rect>
               <rect x={x + barW + gap} y={180 - expH} width={barW} height={expH} fill="#d32f2f">
-                <title>Expense: PKR {d.expense.toLocaleString()}</title>
+                <title>Expense: {fmt(d.expense)}</title>
               </rect>
               <text x={x + barW} y={200} textAnchor="middle" fontSize={10} fill="#666">
                 {d.monthName?.slice(0, 3)}
@@ -213,13 +215,13 @@ function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string 
                 {(data?.monthly ?? []).map((m) => (
                   <TableRow key={`${m.year}-${m.month}`} hover>
                     <TableCell>{m.monthName} {m.year}</TableCell>
-                    <TableCell align="right" sx={{ color: 'success.main' }}>{m.income.toLocaleString()}</TableCell>
-                    <TableCell align="right" sx={{ color: 'error.main' }}>{m.expense.toLocaleString()}</TableCell>
+                    <TableCell align="right" sx={{ color: 'success.main' }}>{fmtNum(m.income)}</TableCell>
+                    <TableCell align="right" sx={{ color: 'error.main' }}>{fmtNum(m.expense)}</TableCell>
                     <TableCell
                       align="right"
                       sx={{ fontWeight: 700, color: m.profit >= 0 ? 'success.main' : 'error.main' }}
                     >
-                      {m.profit.toLocaleString()}
+                      {fmtNum(m.profit)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -252,7 +254,7 @@ function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string 
                   <TableCell>{r.description ?? '—'}</TableCell>
                   <TableCell>{r.reference ?? '—'}</TableCell>
                   <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>
-                    {Number(r.amount).toLocaleString()}
+                    {fmtNum(Number(r.amount))}
                   </TableCell>
                 </TableRow>
               ))}
@@ -284,7 +286,7 @@ function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string 
                   <TableCell>{r.description ?? '—'}</TableCell>
                   <TableCell>{r.reference ?? '—'}</TableCell>
                   <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>
-                    {Number(r.amount).toLocaleString()}
+                    {fmtNum(Number(r.amount))}
                   </TableCell>
                 </TableRow>
               ))}
@@ -311,13 +313,13 @@ function FinanceReport({ fromDate, toDate }: { fromDate: string; toDate: string 
               {(data?.byCategory ?? []).map((c) => (
                 <TableRow key={c.category} hover>
                   <TableCell>{c.category}</TableCell>
-                  <TableCell align="right" sx={{ color: 'success.main' }}>{c.totalIncome.toLocaleString()}</TableCell>
-                  <TableCell align="right" sx={{ color: 'error.main' }}>{c.totalExpense.toLocaleString()}</TableCell>
+                  <TableCell align="right" sx={{ color: 'success.main' }}>{fmtNum(c.totalIncome)}</TableCell>
+                  <TableCell align="right" sx={{ color: 'error.main' }}>{fmtNum(c.totalExpense)}</TableCell>
                   <TableCell
                     align="right"
                     sx={{ fontWeight: 700, color: (c.totalIncome - c.totalExpense) >= 0 ? 'success.main' : 'error.main' }}
                   >
-                    {(c.totalIncome - c.totalExpense).toLocaleString()}
+                    {fmtNum(c.totalIncome - c.totalExpense)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -398,16 +400,16 @@ function LabourReport({ fromDate, toDate }: { fromDate: string; toDate: string }
               <TableRow key={l.id} hover>
                 <TableCell sx={{ fontWeight: 500 }}>{l.name}</TableCell>
                 <TableCell>{l.trade ?? '—'}</TableCell>
-                <TableCell align="right">{l.dailyWage.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(l.dailyWage)}</TableCell>
                 <TableCell align="right" sx={{ color: 'success.main' }}>{l.presentDays}</TableCell>
                 <TableCell align="right" sx={{ color: 'error.main' }}>{l.absentDays}</TableCell>
-                <TableCell align="right">{l.totalWages.toLocaleString()}</TableCell>
-                <TableCell align="right" sx={{ color: 'warning.main' }}>{l.totalAdvances.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(l.totalWages)}</TableCell>
+                <TableCell align="right" sx={{ color: 'warning.main' }}>{fmtNum(l.totalAdvances)}</TableCell>
                 <TableCell
                   align="right"
                   sx={{ fontWeight: 700, color: l.netPayable >= 0 ? 'success.main' : 'error.main' }}
                 >
-                  {l.netPayable.toLocaleString()}
+                  {fmtNum(l.netPayable)}
                 </TableCell>
               </TableRow>
             ))}
@@ -513,11 +515,11 @@ function InventoryReport() {
                   align="right"
                   sx={{ fontWeight: 600, color: item.isLowStock ? 'error.main' : 'success.main' }}
                 >
-                  {item.currentStock.toLocaleString()}
+                  {fmtNum(item.currentStock)}
                 </TableCell>
-                <TableCell align="right">{item.lowStockThreshold.toLocaleString()}</TableCell>
-                <TableCell align="right">{item.unitPrice.toLocaleString()}</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{item.totalValue.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(item.lowStockThreshold)}</TableCell>
+                <TableCell align="right">{fmtNum(item.unitPrice)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{fmtNum(item.totalValue)}</TableCell>
                 <TableCell>{item.supplierName ?? '—'}</TableCell>
                 <TableCell>{item.location ?? '—'}</TableCell>
                 <TableCell>
@@ -617,7 +619,7 @@ function TaxReport({ fromDate, toDate }: { fromDate: string; toDate: string }) {
                 >
                   {fmtDate(r.dueDate)}
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{r.amount.toLocaleString()}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{fmtNum(r.amount)}</TableCell>
                 <TableCell>
                   <Chip
                     label={r.isPaid ? 'Paid' : 'Pending'}
@@ -702,8 +704,8 @@ function CustomerReport() {
                 <TableCell sx={{ fontWeight: 500 }}>{c.name}</TableCell>
                 <TableCell>{c.companyName ?? '—'}</TableCell>
                 <TableCell>{c.phone ?? '—'}</TableCell>
-                <TableCell align="right">{c.totalBilled.toLocaleString()}</TableCell>
-                <TableCell align="right" sx={{ color: 'success.main' }}>{c.totalPaid.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(c.totalBilled)}</TableCell>
+                <TableCell align="right" sx={{ color: 'success.main' }}>{fmtNum(c.totalPaid)}</TableCell>
                 <TableCell
                   align="right"
                   sx={{
@@ -711,7 +713,7 @@ function CustomerReport() {
                     color: c.outstandingBalance > 0 ? 'warning.main' : 'success.main',
                   }}
                 >
-                  {c.outstandingBalance.toLocaleString()}
+                  {fmtNum(c.outstandingBalance)}
                 </TableCell>
               </TableRow>
             ))}
@@ -789,8 +791,8 @@ function SupplierReport() {
                 <TableCell sx={{ fontWeight: 500 }}>{s.name}</TableCell>
                 <TableCell>{s.companyName ?? '—'}</TableCell>
                 <TableCell>{s.phone ?? '—'}</TableCell>
-                <TableCell align="right">{s.totalPurchased.toLocaleString()}</TableCell>
-                <TableCell align="right" sx={{ color: 'success.main' }}>{s.totalPaid.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(s.totalPurchased)}</TableCell>
+                <TableCell align="right" sx={{ color: 'success.main' }}>{fmtNum(s.totalPaid)}</TableCell>
                 <TableCell
                   align="right"
                   sx={{
@@ -798,7 +800,7 @@ function SupplierReport() {
                     color: s.outstandingBalance > 0 ? 'error.main' : 'success.main',
                   }}
                 >
-                  {s.outstandingBalance.toLocaleString()}
+                  {fmtNum(s.outstandingBalance)}
                 </TableCell>
               </TableRow>
             ))}
@@ -875,9 +877,9 @@ function EmployeeReport() {
                 <TableCell sx={{ fontWeight: 500 }}>{e.name}</TableCell>
                 <TableCell>{e.designation ?? '—'}</TableCell>
                 <TableCell>{e.department ?? '—'}</TableCell>
-                <TableCell align="right">{e.salary.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtNum(e.salary)}</TableCell>
                 <TableCell align="right">{e.salaryPaidCount}</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{e.totalSalaryPaid.toLocaleString()}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{fmtNum(e.totalSalaryPaid)}</TableCell>
                 <TableCell>
                   <Chip
                     label={e.isActive ? 'Active' : 'Inactive'}
@@ -968,7 +970,7 @@ function MachineryReport({ fromDate, toDate }: { fromDate: string; toDate: strin
                 </TableCell>
                 <TableCell align="right">{m.maintenanceCount}</TableCell>
                 <TableCell align="right" sx={{ color: 'warning.main', fontWeight: 600 }}>
-                  {m.totalMaintenanceCost.toLocaleString()}
+                  {fmtNum(m.totalMaintenanceCost)}
                 </TableCell>
                 <TableCell>{fmtDate(m.lastMaintenanceDate)}</TableCell>
               </TableRow>
@@ -1054,7 +1056,7 @@ function VehicleReport({ fromDate, toDate }: { fromDate: string; toDate: string 
                 </TableCell>
                 <TableCell align="right">{v.maintenanceCount}</TableCell>
                 <TableCell align="right" sx={{ color: 'warning.main', fontWeight: 600 }}>
-                  {v.totalMaintenanceCost.toLocaleString()}
+                  {fmtNum(v.totalMaintenanceCost)}
                 </TableCell>
                 <TableCell>{fmtDate(v.lastMaintenanceDate)}</TableCell>
               </TableRow>

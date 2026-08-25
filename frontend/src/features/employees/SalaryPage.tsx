@@ -57,8 +57,9 @@ import {
   useLazyGetEmployeeAttendanceQuery,
 } from './employeesApi';
 import type { SalaryPaymentDto } from '../../types/employee.types';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-GB');
 const today = () => new Date().toISOString().split('T')[0];
 

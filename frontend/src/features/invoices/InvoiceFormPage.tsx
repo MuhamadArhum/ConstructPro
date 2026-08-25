@@ -13,6 +13,7 @@ import { showSnackbar } from '../../app/snackbarSlice';
 import Loader from '../../components/common/Loader';
 import { useCreateInvoiceMutation, useUpdateInvoiceMutation, useGetInvoiceQuery } from './invoiceApi';
 import { useGetCustomersQuery } from '../customers/customerApi';
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
 import { useGetProjectsQuery } from '../projects/projectApi';
 import type { CreateInvoiceItemDto } from '../../types/invoice.types';
 
@@ -76,7 +77,7 @@ export default function InvoiceFormPage() {
   };
 
   const subtotal = items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0);
-  const taxAmount = Math.round((subtotal * taxRate) / 100 * 100) / 100;
+  const taxAmount = (subtotal * taxRate) / 100;
   const total = subtotal + taxAmount;
 
   const handleSubmit = async () => {
@@ -243,7 +244,7 @@ export default function InvoiceFormPage() {
                       size="small"
                       type="number"
                       sx={{ width: 90 }}
-                      slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                      slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                     />
                   </TableCell>
                   <TableCell align="right">
@@ -253,11 +254,11 @@ export default function InvoiceFormPage() {
                       size="small"
                       type="number"
                       sx={{ width: 140 }}
-                      slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                      slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                     />
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    {(item.quantity * item.unitPrice).toLocaleString()}
+                    {fmtNum(item.quantity * item.unitPrice)}
                   </TableCell>
                   <TableCell>
                     <IconButton size="small" color="error" onClick={() => removeItem(item._key)} disabled={items.length === 1}>
@@ -275,11 +276,11 @@ export default function InvoiceFormPage() {
         <Stack sx={{ alignItems: 'flex-end' }} spacing={1}>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320 }}>
             <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>Subtotal</Typography>
-            <Typography sx={{ minWidth: 120, textAlign: 'right', fontWeight: 600 }}>PKR {subtotal.toLocaleString()}</Typography>
+            <Typography sx={{ minWidth: 120, textAlign: 'right', fontWeight: 600 }}>{fmtAmount(subtotal)}</Typography>
           </Stack>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320, alignItems: 'center' }}>
             <Typography sx={{ flex: 1, textAlign: 'right', color: 'text.secondary' }}>
-              Tax ({taxRate}%) = PKR {taxAmount.toLocaleString()}
+              Tax ({taxRate}%) = {fmtAmount(taxAmount)}
             </Typography>
             <TextField
               value={taxRate}
@@ -287,13 +288,13 @@ export default function InvoiceFormPage() {
               size="small"
               type="number"
               sx={{ width: 120 }}
-              slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, max: 100, step: 0.1 } }}
+              slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, max: 100, step: 'any' } }}
             />
           </Stack>
           <Stack direction="row" spacing={4} sx={{ minWidth: 320 }}>
             <Typography sx={{ flex: 1, textAlign: 'right', fontWeight: 700, fontSize: '1.1rem' }}>Total</Typography>
             <Typography sx={{ minWidth: 120, textAlign: 'right', fontWeight: 700, fontSize: '1.1rem', color: 'primary.main' }}>
-              PKR {total.toLocaleString()}
+              {fmtAmount(total)}
             </Typography>
           </Stack>
         </Stack>

@@ -12,8 +12,9 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetSuppliersQuery, useDeleteSupplierMutation } from './supplierApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number | undefined) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function SupplierListPage() {
   const navigate = useNavigate();

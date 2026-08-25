@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../app/hooks';
 import { showSnackbar } from '../../app/snackbarSlice';
 import { useCreateJournalEntryMutation, useGetLevel4AccountsQuery } from './accountsApi';
 import type { CreateJournalEntryLineRequest } from '../../types/accounts.types';
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
 
 export default function JournalEntryFormPage() {
   const navigate = useNavigate();
@@ -81,13 +82,13 @@ export default function JournalEntryFormPage() {
                 ))}
                 <TableRow>
                   <TableCell><Button size="small" startIcon={<AddIcon />} onClick={() => setLines(prev => [...prev, { accountId: '', debit: 0, credit: 0 }])}>Add Line</Button></TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: isBalanced ? 'success.main' : 'error.main' }}>PKR {totalDebit.toLocaleString()}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: isBalanced ? 'success.main' : 'error.main' }}>PKR {totalCredit.toLocaleString()}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: isBalanced ? 'success.main' : 'error.main' }}>{fmtAmount(totalDebit)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: isBalanced ? 'success.main' : 'error.main' }}>{fmtAmount(totalCredit)}</TableCell>
                   <TableCell />
                 </TableRow>
               </TableBody>
             </Table>
-            {!isBalanced && <Alert severity="warning">Debit ({totalDebit.toLocaleString()}) ≠ Credit ({totalCredit.toLocaleString()})</Alert>}
+            {!isBalanced && <Alert severity="warning">Debit ({fmtNum(totalDebit)}) ≠ Credit ({fmtNum(totalCredit)})</Alert>}
 
             <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth multiline rows={2} />
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>

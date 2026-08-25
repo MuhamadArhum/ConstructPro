@@ -12,8 +12,9 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Perms } from '../../utils/permissions';
 import { useGetCustomersQuery, useDeleteCustomerMutation } from './customerApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 export default function CustomerListPage() {
   const navigate = useNavigate();

@@ -26,8 +26,9 @@ import {
   useDeleteCategoryMutation,
 } from '../expense/categoryApi';
 import TableSkeleton from '../../components/common/TableSkeleton';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 
 function exportToCsv(rows: any[]) {
   const headers = ['Code', 'Date', 'Category', 'Description', 'Customer', 'Project', 'Amount', 'Paid'];

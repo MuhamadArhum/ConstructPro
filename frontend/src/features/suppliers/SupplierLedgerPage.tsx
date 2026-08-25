@@ -49,8 +49,9 @@ import type { SupplierTransactionType } from '../../types/supplier.types';
 import { exportLedgerPdf } from '../../utils/exportLedgerPdf';
 import { printLedger } from '../../utils/printLedger';
 import { useGetSettingsQuery } from '../settings/settingsApi';
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 const today = () => new Date().toISOString().split('T')[0];
 
 export default function SupplierLedgerPage() {
@@ -282,13 +283,13 @@ export default function SupplierLedgerPage() {
                   </TableCell>
                   <TableCell>{row.description ?? '-'}</TableCell>
                   <TableCell>{row.reference ?? '-'}</TableCell>
-                  <TableCell align="right">{row.debit > 0 ? row.debit.toLocaleString() : '-'}</TableCell>
-                  <TableCell align="right">{row.credit > 0 ? row.credit.toLocaleString() : '-'}</TableCell>
+                  <TableCell align="right">{row.debit > 0 ? fmtNum(row.debit) : '-'}</TableCell>
+                  <TableCell align="right">{row.credit > 0 ? fmtNum(row.credit) : '-'}</TableCell>
                   <TableCell
                     align="right"
                     sx={{ fontWeight: 600, color: row.balance > 0 ? 'error.main' : 'success.main' }}
                   >
-                    {row.balance.toLocaleString()}
+                    {fmtNum(row.balance)}
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Delete">
@@ -313,13 +314,13 @@ export default function SupplierLedgerPage() {
               {transactions.length > 0 && summary && (
                 <TableRow sx={{ backgroundColor: 'action.hover' }}>
                   <TableCell colSpan={4} sx={{ fontWeight: 700 }}>Summary</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>{summary.totalDebit.toLocaleString()}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>{summary.totalCredit.toLocaleString()}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>{fmtNum(summary.totalDebit)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>{fmtNum(summary.totalCredit)}</TableCell>
                   <TableCell
                     align="right"
                     sx={{ fontWeight: 700, color: summary.closingBalance > 0 ? 'error.main' : 'success.main' }}
                   >
-                    {summary.closingBalance.toLocaleString()}
+                    {fmtNum(summary.closingBalance)}
                   </TableCell>
                   <TableCell />
                 </TableRow>

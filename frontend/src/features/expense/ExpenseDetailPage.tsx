@@ -14,6 +14,7 @@ import AppBreadcrumbs from '../../components/common/AppBreadcrumbs';
 import { Perms } from '../../utils/permissions';
 import { useGetExpenseByIdQuery, useDeleteExpenseMutation } from './expenseApi';
 import { useState } from 'react';
+import { fmtAmount } from '../../utils/formatNumber';
 
 const categoryLabels: Record<string, string> = {
   LabourExpenses: 'Labour Expenses',
@@ -29,7 +30,7 @@ const categoryLabels: Record<string, string> = {
   Miscellaneous: 'Miscellaneous',
 };
 
-const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
 
 export default function ExpenseDetailPage() {

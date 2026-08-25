@@ -898,9 +898,10 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  items         InvoiceItem[]
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  project         Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items           InvoiceItem[]
+  progressBill    BoqProgressBill?
 
   @@index([customerId])
   @@index([status])
@@ -966,14 +967,15 @@ model PurchaseOrderItem {
 }
 
 model Boq {
-  id        String       @id @default(uuid())
-  projectId String       @unique
-  title     String       @default("Bill of Quantities")
-  notes     String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sections  BoqSection[]
+  id            String            @id @default(uuid())
+  projectId     String            @unique
+  title         String            @default("Bill of Quantities")
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections      BoqSection[]
+  progressBills BoqProgressBill[]
 
   @@map("boqs")
 }
@@ -991,17 +993,49 @@ model BoqSection {
 }
 
 model BoqItem {
-  id          String     @id @default(uuid())
-  sectionId   String
-  description String
-  unit        String     @default("nos")
-  quantity    Decimal    @default(0)
-  unitRate    Decimal    @default(0)
-  amount      Decimal    @default(0)
-  notes       String?
-  order       Int        @default(0)
-  section     BoqSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id              String                @id @default(uuid())
+  sectionId       String
+  description     String
+  unit            String                @default("nos")
+  quantity        Decimal               @default(0)
+  unitRate        Decimal               @default(0)
+  amount          Decimal               @default(0)
+  billedQuantity  Decimal               @default(0)
+  notes           String?
+  order           Int                   @default(0)
+  section         BoqSection            @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progressBillItems BoqProgressBillItem[]
 
   @@index([sectionId])
   @@map("boq_items")
+}
+
+model BoqProgressBill {
+  id         String                @id @default(uuid())
+  boqId      String
+  invoiceId  String                @unique
+  billNumber Int
+  notes      String?
+  createdAt  DateTime              @default(now())
+  boq        Boq                   @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  invoice    Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  items      BoqProgressBillItem[]
+
+  @@index([boqId])
+  @@map("boq_progress_bills")
+}
+
+model BoqProgressBillItem {
+  id             String          @id @default(uuid())
+  progressBillId String
+  boqItemId      String
+  billedQty      Decimal
+  unitRate       Decimal
+  amount         Decimal
+  progressBill   BoqProgressBill @relation(fields: [progressBillId], references: [id], onDelete: Cascade)
+  boqItem        BoqItem         @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+
+  @@index([progressBillId])
+  @@index([boqItemId])
+  @@map("boq_progress_bill_items")
 }

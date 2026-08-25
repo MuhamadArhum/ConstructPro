@@ -70,6 +70,7 @@ import {
 } from './projectApi';
 import { useGetVehiclesQuery } from '../vehicles/vehicleApi';
 import { useGetPlantsQuery } from '../plants/plantApi';
+import { fmtAmount, fmtNum } from '../../utils/formatNumber';
 import { useGetExpenseCategoriesQuery, useGetIncomeCategoriesQuery } from '../expense/categoryApi';
 
 import { today, isOverdue } from './tabs/utils';
@@ -535,13 +536,13 @@ export default function ProjectDetailPage() {
 
       {/* Budget Alert */}
       {project.budget > 0 && budgetUsedPct >= 100 && (
-        <Alert severity="error" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
-          Budget exceeded! Spent <strong>{`PKR ${(project.spent ?? 0).toLocaleString()}`}</strong> of <strong>{`PKR ${(project.budget ?? 0).toLocaleString()}`}</strong> budget.
+        <Alert severity="error" icon={<WarningAmberIcon />} sx={{ mb: 2, color: '#7f1010', '& .MuiAlert-icon': { color: '#7f1010' } }}>
+          Budget exceeded! Spent <strong>{fmtAmount(project.spent)}</strong> of <strong>{fmtAmount(project.budget)}</strong> budget.
         </Alert>
       )}
       {project.budget > 0 && budgetUsedPct >= 80 && budgetUsedPct < 100 && (
-        <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
-          Budget warning: <strong>{Math.round(budgetUsedPct)}%</strong> used ({`PKR ${(project.spent ?? 0).toLocaleString()}`} of {`PKR ${(project.budget ?? 0).toLocaleString()}`}).
+        <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2, color: '#7a4a00', '& .MuiAlert-icon': { color: '#7a4a00' } }}>
+          Budget warning: <strong>{Math.round(budgetUsedPct)}%</strong> used ({fmtAmount(project.spent)} of {fmtAmount(project.budget)}).
         </Alert>
       )}
       {overdueMilestones > 0 && (
@@ -755,7 +756,7 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setExpTax(e.target.value)}
                 fullWidth
                 slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
-                helperText={parseFloat(expAmount) > 0 && parseFloat(expTax) > 0 ? `Total: PKR ${(parseFloat(expAmount) + parseFloat(expTax)).toLocaleString()}` : ''}
+                helperText={parseFloat(expAmount) > 0 && parseFloat(expTax) > 0 ? `Total: ${fmtAmount(parseFloat(expAmount) + parseFloat(expTax))}` : ''}
               />
               <TextField
                 label="Date"
@@ -887,7 +888,7 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setIncTax(e.target.value)}
                 fullWidth
                 slotProps={{ input: { startAdornment: <InputAdornment position="start">PKR</InputAdornment> } }}
-                helperText={parseFloat(incAmount) > 0 && parseFloat(incTax) > 0 ? `Net: PKR ${(parseFloat(incAmount) - parseFloat(incTax)).toLocaleString()}` : ''}
+                helperText={parseFloat(incAmount) > 0 && parseFloat(incTax) > 0 ? `Net: ${fmtAmount(parseFloat(incAmount) - parseFloat(incTax))}` : ''}
               />
               <TextField
                 label="Date"
@@ -1092,7 +1093,7 @@ export default function ProjectDetailPage() {
                   </Stack>
                   {genPendingCount > 0 && (
                     <Alert severity="warning" sx={{ py: 0.5 }}>
-                      <strong>{genPendingCount} advance{genPendingCount > 1 ? 's' : ''} ({`PKR ${(genPendingTotal ?? 0).toLocaleString()}`})</strong> will be automatically deducted.
+                      <strong>{genPendingCount} advance{genPendingCount > 1 ? 's' : ''} ({fmtAmount(genPendingTotal)})</strong> will be automatically deducted.
                     </Alert>
                   )}
                   {genDaysPresent && basicNum > 0 && (
@@ -1100,30 +1101,30 @@ export default function ProjectDetailPage() {
                       <Stack spacing={0.5}>
                         <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                           <Typography variant="body2" color="text.secondary">Earned ({genDaysPresent}/{genTotalDays} days)</Typography>
-                          <Typography variant="body2">{`PKR ${Math.round(earnedPreview).toLocaleString()}`}</Typography>
+                          <Typography variant="body2">{fmtAmount(earnedPreview)}</Typography>
                         </Stack>
                         {(parseFloat(genBonus) || 0) > 0 && (
                           <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                             <Typography variant="body2" color="success.main">+ Bonus</Typography>
-                            <Typography variant="body2" color="success.main">{`PKR ${parseFloat(genBonus).toLocaleString()}`}</Typography>
+                            <Typography variant="body2" color="success.main">{fmtAmount(parseFloat(genBonus))}</Typography>
                           </Stack>
                         )}
                         {genPendingTotal > 0 && (
                           <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                             <Typography variant="body2" color="error.main">− Advances</Typography>
-                            <Typography variant="body2" color="error.main">{`PKR ${(genPendingTotal ?? 0).toLocaleString()}`}</Typography>
+                            <Typography variant="body2" color="error.main">{fmtAmount(genPendingTotal)}</Typography>
                           </Stack>
                         )}
                         {(parseFloat(genDeductions) || 0) > 0 && (
                           <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
                             <Typography variant="body2" color="error.main">− Extra Deductions</Typography>
-                            <Typography variant="body2" color="error.main">{`PKR ${parseFloat(genDeductions).toLocaleString()}`}</Typography>
+                            <Typography variant="body2" color="error.main">{fmtAmount(parseFloat(genDeductions))}</Typography>
                           </Stack>
                         )}
                         <Stack direction="row" sx={{ justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
                           <Typography variant="body2" sx={{ fontWeight: 700 }}>Net Salary</Typography>
                           <Typography variant="body2" sx={{ fontWeight: 700, color: netPreview < 0 ? 'error.main' : 'primary.main' }}>
-                            {`PKR ${Math.round(netPreview).toLocaleString()}`}
+                            {fmtAmount(netPreview)}
                           </Typography>
                         </Stack>
                       </Stack>

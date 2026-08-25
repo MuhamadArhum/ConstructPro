@@ -14,8 +14,9 @@ import { showSnackbar } from '../../app/snackbarSlice';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TableSkeleton from '../../components/common/TableSkeleton';
 import { useGetInvoicesQuery, useUpdateInvoiceStatusMutation } from './invoiceApi';
+import { fmtAmount } from '../../utils/formatNumber';
 
-const fmt = (n: number) => `PKR ${(n ?? 0).toLocaleString()}`;
+const fmt = fmtAmount;
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
 
 const STATUS_OPTIONS = ['Draft', 'Sent', 'Paid', 'Cancelled'];
